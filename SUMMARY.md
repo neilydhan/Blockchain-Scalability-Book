@@ -1,6 +1,7 @@
 # Summary
 
 * [Introduction](README.md)
+* [Preface](chapters/00_preface.md)
 
 ## Core Chapters
 

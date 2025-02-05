@@ -2,6 +2,8 @@
 
 Welcome to the Blockchain Scalability Book project! This book is a community-driven effort to explore, elucidate, and solve the scalability issues that blockchain technologies, especially Ethereum, face today. By leveraging the collective wisdom and expertise of the blockchain community, this book aims to provide comprehensive insights into scalability solutions like Layer 2 rollups, modular chains, and parallel execution.
 
+👉 Start with our [Preface](chapters/00_preface.md) to learn more about the book's purpose and structure.
+
 ## Why This Book?
 Blockchain scalability is a critical challenge that impedes the widespread adoption of this revolutionary technology. This book seeks to demystify the technical complexities and present scalable solutions in a way that is accessible to both newcomers and seasoned professionals in the field.
 
