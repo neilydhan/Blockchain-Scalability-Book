@@ -47,7 +47,7 @@ We use [GitHub Sponsors](https://github.com/sponsors/neilydhan), or you can send
 Your donations help sustain our project and encourage further contributions!
 
 ## License
-This work is licensed under the [MIT License](LICENSE). By contributing to this book, you agree to abide by its terms.
+This work is licensed under the [MIT License](LICENSE.md). By contributing to this book, you agree to abide by its terms.
 
 ## Stay Connected
 Star this repository and follow the progress! Share your thoughts and connect with other contributors by starting discussions in the issues section.
