@@ -31,8 +31,8 @@ Status indicators:
 We welcome contributions from anyone interested in making blockchain more scalable. Whether you're a developer, researcher, writer, or enthusiast, your insights are valuable!
 
 ### Getting Started
-1. **Read the Contribution Guidelines**: Check out the `CONTRIBUTING.md` for detailed instructions on how to contribute.
-2. **Choose a Chapter**: Look at the `SUMMARY.md` to find a chapter you're interested in.
+1. **Read the Contribution Guidelines**: Check out our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to contribute.
+2. **Choose a Chapter**: Look at the [Summary](SUMMARY.md) to find a chapter you're interested in.
 3. **Fork the Repository**: Make your changes and submit a pull request.
 
 ## Donations
@@ -47,7 +47,7 @@ We use [GitHub Sponsors](https://github.com/sponsors/neilydhan), or you can send
 Your donations help sustain our project and encourage further contributions!
 
 ## License
-This work is licensed under [LICENSE]. By contributing to this book, you agree to abide by its terms.
+This work is licensed under the [MIT License](LICENSE). By contributing to this book, you agree to abide by its terms.
 
 ## Stay Connected
 Star this repository and follow the progress! Share your thoughts and connect with other contributors by starting discussions in the issues section.
