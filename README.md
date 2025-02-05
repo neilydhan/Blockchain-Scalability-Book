@@ -16,6 +16,17 @@ We welcome contributions from anyone interested in making blockchain more scalab
 ## Donations
 This project relies on donations to motivate contributions and enhance the collaborative process. If you find this initiative valuable, consider donating. Every donor can submit a wish or suggestion with their donation, which we might include in the book! See `DONATIONS.md` for more details.
 
+# Donations Guide
+
+Thank you for considering a donation to the Blockchain Scalability Book project! Your support not only helps fund our efforts but also motivates the community to contribute and collaborate.
+
+We use [GitHub Sponsors](https://github.com/sponsors/neilydhan), or you can send USDT or USDC to the following address directly:
+
+- **USDT/USDC Address**: 0x8B12f280f997308B98c2a820279Faf61Aa54345c
+- **Network**: Ethereum (ERC-20)
+
+Your donations help sustain our project and encourage further contributions!
+
 ## License
 This work is licensed under [LICENSE]. By contributing to this book, you agree to abide by its terms.
 
