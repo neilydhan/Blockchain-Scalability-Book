@@ -14,9 +14,6 @@ We welcome contributions from anyone interested in making blockchain more scalab
 3. **Fork the Repository**: Make your changes and submit a pull request.
 
 ## Donations
-This project relies on donations to motivate contributions and enhance the collaborative process. If you find this initiative valuable, consider donating. Every donor can submit a wish or suggestion with their donation, which we might include in the book! See `DONATIONS.md` for more details.
-
-# Donations Guide
 
 Thank you for considering a donation to the Blockchain Scalability Book project! Your support not only helps fund our efforts but also motivates the community to contribute and collaborate.
 
