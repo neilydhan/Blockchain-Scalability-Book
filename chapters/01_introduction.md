@@ -277,7 +277,7 @@ Two emerging approaches—**BlockBench** and **Gas Per Second (GPS)**—offer ea
 
 ### **BlockBench: A First Step Toward Blockchain Benchmarking**  
 
-BlockBench is one of the earliest frameworks developed to benchmark **private (permissioned) blockchains**. It introduces a structured methodology for evaluating blockchain scalability, focusing on three key layers:  
+BlockBench [^2] is one of the earliest frameworks developed to benchmark **private (permissioned) blockchains**. It introduces a structured methodology for evaluating blockchain scalability, focusing on three key layers:  
 
 1. **Consensus Layer** – Measures how different consensus algorithms (e.g., PBFT, PoW, PoA) affect performance.  
 2. **Data Layer** – Analyzes blockchain storage models and how they impact read/write speeds.  
@@ -287,11 +287,14 @@ BlockBench evaluates **throughput, latency, and fault tolerance** using real-wor
 
 However, while BlockBench provides a useful starting point, its focus is primarily on **private blockchains**, making it **less relevant for public, high-throughput blockchains like Ethereum**.  
 
+[^2]: Tien Tuan Anh Dinh, *BLOCKBENCH: A Framework for Analyzing Private
+Blockchains*. [Available here](https://www.comp.nus.edu.sg/~ooibc/blockbench.pdf).
+
 ---
 
 ### **Gas Per Second: A More Accurate Measure for EVM Chains**  
 
-While **Transactions Per Second (TPS)** is commonly used to measure blockchain performance, it has limitations—**not all transactions consume the same computational resources**. A more precise metric, **Gas Per Second (GPS)**, offers a better way to benchmark Ethereum and EVM-compatible blockchains.  
+While **Transactions Per Second (TPS)** is commonly used to measure blockchain performance, it has limitations—**not all transactions consume the same computational resources**. A more precise metric, **Gas Per Second (GPS)** [^3], offers a better way to benchmark Ethereum and EVM-compatible blockchains.  
 
 #### **Why GPS Matters**
 - **Gas measures computational effort, not just transaction count.**  
@@ -302,6 +305,8 @@ GPS is calculated as:
 > **Gas Per Second = (Target Gas Usage Per Block) / (Block Time)**  
 
 This metric allows researchers and developers to compare execution performance across different Ethereum-based Layer 1 and Layer 2 chains, offering a **standardized way to assess scalability**.  
+
+[^3]: Georgios Konstantopoulos, *Reth’s path to 1 gigagas per second, and beyond*. [Available here](https://www.paradigm.xyz/2024/04/reth-perf).
 
 ---
 
