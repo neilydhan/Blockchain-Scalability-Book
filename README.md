@@ -14,7 +14,7 @@ Status indicators:
 - 🚧 Work in Progress
 - ✅ Complete
 
-1. 🚧 **[Introduction to Blockchain Scalability](chapters/01_introduction.md)**: Foundation concepts and overview of blockchain scalability challenges.
+1. ✅ **[Introduction to Blockchain Scalability](chapters/01_introduction.md)**: Foundation concepts and overview of blockchain scalability challenges.
 2. 🚧 **[The Blockchain Trilemma](chapters/02_blockchain_triemma.md)**: Understanding the fundamental trade-offs in blockchain design.
 3. 🚧 **[Layer 1 vs Layer 2](chapters/03_layer_1_vs_layer_2.md)**: Comparing different approaches to blockchain scaling.
 4. 🚧 **[Layer 1 On-Chain Scalability](chapters/04_layer_1_on_chain_scalability.md)**: Exploring base layer scaling solutions.
