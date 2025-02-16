@@ -287,8 +287,7 @@ BlockBench evaluates **throughput, latency, and fault tolerance** using real-wor
 
 However, while BlockBench provides a useful starting point, its focus is primarily on **private blockchains**, making it **less relevant for public, high-throughput blockchains like Ethereum**.  
 
-[^2]: Tien Tuan Anh Dinh, *BLOCKBENCH: A Framework for Analyzing Private
-Blockchains*. [Available here](https://www.comp.nus.edu.sg/~ooibc/blockbench.pdf).
+[^2]: Tien Tuan Anh Dinh, *BLOCKBENCH: A Framework for Analyzing Private Blockchains*. [Available here](https://www.comp.nus.edu.sg/~ooibc/blockbench.pdf).
 
 ---
 
