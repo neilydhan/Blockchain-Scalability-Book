@@ -10,8 +10,21 @@ default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/neilydhan/Blockchain-Scalability-Book"
 edit-url-template = "https://github.com/neilydhan/Blockchain-Scalability-Book/edit/main/{path}"
+print = { enable = true }
 
-[output.pdf]
+[build]
+build-dir = "book"
+
+[watch]
+ignore = ["*.git/*", "book/*"]
+debounce = 1000
+
+# Comment out or remove the [output.pdf] section during development
+# Uncomment when you want to generate PDF
+# [output.pdf]
+# enable = true
+# renderer = ["html", "pdf"]
+# command = "mdbook-pdf"
 margin-left = 1.5
 margin-right = 1.5
 margin-top = 1.5
@@ -20,3 +33,4 @@ page-break = true
 display-header = true
 display-footer = true
 scale = 1.0
+prefer-local-renderer = true
