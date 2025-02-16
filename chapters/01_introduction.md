@@ -2,21 +2,24 @@
 
 ## **Introduction**  
 
-Blockchain technology promises a decentralized, secure, and transparent approach to handling digital transactions and computation. However, as its adoption grows, **scalability** remains a significant barrier preventing blockchain networks from achieving mass adoption. Unlike traditional centralized systems like VISA or PayPal, which process thousands of transactions per second (TPS), major blockchain networks like **Ethereum** and **Bitcoin** struggle to achieve even a fraction of that throughput.  
+Blockchain technology promises a decentralized, secure, and transparent approach to handling digital transactions and computation. However, as its adoption grows, scalability remains a significant barrier preventing blockchain networks from achieving mass adoption. Unlike traditional centralized systems like VISA or PayPal, which process thousands of transactions per second (TPS), major blockchain networks like Ethereum and Bitcoin struggle to achieve even a fraction of that throughput.
 
-This chapter provides an introduction to **blockchain scalability issues**, examining real-world bottlenecks, past challenges, and industry efforts to redefine what scalability means in a decentralized system.  
+Scalability is critical not just for financial transactions but also for broader applications like gaming, AI-driven agents, and supply chain tracking. This chapter introduces blockchain scalability issues, examining real-world bottlenecks, past challenges, and industry efforts to redefine what scalability means in a decentralized system.
 
 ---
 ## **The Scalability Gap: A Comparative View**  
 
 To understand blockchain’s scalability problem, we must compare its performance with traditional financial networks:  
 
-| System        | Transactions Per Second (TPS) |
-|--------------|-----------------------------|
-| **VISA**     | 24,000                      |
-| **PayPal**   | 193                          |
-| **Ethereum** | ~20                          |
-| **Bitcoin**  | ~7                            |
+| **System**       | **Transactions Per Second (TPS)** | **Notes** |
+|-----------------|-------------------------------|----------|
+| **VISA**       | 24,000                        | Centralized payment network |
+| **PayPal**     | 193                            | Centralized digital payments |
+| **Ethereum**   | ~20                            | General-purpose smart contracts |
+| **Bitcoin**    | ~7                             | Secure but slow settlement |
+| **Solana**     | ~4,000                         | High TPS, but network outages |
+| **Aptos**      | ~160,000                       | Uses parallel execution (MoveVM) |
+
 
 Ethereum is the **second-largest cryptocurrency by market cap after Bitcoin**, but it is much more than just a digital asset. **Ethereum is a decentralized computing platform capable of running a wide variety of applications, including an entire ecosystem of decentralized finance (DeFi) protocols.** However, despite its versatility, Ethereum's ability to process **only 20 TPS** presents a major bottleneck.  
 
@@ -26,9 +29,9 @@ This limitation raises two fundamental concerns:
 1. **Network Congestion:** When too many users submit transactions simultaneously, the network struggles to handle the load.  
 2. **Gas Fees:** Increased competition for block space leads to rising transaction fees, making blockchain transactions costly.  
 
-However, scalability is not unique to Ethereum. It is a **universal challenge** faced by virtually all blockchain networks, from Bitcoin’s 7 TPS to high-throughput chains like Solana and Binance Smart Chain. Each blockchain approaches scalability differently, often making trade-offs between **throughput, decentralization, and security** —a concept we will explore in detail in later chapters.
+However, scalability is not unique to Ethereum. It is a **universal challenge** faced by virtually all blockchain networks, from Bitcoin’s 7 TPS to high-throughput chains like Solana and Aptos. Each blockchain approaches scalability differently, often making trade-offs between **throughput, decentralization, and security** —a concept we will explore in detail in later chapters.
 
-This book is not just about Ethereum’s scalability; It is about **blockchain scalability as a whole**. We will examine the technical limitations, innovative solutions, and real-world implications of scaling decentralized networks, drawing examples from a wide range of blockchains to provide a comprehensive understanding of this critical issue.
+This book is not just about Ethereum’s scalability; It is about **blockchain scalability as a whole**. Blockchain researchers are exploring Layer 2 scaling solutions, sharding, and alternative consensus mechanisms. This book will examine these approaches in depth.
 
 ---
 ## **Understanding Gas Fees and Transaction Costs in Ethereum**  
@@ -299,18 +302,6 @@ GPS is calculated as:
 > **Gas Per Second = (Target Gas Usage Per Block) / (Block Time)**  
 
 This metric allows researchers and developers to compare execution performance across different Ethereum-based Layer 1 and Layer 2 chains, offering a **standardized way to assess scalability**.  
-
----
-
-### **Industry Efforts to Improve Benchmarking**  
-
-The **Reth project** is one of the first implementations optimizing Ethereum execution around **1 gigagas per second**. Their roadmap includes:  
-
-- **Just-In-Time (JIT) & Ahead-of-Time (AOT) EVM compilation** to optimize smart contract execution.  
-- **Parallel EVM execution** to process multiple transactions simultaneously.  
-- **Cloud-native architectures** to scale Ethereum nodes beyond a single machine.  
-
-By pushing the boundaries of **Gas Per Second** benchmarks, projects like Reth are laying the groundwork for **next-generation EVM scalability**, introducing **continuous benchmarking frameworks** similar to TPC benchmarks in databases.  
 
 ---
 
