@@ -12,6 +12,8 @@ At its core, the blockchain trilemma is a framework that highlights the interdep
 
 <p align="center">
   <img src="../assets/trilemma.png" width="500" alt="Blockchain Trilemma">
+  <br>
+  <em>Figure 1: The Blockchain Trilemma - Decentralization, Security, and Scalability Trade-offs</em>
 </p>
 
 1. **Decentralization**: The extent to which a blockchain operates without a central authority, relying instead on a distributed network of nodes to validate transactions and maintain the ledger.
@@ -83,7 +85,9 @@ In Bitcoin’s early days (2009–2011), trading was purely peer-to-peer, conduc
 
 As Bitcoin gained traction, the limitations of peer-to-peer trading became apparent. Scalability demanded faster, more efficient systems, and security required protections against fraud. This led to the rise of centralized exchanges like Mt. Gox (launched 2010), which dominated early crypto trading. CEXs operated off-chain, matching buy/sell orders in a centralized database and settling trades internally, only occasionally interacting with the blockchain for deposits and withdrawals. This design sacrificed decentralization for scalability and security: Mt. Gox could handle thousands of trades per day with custodial security measures, far outpacing Bitcoin’s ~7 TPS. However, centralization introduced single points of failure—Mt. Gox’s infamous 2014 hack, losing 850,000 BTC, underscored the risks of trusting a centralized entity [^10].
 <p align="center">
-  <img src="../assets/cex_architecture.jpg" width="500" alt="Blockchain Trilemma">
+  <img src="../assets/cex_architecture.jpg" width="500" alt="CEX Architecture">
+  <br>
+  <em>Figure 2: Centralized Exchange (CEX) Architecture</em>
 </p>
 
 The trilemma explains this shift: Bitcoin’s decentralized and secure base layer couldn’t scale to meet growing demand, pushing users toward centralized solutions. Ethereum’s launch in 2015 amplified this trend, as smart contracts enabled DeFi but strained the network’s ~20 TPS capacity, driving traders to CEXs like Binance for speed and lower costs.
@@ -93,7 +97,9 @@ The trilemma explains this shift: Bitcoin’s decentralized and secure base laye
 Decentralized exchanges emerged to reclaim decentralization, leveraging blockchain’s trustless ethos. Early DEXs, like EtherDelta (2017), ran entirely on-chain using Ethereum smart contracts for order matching and settlement. While secure and decentralized, they were crippled by scalability: high gas fees and slow transaction times made them impractical during network congestion (e.g., the CryptoKitties surge). The trilemma was stark—on-chain DEXs preserved decentralization and security but couldn’t scale.
 
 <p align="center">
-  <img src="../assets/dex_architecture.jpg" width="500" alt="Blockchain Trilemma">
+  <img src="../assets/dex_architecture.jpg" width="500" alt="DEX Architecture">
+  <br>
+  <em>Figure 3: Decentralized Exchange (DEX) Architecture</em>
 </p>
 
 The evolution of scaling solutions transformed DEXs. Layer 2 rollups (e.g., Optimism, Arbitrum) and high-throughput Layer 1 chains (e.g., BSC, Solana) enabled DEXs like Uniswap and PancakeSwap to process thousands of trades efficiently. Uniswap V3, for instance, uses Ethereum’s Layer 1 for security and decentralization while offloading computation to Layer 2 for scalability, reducing fees and latency. Similarly, Serum on Solana leverages PoH to achieve CEX-like speeds without sacrificing on-chain settlement [^11]. These advancements illustrate how scaling innovations mitigate the trilemma, allowing DEXs to compete with CEXs while retaining blockchain’s core principles.
