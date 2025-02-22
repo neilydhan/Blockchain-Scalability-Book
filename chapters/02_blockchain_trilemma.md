@@ -71,19 +71,55 @@ Here’s a summary of these trade-offs:
 | Binance Smart Chain| Low              | Medium   | ~100+             | Centralizes for speed and low fees       |
 | Solana             | Medium           | Medium   | ~4,000            | High throughput with stability risks     |
 
-## The Trilemma in Context: Lessons from Traditional Systems
+### The Evolution of Exchanges and the Trilemma
 
-The blockchain trilemma echoes trade-offs seen in traditional distributed systems, such as the CAP theorem in databases. The CAP theorem states that a distributed system can only guarantee two out of three properties: consistency, availability, and partition tolerance [^9]. Similarly, the blockchain trilemma reflects the difficulty of optimizing competing goals in a decentralized environment. However, unlike databases, blockchains must also contend with Byzantine fault tolerance—resistance to malicious actors—which adds another layer of complexity.
+The trilemma’s impact extends beyond blockchain protocols to the applications built on them, particularly cryptocurrency exchanges. The evolution from early trading mechanisms to centralized exchanges (CEXs) and later decentralized exchanges (DEXs) reflects the practical challenges of balancing decentralization, security, and scalability.
+
+#### Early Days: Peer-to-Peer Trading
+
+In Bitcoin’s early days (2009–2011), trading was purely peer-to-peer, conducted via forums like BitcoinTalk or IRC channels. Users negotiated trades directly, exchanging BTC for fiat or other assets off-chain, with transactions settled on the Bitcoin blockchain. This approach was highly decentralized—no intermediaries controlled the process—but it was neither scalable nor secure. Trades were slow, trust-dependent (risking scams), and limited to a small community, processing only a handful of transactions daily [^9].
+
+#### Rise of Centralized Exchanges
+
+As Bitcoin gained traction, the limitations of peer-to-peer trading became apparent. Scalability demanded faster, more efficient systems, and security required protections against fraud. This led to the rise of centralized exchanges like Mt. Gox (launched 2010), which dominated early crypto trading. CEXs operated off-chain, matching buy/sell orders in a centralized database and settling trades internally, only occasionally interacting with the blockchain for deposits and withdrawals. This design sacrificed decentralization for scalability and security: Mt. Gox could handle thousands of trades per day with custodial security measures, far outpacing Bitcoin’s ~7 TPS. However, centralization introduced single points of failure—Mt. Gox’s infamous 2014 hack, losing 850,000 BTC, underscored the risks of trusting a centralized entity [^10].
+<p align="center">
+  <img src="../assets/cex_architecture.png" width="500" alt="Blockchain Trilemma">
+</p>
+
+The trilemma explains this shift: Bitcoin’s decentralized and secure base layer couldn’t scale to meet growing demand, pushing users toward centralized solutions. Ethereum’s launch in 2015 amplified this trend, as smart contracts enabled DeFi but strained the network’s ~20 TPS capacity, driving traders to CEXs like Binance for speed and lower costs.
+
+#### DEXs and the Scalability Revolution
+
+Decentralized exchanges emerged to reclaim decentralization, leveraging blockchain’s trustless ethos. Early DEXs, like EtherDelta (2017), ran entirely on-chain using Ethereum smart contracts for order matching and settlement. While secure and decentralized, they were crippled by scalability: high gas fees and slow transaction times made them impractical during network congestion (e.g., the CryptoKitties surge). The trilemma was stark—on-chain DEXs preserved decentralization and security but couldn’t scale.
+
+<p align="center">
+  <img src="../assets/dex_architecture.png" width="500" alt="Blockchain Trilemma">
+</p>
+
+The evolution of scaling solutions transformed DEXs. Layer 2 rollups (e.g., Optimism, Arbitrum) and high-throughput Layer 1 chains (e.g., BSC, Solana) enabled DEXs like Uniswap and PancakeSwap to process thousands of trades efficiently. Uniswap V3, for instance, uses Ethereum’s Layer 1 for security and decentralization while offloading computation to Layer 2 for scalability, reducing fees and latency. Similarly, Serum on Solana leverages PoH to achieve CEX-like speeds without sacrificing on-chain settlement [^11]. These advancements illustrate how scaling innovations mitigate the trilemma, allowing DEXs to compete with CEXs while retaining blockchain’s core principles.
+
+Here’s a comparison of exchange evolution through the trilemma lens:
+
+| Exchange Type       | Decentralization | Security | Scalability       | Notes                                      |
+|---------------------|------------------|----------|-------------------|--------------------------------------------|
+| Peer-to-Peer (Early)| High             | Low      | Very Low (~1 TPS) | Trust-dependent, slow                     |
+| CEX (e.g., Mt. Gox) | Low              | Medium   | High (~1000s TPS) | Centralized, vulnerable to hacks          |
+| Early DEX (EtherDelta)| High          | High     | Low (~20 TPS)     | On-chain, limited by gas fees             |
+| Modern DEX (Uniswap)| High            | High     | Medium (~100s TPS)| Leverages Layer 2 for scale               |
+
+### The Trilemma in Context: Lessons from Traditional Systems
+
+The blockchain trilemma echoes trade-offs seen in traditional distributed systems, such as the CAP theorem in databases. The CAP theorem states that a distributed system can only guarantee two out of three properties: consistency, availability, and partition tolerance [^12]. Similarly, the blockchain trilemma reflects the difficulty of optimizing competing goals in a decentralized environment. However, unlike databases, blockchains must also contend with Byzantine fault tolerance—resistance to malicious actors—which adds another layer of complexity.
 
 ## Why the Trilemma Matters
 
-The blockchain trilemma is more than a theoretical framework; it shapes the practical evolution of blockchain technology. Understanding these trade-offs is crucial for:
+The blockchain trilemma is more than a theoretical framework; it shapes the practical evolution of blockchain technology—including its ecosystems like exchanges. Understanding these trade-offs is crucial for:
 
 - **Developers**: Designing systems that align with specific use cases (e.g., high-throughput payments vs. secure asset storage).
 - **Researchers**: Exploring solutions that push the boundaries of the trilemma (e.g., rollups, sharding).
-- **Users**: Evaluating which blockchains meet their needs based on decentralization, security, or performance priorities.
+- **Users**: Evaluating which blockchains and applications meet their needs based on decentralization, security, or performance priorities.
 
-For Ethereum, the trilemma underscores the urgency of scalability solutions. As a “decentralized world computer,” Ethereum must scale to support DeFi, NFTs, and beyond without losing its core principles. The CryptoKitties case study (Chapter 1) highlighted how scalability bottlenecks can ripple through the ecosystem, driving up fees and degrading user experience [^10].
+For Ethereum, the trilemma underscores the urgency of scalability solutions. As a “decentralized world computer,” Ethereum must scale to support DeFi, NFTs, and beyond without losing its core principles. The CryptoKitties case study (Chapter 1) and the rise of DEXs highlight how scalability bottlenecks can ripple through the ecosystem, driving innovation to address these limits.
 
 ## Beyond the Trilemma: A Path Forward
 
@@ -93,11 +129,11 @@ While the trilemma frames blockchain design as a zero-sum game, it also inspires
 - **Layer 2 Solutions**: Offloading computation to rollups while preserving security and decentralization.
 - **Modular Architectures**: Separating consensus, execution, and data availability to optimize each independently.
 
-These strategies don’t eliminate the trilemma but seek to mitigate its constraints, offering hope for a future where blockchains can scale without sacrificing their foundational values.
+These strategies don’t eliminate the trilemma but seek to mitigate its constraints, as seen in the evolution of DEXs, offering hope for a future where blockchains can scale without sacrificing their foundational values.
 
 ## Conclusion
 
-The blockchain trilemma encapsulates the core challenge of decentralized systems: balancing decentralization, security, and scalability. By dissecting this framework, we gain insight into why Bitcoin prioritizes security over speed, why Ethereum struggles with gas fees, and why high-throughput chains like Solana face centralization risks. As we progress through this book, the trilemma will serve as a guiding principle for evaluating scalability solutions and understanding their trade-offs.
+The blockchain trilemma encapsulates the core challenge of decentralized systems: balancing decentralization, security, and scalability. By dissecting this framework, we gain insight into why Bitcoin prioritizes security over speed, why Ethereum struggles with gas fees, why high-throughput chains like Solana face centralization risks, and how exchanges evolved from centralized hubs to scalable DEXs. As we progress through this book, the trilemma will serve as a guiding principle for evaluating scalability solutions and understanding their trade-offs.
 
 In the next chapter, we’ll compare Layer 1 and Layer 2 approaches, building on the trilemma to explore how the blockchain community is tackling this enduring challenge.
 
@@ -116,5 +152,7 @@ In the next chapter, we’ll compare Layer 1 and Layer 2 approaches, building on
 [^6]: Buterin, Vitalik. "Ethereum Roadmap: Sharding and Rollups." *Ethereum Foundation Blog* (2021). Available at: <https://ethereum.org/en/roadmap/>.
 [^7]: Binance. "Binance Smart Chain Whitepaper." (2020). Available at: <https://www.binance.com/resources/BNB-Chain-Whitepaper.pdf>.
 [^8]: Yakovenko, Anatoly. "Solana: A New Architecture for a High Performance Blockchain." *Solana Whitepaper* (2018). Available at: <https://solana.com/solana-whitepaper.pdf>.
-[^9]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). Available at: <https://www.cs.berkeley.edu/~brewer/papers/podc2000.pdf>.
-[^10]: [Placeholder for SC6019 Lecture 07 content]. "Case Study: CryptoKitties and Ethereum Congestion." *Nanyang Technological University Lecture Notes* (2023).
+[^9]: Narayanan, Arvind, et al. "Bitcoin and Cryptocurrency Technologies." *Princeton University Press* (2016).
+[^10]: McMillan, Robert. "The Inside Story of Mt. Gox, Bitcoin’s $460 Million Disaster." *Wired* (2014). Available at: <https://www.wired.com/2014/03/bitcoin-exchange/>.
+[^11]: Adams, Hayden, et al. "Uniswap V3 Core." *Uniswap Whitepaper* (2021). Available at: <https://uniswap.org/whitepaper-v3.pdf>.
+[^12]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). Available at: <https://www.cs.berkeley.edu/~brewer/papers/podc2000.pdf>.
