@@ -16,7 +16,7 @@ Status indicators:
 
 1. ✅ **[Introduction to Blockchain Scalability](chapters/01_introduction.md)**: Foundation concepts and overview of blockchain scalability challenges.
 2. ✅ **[The Blockchain Trilemma](chapters/02_blockchain_trilemma.md)**: Understanding the fundamental trade-offs in blockchain design.
-3. 🚧 **[Layer 1 vs Layer 2](chapters/03_layer_1_vs_layer_2.md)**: Comparing different approaches to blockchain scaling.
+3. ✅ **[Layer 1 vs Layer 2](chapters/03_layer_1_vs_layer_2.md)**: Comparing different approaches to blockchain scaling.
 4. 🚧 **[Layer 1 On-Chain Scalability](chapters/04_layer_1_on_chain_scalability.md)**: Exploring base layer scaling solutions.
 5. 🚧 **[Layer 2 Off-Chain Scalability](chapters/05_layer_2_off_chain_scalability.md)**: Understanding off-chain scaling approaches.
 6. 🚧 **[Rollups](chapters/06_rollups.md)**: Deep dive into rollup technology and implementations.
@@ -36,6 +36,24 @@ We welcome contributions from anyone interested in making blockchain more scalab
 1. **Read the Contribution Guidelines**: Check out our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to contribute.
 2. **Choose a Chapter**: Look at the [Summary](SUMMARY.md) to find a chapter you're interested in.
 3. **Fork the Repository**: Make your changes and submit a pull request.
+
+## How to Run the Book
+To read and develop this book locally, you'll need to install [mdBook](https://rust-lang.github.io/mdBook/), a command-line tool for creating books with Markdown.
+
+### Installation
+```bash
+cargo install mdbook
+```
+### Clone this repository
+```bash
+git clone https://github.com/neilydhan/Blockchain-Scalability-Book.git
+cd Blockchain-Scalability-Book
+```
+### Build and serve the book
+```bash
+mdbook serve --open
+```
+This will start a local server and automatically open the book in your default web browser. The server will watch for changes and rebuild the book automatically.
 
 ## Donations
 
