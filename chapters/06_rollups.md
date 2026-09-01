@@ -309,6 +309,101 @@ Before an upgrade, operators should replay historical blocks against the new imp
 
 The upgrade announcement should publish code hashes, verifier addresses, activation time, audit results, and user exit deadline. Emergency changes need narrower scope and a postmortem. An escape hatch that an upgrade can silently disable is not independent protection.
 
+## **Fault-Proof Pipeline: From Assertion to One-Step Dispute**
+
+An optimistic rollup accepts an assertion unless a challenger proves it inconsistent with the transition rules. The production system includes more than a challenge window: it needs an assertion graph, bonds, authenticated data, interactive narrowing, a one-step verifier, clocks, and permissionless participation.
+
+### Assertion
+
+A proposer submits a claim derived from a parent:
+
+```text
+Assertion {
+  rollup_id,
+  parent_assertion,
+  l2_block_range,
+  pre_state_root,
+  post_state_root,
+  data_commitment,
+  inbox_position,
+  vm_version,
+  proposer_bond
+}
+```
+
+The contract checks structural rules and starts a clock. It does not re-execute the batch. The data commitment and VM version must select the bytes and transition function a challenger will use.
+
+An assertion may be valid or invalid independent of who proposed it. A trusted proposer is not a correctness proof; a permissioned proposer primarily controls liveness and censorship.
+
+### Challenger reproduction
+
+A challenger retrieves the committed batch data, reconstructs the pre-state or required witnesses, and executes the pinned VM. If its computed post-state differs, it opens a dispute before deadline and posts the required bond.
+
+This path must be economically and operationally open. If data access, state snapshots, or a proprietary VM build are available only to the operator, "permissionless challenge" is nominal.
+
+### Bisection
+
+Re-executing an entire batch on L1 is too expensive. The parties commit to an execution trace and repeatedly narrow the disagreement.
+
+If the trace has `N` steps, binary bisection takes approximately:
+
+```text
+ceil(log2(N))
+```
+
+rounds to isolate one transition. For `N = 2^30` machine steps, at most 30 bisection choices locate the disputed step, though each on-chain round also consumes confirmation and response time.
+
+At each round, both sides bind their claimed intermediate state. The protocol chooses the half where commitments disagree. Domain separation includes game identity, round, interval, and trace commitment so a proof cannot be replayed into another dispute.
+
+### Clocks and timing
+
+A chess-clock design gives each side a total response budget rather than restarting a full window every round. The contract must define whose clock runs, when a move becomes effective, how L1 reorganizations affect inclusion, and what happens when both parties submit near a boundary.
+
+Suppose each side has a 3.5-day clock and ordinary L1 inclusion p99 is two minutes. Thirty interactive rounds do not automatically require 60 minutes because parties may consume variable time, but automation needs enough margin for monitoring, proof construction, fee spikes, and reorgs. Timeout tests should target exact block boundaries and delayed transactions.
+
+### One-step proof
+
+After narrowing, the L1 verifier checks one transition from pre-step state to post-step state. Depending on design, it verifies a VM instruction, memory and register witnesses, Merkle proofs, inbox access, and output commitment.
+
+The one-step verifier is a consensus-critical implementation of VM semantics. A mismatch between native rollup execution and this verifier can reject valid state or accept invalid state. Differential vectors must cover opcodes, exceptions, memory expansion, calls, precompiles, gas, and host inputs.
+
+### Resolution and bonds
+
+If the one-step proof shows the assertion invalid, the contract rejects it and descendants depending on it. If the challenge is invalid or times out, the assertion advances toward acceptance. Bond allocation rewards useful participation and deters spam, but must not price honest challengers out.
+
+Economics need to cover:
+
+- L1 gas across worst-case rounds;
+- capital locked for the full game;
+- data retrieval and state reconstruction;
+- computation and monitoring;
+- concurrent disputes and denial-of-service;
+- volatility of the bonded asset.
+
+A proposer bond lower than extractable bridge value may still work if invalid assertions cannot finalize while one honest challenger acts. The bond funds deterrence and operations; cryptographic/game correctness protects the state. However, challenger rewards must support an actual monitoring market.
+
+### Multiple games and denial of service
+
+An attacker may create many claims or challenges to exhaust honest capital and computation. Limit policies must avoid giving one administrator power to suppress a valid challenge. Defenses include per-claim bonds, bounded game trees, shared computation, proof caching, and priority for games closest to finalization.
+
+Game implementations need garbage collection. Resolved descendants, bonds, and trace data should be finalized without deleting evidence before appeals or monitoring complete.
+
+### Fault-proof assertions
+
+A release test should assert:
+
+1. an invalid state root cannot pass when one challenger has data and responds on time;
+2. a valid assertion survives malicious challenges;
+3. every bisection round shrinks the disputed interval and binds one trace;
+4. timeout results are deterministic at block boundaries and through shallow reorgs;
+5. the one-step verifier agrees with native execution on generated and adversarial vectors;
+6. duplicate and concurrent games cannot settle the same bond or assertion twice;
+7. parent rejection invalidates dependent state safely;
+8. any qualified challenger can participate without operator credentials;
+9. worst-case gas, time, and capital fit the published challenge assumptions.
+
+Run the complete game periodically in production-like staging. A deployed contract that has never resolved an intentionally invalid assertion remains an untested safety mechanism.
+
 ## **Proving Pipeline: From Execution Trace to L1 Verification**
 
 A validity rollup does not prove "the block" as an informal object. It proves that a precisely encoded program accepted private witness data and public inputs. The engineering pipeline must keep execution, trace generation, arithmetization, proof creation, and contract verification on the same version.
