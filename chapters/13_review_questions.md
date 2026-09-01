@@ -69,3 +69,42 @@ Your design must state:
 8. user exit or recovery path;
 9. benchmark method and hardware disclosure;
 10. the trilemma cost the design accepts.
+
+## **Quantitative Laboratory: Capacity and Finality**
+
+Assume a rollup posts one batch every 10 seconds. Each batch contains 2,000 transactions, consumes 120 kB of compressed data, and takes a prover 24 seconds on one machine. The settlement chain finalizes a posted batch after 12 minutes. The sequencer has a 20-second forced-inclusion deadline.
+
+1. Compute offered throughput when every batch is full.
+2. Compute the sustained data rate in bytes per second, excluding commitment overhead.
+3. How many independent prover workers are required to prevent an unbounded proof queue under steady load? Include utilization headroom rather than giving only the mathematical minimum.
+4. Draw the user-visible milestones for sequencer receipt, batch publication, proof acceptance, and settlement finality.
+5. Which milestone should a bridge use before releasing a high-value withdrawal, and why?
+6. If the sequencer stops immediately after receipt, what evidence and deadline does a user need to invoke forced inclusion?
+7. Repeat the capacity calculation when average compression worsens by 40 percent and the settlement data limit is fixed.
+
+A strong submission shows units, separates offered load from completed throughput, and names assumptions about proof aggregation and parallelism.
+
+## **Fault-Injection Laboratory**
+
+Run an implementation or simulator through this sequence:
+
+1. operate at 60 percent of measured saturation for ten minutes;
+2. disconnect the current consensus leader for two views;
+3. delay 10 percent of data chunks beyond their normal retrieval deadline;
+4. stop the primary prover while proofs are queued;
+5. submit one malformed cross-domain message and one replay;
+6. restore all components without deleting persistent state.
+
+Record p50, p95, and p99 latency; queue depth; time to view change; data-repair traffic; proof backlog; finalized height; and every user-visible status transition. The report must identify whether each fault affected safety, liveness, latency, or only cost. It must also explain which component detected the fault and which component initiated recovery.
+
+## **Design Review Rubric**
+
+Evaluate the capstone on five dimensions, each from 0 to 4:
+
+- **Explicit assumptions:** network, trust, workload, finality, and failure assumptions are testable.
+- **End-to-end correctness:** the transaction, message, withdrawal, and recovery paths are internally consistent.
+- **Quantitative evidence:** calculations retain units, benchmarks reach saturation, and latency distributions are reported.
+- **Adversarial depth:** censorship, withholding, equivocation, reorganization, upgrade compromise, and correlated outages are addressed.
+- **User recovery:** escape paths are available, affordable under congestion, observable, and exercised in tests.
+
+A score of 0 means the issue is absent. A score of 2 means it is described but not measured or tested. A score of 4 means another team could reproduce the evidence and challenge the assumptions.
