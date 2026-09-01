@@ -14,13 +14,10 @@ Figures are part of the technical argument, not decoration. Captions identify th
 - **Figure 9.1, Parallel scheduling and deterministic commitment.** Original diagram created for this edition based on Block-STM and SC6019 Lecture 05.
 - **Figure 10.1, Leader-based BFT normal path.** Original diagram created for this edition based on the HotStuff protocol paper.
 
-## **Figures From Neil Han's SC6019 Course Materials**
+## **Existing Repository Figure**
 
-Used with chapter-level captions identifying the lecture and slide:
+- **Figure 2.1, Blockchain trilemma.** This image was present in the repository before this edition. Its editable source and third-party provenance were not available. Redraw it or complete a separate rights review before commercial publication.
 
+## **Rights Checklist**
 
-The SC6019 slide deck is the author's course material. Some slides incorporate diagrams or data from sources named on the slide itself. Before commercial publication, confirm the reuse rights of every embedded third-party element or redraw the concept as an original diagram with the primary source cited.
-
-## **Existing Repository Figures**
-
-Chapter 2 contains the trilemma, centralized-exchange, and decentralized-exchange figures that were already present in the repository before this edition. Their underlying design files and third-party provenance were not available in the repository. They should receive a separate rights review before commercial publication.
+Before a release, verify that every figure referenced by the manuscript exists, has an editable source when possible, matches its caption, and is covered by the book's license or explicit permission. A concept derived from a paper or lecture should cite that source even when the artwork is original. Generated build files and superseded source images should not ship as part of the rights inventory.
