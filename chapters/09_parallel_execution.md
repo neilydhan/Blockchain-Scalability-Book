@@ -200,6 +200,66 @@ A useful benchmark varies both transaction complexity and conflict rate:
 
 Report execution, validation, aborts, root computation, memory, and speedup against the same engine running one worker.
 
+## **Scheduling Algorithms**
+
+A scheduler can use several strategies.
+
+**Greedy waves** place a transaction in the earliest wave whose writes do not conflict with earlier reads or writes. This works well when access lists are known and graph construction is cheap.
+
+**Work stealing** gives each worker a queue and lets idle workers take ready transactions from others. It balances irregular execution times, but dependency bookkeeping must prevent a transaction from running before required predecessors.
+
+**Speculative windowing** executes only a bounded range ahead of the validated frontier. A large window exposes more parallelism but wastes more work when early transactions invalidate later reads.
+
+**Hot-key serialization** detects repeatedly conflicting keys and routes their transactions to an ordered lane while leaving unrelated work parallel.
+
+The best scheduler depends on conflict distribution, transaction duration, and cost of abort. Benchmarks should include short and long transactions; counting transactions alone hides load imbalance.
+
+## **Fee Markets for Contention**
+
+A transaction can consume little CPU yet block many others by writing a popular key. Traditional gas meters its direct execution but not the opportunity cost of serializing a block.
+
+A concurrency-aware market could charge for declared writable accounts, price hot keys dynamically, reserve parallel lanes, or let builders optimize total fee under a conflict graph. Each proposal affects predictability and manipulation. A user might over-declare reads to exclude competitors, while a builder might prefer independent low-fee transactions that fill idle cores.
+
+The protocol must keep consensus deterministic. If scheduling affects inclusion, validators still verify one canonical ordered block; local thread decisions cannot change fees or results.
+
+## **Parallel Smart-Contract Patterns**
+
+### **Sharded Counters**
+
+Replace one global counter with `k` buckets selected by account hash. Updates spread across buckets; reads sum them. This improves writes but makes reads more expensive and may provide only eventual snapshots.
+
+### **Escrowed Objects**
+
+Move an asset into an order-specific object before matching. Independent orders then touch independent state. Settlement combines only matched objects.
+
+### **Commutative Accumulators**
+
+Some updates can be combined regardless of order, such as adding independent reward deltas. The VM or contract batches deltas and applies a deterministic reduction.
+
+### **Epoch Batching**
+
+Collect actions during an epoch and compute one aggregate update. This reduces shared writes but adds latency and requires rules for ordering within the batch.
+
+Patterns should preserve invariants under retries and partial execution. A parallel-friendly design that weakens accounting correctness is not an optimization.
+
+## **Testing Determinism**
+
+Run the same block many times with different worker counts, queue seeds, thread timing, and storage latency. Every run must produce identical receipts, logs, gas, and state root.
+
+Differential tests compare the parallel engine with a simple sequential reference. Fuzzers generate transactions with nested calls, reverts, dynamic storage, and conflict patterns. Crash tests stop a worker after speculative writes and verify that recovery discards uncommitted versions.
+
+Race detectors help implementation safety, but protocol determinism is a higher-level property. Two race-free executions can still disagree if iteration order or error precedence is unspecified.
+
+## **End-to-End Speedup Limits**
+
+Amdahl's law bounds speedup when part of execution remains serial. If fraction `p` is parallel and fraction `1-p` is serial, speedup on `N` workers is at most:
+
+> `1 / ((1 - p) + p/N)`
+
+If 20% of block processing is serial, infinite workers cannot exceed 5× speedup. Signature checks may parallelize while ordering, hot state, receipt assembly, and root commitment remain serial.
+
+Measure the entire validation pipeline before projecting core scaling. Optimizing the parallel fraction can make the unchanged serial section the dominant cost.
+
 ## **Conclusion**
 
 Parallel execution turns transaction independence into throughput. Declared-access systems expose dependencies before execution; optimistic systems discover them during execution and retry conflicts. Both must preserve deterministic, sequentially valid results.
