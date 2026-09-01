@@ -448,6 +448,102 @@ Before enabling expiry:
 
 State expiry is operationally credible only when a user can return after the horizon, obtain the right data from more than one source, verify it against consensus commitments, and safely resume activity.
 
+## **Node Synchronization and Snapshot Recovery**
+
+A chain has not scaled sustainably if existing validators keep up but a replacement node cannot join, recover, or audit state within an acceptable window. Synchronization is part of the protocol's availability and decentralization budget.
+
+A new node can obtain state in several ways:
+
+- **genesis replay:** download and execute every block from genesis;
+- **checkpoint sync:** start from a trusted or consensus-verified finalized checkpoint;
+- **snapshot sync:** download a state snapshot committed by a finalized header, verify its chunks, then replay later blocks;
+- **state sync:** request authenticated state ranges from peers while following headers;
+- **witness sync:** verify new blocks from witnesses without first storing the entire state.
+
+Genesis replay provides the strongest independent historical reconstruction but becomes slow as history and state grow. Snapshot sync reduces time to participation, but it must not turn a convenient file into an unexamined trusted database.
+
+### Authenticated snapshot format
+
+A snapshot manifest should bind:
+
+```text
+SnapshotManifest {
+  chain_id,
+  protocol_version,
+  finalized_height,
+  block_hash,
+  state_root,
+  chunk_count,
+  chunk_hashes_root,
+  state_encoding_version,
+  compression,
+  created_at
+}
+```
+
+Each chunk has an index, uncompressed length, compressed length, content hash, and proof to `chunk_hashes_root`. After decoding all chunks, the client reconstructs the canonical state commitment and checks it against `state_root` from the finalized block.
+
+Chunk hashes detect transfer corruption; the final state-root check detects a malicious but internally consistent snapshot. Both are needed. The decoder must reject duplicate keys, non-canonical encodings, decompression bombs, out-of-range lengths, overlapping ranges, and trailing data.
+
+### Checkpoint trust
+
+A hard-coded checkpoint is an explicit trust decision. A weak-subjectivity checkpoint may be needed when former validators can sign an alternative old history after exiting. Operators must know who distributes the checkpoint, its age limit, how it is authenticated, and how to obtain the same value through independent channels.
+
+A BFT finality certificate can authenticate a checkpoint if the client already trusts the applicable validator set and verifies every set transition. A proof-of-work header chain needs its own accumulated-work and eclipse-resistance assumptions. "Fast sync" is not one security model.
+
+### Worked catch-up budget
+
+Suppose the active snapshot is 1.2 TB compressed and the node has 400 Mbps usable ingress. Ignoring overhead, transfer time is:
+
+```text
+1.2 TB × 8 / 400 Mb/s = 24,000 s ≈ 6.7 hours
+```
+
+If verification and insertion sustain only 25 MB/s, local processing takes:
+
+```text
+1,200,000 MB / 25 MB/s = 48,000 s ≈ 13.3 hours
+```
+
+Processing, not bandwidth, is the first bottleneck. Meanwhile the chain continues producing blocks. At 3 MB/s of new data, a 13.3-hour sync creates another roughly 144 GB of catch-up traffic. The node must process historical catch-up faster than the chain's live growth or it never converges.
+
+Report time to header verification, snapshot acquisition, state-root verification, head catch-up, and validator readiness separately. "Synced" should mean the node can safely perform its intended role, not merely that it opened a peer connection.
+
+### Peer and provider diversity
+
+Downloading chunks from many addresses does not provide diversity if they share one cloud bucket or snapshot producer. Record snapshot producer, serving provider, region, autonomous system, and software implementation. Randomize requests so one peer cannot selectively shape all ranges.
+
+A malicious peer can send valid but useless old chunks, stall the last range, or repeatedly trigger expensive decoding. Use per-peer deadlines, authenticated range selection, bounded concurrent work, resumable progress, and penalties that do not let an attacker evict honest peers cheaply.
+
+### Crash consistency
+
+Persist the verified manifest before chunks, record each completed chunk atomically, and make state installation idempotent. On restart, recheck stored chunk hashes and continue; do not silently mix chunks from different manifests or protocol versions.
+
+Install the reconstructed database with an atomic directory or generation switch. If the process crashes during activation, it must restart from either the old database or the complete new one, never a partial mixture. Retain rollback state until the post-snapshot block replay and state-root checks succeed.
+
+### Snapshot production
+
+Producing a snapshot can contend with block execution for disk bandwidth and cache. Generate from a consistent finalized database view, not a live collection changing beneath the exporter. Bound memory, stream chunks, and verify the finished artifact using a separate importer before publishing it.
+
+Multiple independent operators should produce snapshots for the same height. Byte-for-byte files may differ because of compression or chunking, but all must reconstruct the same canonical state root.
+
+### Recovery drill
+
+A release drill should:
+
+1. remove the node's state database;
+2. authenticate a finalized checkpoint through the documented rule;
+3. download a snapshot with one corrupt, one delayed, and one unavailable serving peer;
+4. crash during chunk verification and again during database activation;
+5. resume without redownloading verified data;
+6. reconstruct the exact committed state root;
+7. replay blocks to the live head while load continues;
+8. join validation without missing its operational readiness target.
+
+Measure bytes, CPU, peak memory, disk amplification, random I/O, elapsed time, peer failures, and catch-up margin over live growth. Repeat from at least two geographic regions and on the minimum supported hardware.
+
+Snapshot sync is credible when a skeptical operator can authenticate the checkpoint, reconstruct state from interchangeable providers, survive interruption, and converge faster than the chain grows without copying an incumbent's trust assumptions.
+
 ## **Worked Resharding Trace: Moving a Hot Account Range**
 
 Static shards eventually become unbalanced. A popular application can saturate one shard while others remain idle. Dynamic resharding changes the partition map without losing, duplicating, or accepting transactions against two owners of the same state.
