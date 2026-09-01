@@ -178,4 +178,4 @@ The rest of the book studies ways to divide or compress that work: sharding at L
 
 [^1]: Hill, Mark D. "What is Scalability?" *ACM SIGARCH Computer Architecture News* 18, no. 4 (1990). <https://minds.wisconsin.edu/bitstream/handle/1793/9676/file_1.pdf?sequence=1&isAllowed=y>.
 [^2]: Dinh, Tien Tuan Anh, et al. "BLOCKBENCH: A Framework for Analyzing Private Blockchains." SIGMOD 2017. <https://www.comp.nus.edu.sg/~ooibc/blockbench.pdf>.
-[^3]: Konstantopoulos, Georgios. "Reth’s path to 1 gigagas per second, and beyond." Paradigm, 2024. <https://www.paradigm.xyz/2024/04/reth-perf>.
+[^3]: Konstantopoulos, Georgios. "Reth's path to 1 gigagas per second, and beyond." Paradigm, 2024. <https://www.paradigm.xyz/2024/04/reth-perf>.

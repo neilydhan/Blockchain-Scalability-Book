@@ -148,12 +148,6 @@ The trilemma usually treats rules as fixed, but deployed systems change. Governa
 
 For every upgradeable system, evaluate current code and the process that can replace it. The latter is part of the security boundary from launch.
 
-## Chapter Summary
-
-The trilemma is a disciplined way to ask where the cost of scale is paid. It is not a scorecard with one winner. Better designs improve the frontier, but every claim must state its workload, validator burden, adversary model, control structure, and recovery path.
-
-Bitcoin, Ethereum, high-throughput Layer 1s, sidechains, and rollups choose different operating points. Understanding those choices prepares us to compare Layer 1 and Layer 2 mechanisms directly.
-
 ## Conclusion
 
 The trilemma is useful when it exposes where a scaling design spends resources and trust. It does not assign one score to a chain, prove that only two properties are possible, or make decentralization a validator count.

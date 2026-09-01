@@ -1,4 +1,4 @@
-# **Chapter 3: Layer 1 vs Layer 2 — Comparing Different Approaches to Blockchain Scaling**
+# **Chapter 3: Layer 1 vs Layer 2 - Comparing Different Approaches to Blockchain Scaling**
 
 ## **Introduction**
 
@@ -183,12 +183,6 @@ Without a verifiable state mapping, migration becomes administrator custody.
 ## **Architecture Decision Record**
 
 Record workload, latency objective, assets at risk, composability needs, execution and DA requirements, sequencing, proof or challenge rules, normal and forced message paths, fee subsidies, upgrade authority, and shutdown plan. Revisit the record as demand changes.
-
-## **Chapter Summary**
-
-Layer 1 scales the base protocol; Layer 2 reduces the work the base layer performs per user action while retaining a settlement or enforcement relationship. Sidechains add independent capacity but carry independent consensus and bridge risk. Channels specialize in repeated interactions; rollups specialize in batched general-purpose execution.
-
-The right comparison follows a transaction from submission through finality and failure recovery. It identifies the bottleneck, the trust domain at every stage, and the user's escape path.
 
 ## **Conclusion**
 

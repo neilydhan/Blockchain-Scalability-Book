@@ -116,7 +116,7 @@ Full danksharding aims to expand blob capacity while allowing nodes to verify av
 | Appchains | Isolation and sovereignty | Fragmented liquidity and separate security |
 | Data sharding | More capacity for rollups | Sampling, coding, and networking complexity |
 
-A robust protocol must handle committee corruption, data withholding, partitions, validator churn, and state synchronization. The recovery path often determines real security.
+A production protocol must handle committee corruption, data withholding, partitions, validator churn, and state synchronization. The recovery path often determines real security.
 
 ## **Worked Example: A Cross-Shard Transfer**
 
