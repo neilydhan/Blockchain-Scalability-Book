@@ -286,7 +286,7 @@ Relayers provide data but no authority. If one relayer withholds a packet, anoth
 
 ### Validator-set update
 
-Source validators change from set `V_n` to `V_{n+1}`. The destination cannot simply accept a header signed by unknown `V_{n+1}`. It verifies the transition according to source consensus, commonly by checking that a trusted set finalized a commitment to the next set, then using that set for later headers.
+Source validators change from set `V_n` to `V_{n+1}`. The destination cannot accept a header solely because it is signed by unknown `V_{n+1}`. It verifies the transition according to source consensus, commonly by checking that a trusted set finalized a commitment to the next set, then using that set for later headers.
 
 Skipping many heights may require adjacent transition proofs or a protocol-specific overlap rule. The implementation must bound proof length and signature work. An attacker should not be able to submit a million empty transitions to exhaust gas.
 

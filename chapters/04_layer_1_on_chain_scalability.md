@@ -531,7 +531,7 @@ Assert conservation of balances, one owner per key and epoch, exact message-once
 
 ## **Conclusion**
 
-Layer 1 scaling is not simply making blocks larger. It redesigns execution, storage, networking, data availability, and consensus so the system can grow without excluding independent validators. Sharding provides horizontal capacity; client and protocol optimization push vertical limits.
+Layer 1 scaling does not mean only making blocks larger. It redesigns execution, storage, networking, data availability, and consensus so the system can grow without excluding independent validators. Sharding provides horizontal capacity; client and protocol optimization push vertical limits.
 
 The emerging architecture is layered: the base layer supplies secure settlement and verifiable data while execution is parallelized across shards, rollups, and application-specific chains. The next chapter examines moving repeated interaction off the base chain.
 
