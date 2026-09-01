@@ -210,6 +210,84 @@ A mandatory delay between scheduling and executing an upgrade or privileged acti
 
 The requirement for a proof-of-stake client to begin from a sufficiently recent trusted checkpoint, limiting long-range histories signed by validators whose stake is no longer slashable.
 
+## **Performance and Reliability**
+
+**Admission control**
+
+A mechanism that limits or prices incoming work so queues and resources remain within an operating objective. Fee markets are one form of admission control.
+
+**Backpressure**
+
+A signal from a saturated downstream component that slows upstream production. Without backpressure, a sequencer can create batches faster than a prover or DA layer can process them.
+
+**Capacity**
+
+The maximum sustainable offered load that meets a stated latency and error objective. Capacity is measured for a workload, hardware configuration, network, duration, and completion boundary.
+
+**Capacity knee**
+
+The region where increasing offered load causes tail latency and queue depth to rise rapidly while completed throughput grows slowly or stops growing.
+
+**Critical path**
+
+The longest dependency chain determining completion time. Parallel work outside the critical path may improve resource use without reducing user latency.
+
+**Headroom**
+
+Unused capacity reserved for demand variance, component loss, retries, compaction, view change, or recovery traffic. Headroom should be chosen separately for each resource.
+
+**Idempotence**
+
+The property that repeating an operation has the same durable effect as applying it once. Message consumption, deposits, withdrawals, and retried jobs need idempotent identifiers.
+
+**Offered load**
+
+The rate at which clients submit work, whether or not the system accepts or completes it. Reporting completed throughput without offered load hides overload behavior.
+
+**Operating envelope**
+
+The workloads and fault conditions under which a system meets its throughput, latency, safety, liveness, cost, and recovery objectives.
+
+**p50, p95, p99 latency**
+
+Percentile latencies. p99 is the value at or below which 99 percent of measured operations complete. Percentiles require a defined population, window, and completion boundary.
+
+**Queue stability**
+
+A condition in which backlog remains bounded over time. A temporary high throughput result is not sustainable when queued data, proofs, or transactions continually grow.
+
+**Recovery point objective (RPO)**
+
+The maximum accepted loss of durable work or state after failure. A blockchain safety design often targets no loss of finalized state, while auxiliary indexes may permit replay from an earlier point.
+
+**Recovery time objective (RTO)**
+
+The target time to restore a specified service after failure. State which service and finality boundary the timer covers.
+
+**Saturation**
+
+A state where one resource is fully utilized and limits completed work. CPU, storage I/O, network bandwidth, DA publication, proving, or consensus can each saturate independently.
+
+**Service-level objective (SLO)**
+
+A measurable target such as p99 settlement within ten minutes for 99.9 percent of withdrawals. An alert should map to user impact or exhaustion of the SLO's error budget.
+
+**Tail latency**
+
+Latency of slower requests, commonly represented by high percentiles. Tail behavior reveals queues, pauses, retries, and skew hidden by averages.
+
+**Throughput**
+
+Completed work per unit time under a defined completion rule. Submitted, sequenced, executed, proved, and finalized throughput are different metrics.
+
+**Utilization**
+
+The fraction of a resource's capacity in use. Running near 100 percent average utilization usually produces unstable queues when service time or arrivals vary.
+
+**Workload mix**
+
+The distribution of transaction or request types, state-access patterns, sizes, and bursts used in a test. A throughput result applies to that mix, not to an abstract average transaction.
+
 ## **Execution and Consensus**
 
 **Block-STM**
@@ -255,6 +333,14 @@ Executing independent transactions concurrently while producing a deterministic 
 **Quorum certificate (QC)**
 
 Aggregated evidence that a quorum of replicas voted for a proposal.
+
+**Quorum intersection**
+
+The property that two threshold quorums overlap in enough participants or weight to include an honest voter under the stated fault bound.
+
+**Prover market**
+
+A system that assigns proof-generation jobs among independent providers. Correctness follows from verification, while deadlines, witness privacy, job availability, and concentration remain operational concerns.
 
 **Safety**
 
