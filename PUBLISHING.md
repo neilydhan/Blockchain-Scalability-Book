@@ -57,3 +57,13 @@ The HTML edition remains the canonical source output. Print rules live in `theme
 Use semantic edition tags such as `v1.0.0`. A patch release corrects prose, citations, or formatting without changing the book's architecture. A minor release adds substantial sections or updates protocol coverage. A major release changes the edition's scope or organization.
 
 A release note should list the commit, word count, build versions, material technical changes, known rights limitations, and the date on which time-sensitive claims were checked.
+
+## Package an Edition Candidate
+
+Set the semantic version in `VERSION`, commit all source changes, and run:
+
+```bash
+./scripts/package-release.sh
+```
+
+The script requires a clean tree and creates `release/v<version>/` with the PDF, compressed HTML edition, JSON build manifest, and SHA-256 checksums. Review and archive the build log separately. Generated release artifacts are not source files and should normally be attached to a signed repository release rather than committed.
