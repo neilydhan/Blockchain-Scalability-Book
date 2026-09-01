@@ -253,6 +253,82 @@ Successful payments move liquidity in one direction. A channel can remain fully 
 
 Rebalancing costs routing fees and may fail because the required cycle lacks liquidity. Automated policies choose target balances and fee limits. They can leak demand information or compete with user payments. Network throughput therefore depends on liquidity distribution and rebalancing efficiency, not only total locked value.
 
+## **Worked Lightning Route: Amounts, Fees, and Timelocks**
+
+Consider a payment from Alice to Dave through Bob and Carol:
+
+```text
+Alice -> Bob -> Carol -> Dave
+```
+
+Dave must receive 100,000 millisatoshis. Carol charges a 1,000 msat base fee plus 0.1 percent of the forwarded amount. Bob charges 500 msat plus 0.05 percent. Ignoring integer-rounding details for the illustration, compute backward from the receiver.
+
+Carol must receive enough to forward 100,000 msat and retain:
+
+```text
+1,000 + 0.001 × 100,000 = 1,100 msat
+```
+
+So Bob offers Carol 101,100 msat. Bob's fee is approximately:
+
+```text
+500 + 0.0005 × 101,100 = 550.55 msat
+```
+
+Alice therefore offers Bob about 101,651 msat after applying the protocol's integer rounding. Route construction works backward because each incoming HTLC must cover the next hop's outgoing amount plus fee.
+
+### Timelock ladder
+
+The outgoing HTLC near Dave expires first. Each upstream HTLC expires later by a safety delta:
+
+```text
+Alice-Bob expiry: 700
+Bob-Carol expiry: 660
+Carol-Dave expiry: 620
+```
+
+Dave reveals the payment preimage to claim Carol's HTLC. Carol uses the same preimage to claim from Bob, who uses it to claim from Alice. The decreasing expiries give an intermediary time to learn the preimage downstream and enforce its incoming claim on-chain before that claim expires.
+
+A delta that is too small exposes an intermediary during congestion or a counterparty delay. A delta that is too large locks liquidity longer. Implementations account for confirmation depth, block-time variance, fee spikes, and the time required to publish a commitment transaction and second-stage claim.
+
+### Failure traces
+
+**Insufficient directional liquidity.** A channel can have enough total capacity while lacking balance in the required direction. The sender tries another route or amount. Repeated probes can leak payment intent.
+
+**Dave never reveals the preimage.** Every HTLC times out in reverse order. Funds remain temporarily locked, reducing routing capacity, but no intermediary should lose principal if deadlines and on-chain actions are correct.
+
+**Carol learns the preimage but goes offline.** Bob may enforce the outgoing or incoming contract on-chain according to the channel design. Watchtowers can react to revoked states, but they do not create missing liquidity or eliminate base-layer congestion.
+
+**An old channel state is published.** The counterparty uses the revocation or newer-state mechanism during the dispute window. Security depends on monitoring and affordable chain access before deadline.
+
+**The base layer is congested.** Many expiring HTLCs compete for blockspace. Fee reserves and deadline margins are part of channel safety. A theoretical claim path that cannot be included before expiry is not an effective remedy.
+
+### Multipath payments
+
+If no one route can carry 100,000 msat, the sender may split the payment. Atomic multipath designs bind parts to one payment condition so the receiver claims only when the required total arrives. Splitting improves liquidity use but increases routing attempts, fees, privacy leakage, and the number of temporary locks.
+
+### Route-level accounting
+
+A useful payment trace records:
+
+- amount delivered and total amount sent;
+- fee at each hop and rounding rule;
+- outgoing and incoming expiry at each hop;
+- channel balance before and after;
+- attempt count and failure reason;
+- time to receiver claim and full upstream settlement;
+- whether any hop required an on-chain transaction.
+
+Network TPS is not the useful metric. Capacity depends on directional liquidity, route length, fee policy, failure rate, lock duration, rebalancing, and base-layer dispute capacity.
+
+## **Watchtower Data and Privacy**
+
+A watchtower needs enough information to recognize a revoked commitment and publish the appropriate remedy, but users should not disclose their entire channel history. Designs can send encrypted penalty material indexed by a transaction-derived hint. The tower learns little until a matching breach appears on-chain.
+
+The client must durably confirm that a tower accepted the latest appointment before treating protection as active. Towers need fee strategy, chain monitoring, data retention, and redundancy. If several apparent towers share one operator or infrastructure region, they are one failure domain.
+
+Test breach response while the client is offline, the tower restarts, the fee market spikes, a chain reorganization removes the first remedy, and an appointment is duplicated or delivered out of order. Measure from breach publication to irrevocable remedy, not only webhook detection.
+
 ## **Conclusion**
 
 Layer 2 systems scale by avoiding global replication of every interaction. Channels are efficient for stable participants, sidechains provide independent capacity, Plasma uses exit games, and rollups combine off-chain execution with verifiable state commitments and available data.
