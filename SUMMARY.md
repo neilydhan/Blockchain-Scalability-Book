@@ -26,3 +26,4 @@
 - [Practitioner Evaluation Handbook](chapters/14_evaluation_handbook.md)
 - [Figure Credits](chapters/15_figure_credits.md)
 - [Threat-Model Worksheets](chapters/16_threat_model_worksheets.md)
+- [Benchmark Reporting Template](chapters/17_benchmark_reporting_template.md)
