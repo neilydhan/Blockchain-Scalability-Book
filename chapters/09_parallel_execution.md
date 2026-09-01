@@ -260,6 +260,82 @@ If 20% of block processing is serial, infinite workers cannot exceed 5× speedup
 
 Measure the entire validation pipeline before projecting core scaling. Optimizing the parallel fraction can make the unchanged serial section the dominant cost.
 
+## **Worked Scheduler Trace: Speculate, Validate, Commit**
+
+Consider four transactions in canonical block order:
+
+```text
+T1: read A; write B = A + 1
+T2: read C; write D = C + 1
+T3: read B; write C = B + 1
+T4: read E; write F = E + 1
+```
+
+`T1`, `T2`, and `T4` can begin from the same snapshot because their initial access sets do not conflict. `T3` reads `B`, which `T1` writes, and writes `C`, which `T2` read. If `T3` speculates before those dependencies are resolved, validation must abort and retry it against the state that includes earlier canonical transactions.
+
+One possible trace is:
+
+```text
+worker 1: execute T1 at version 0 -> tentative write B
+worker 2: execute T2 at version 0 -> tentative write D
+worker 3: execute T3 at version 0 -> reads old B, tentative write C
+worker 4: execute T4 at version 0 -> tentative write F
+
+validate T1 -> success; commit version 1
+validate T2 -> success; commit version 2
+validate T3 -> stale read of B; abort tentative C
+validate T4 -> success; commit when canonical prefix permits
+retry T3 after T1/T2 -> read committed B; write C; commit version 3
+commit T4 as version 4
+```
+
+Workers can finish out of order, but the visible result must match sequential execution of `T1,T2,T3,T4`. An engine may buffer `T4` even after successful validation until every earlier transaction has a committed result or deterministic abort.
+
+### Multi-version state
+
+Optimistic engines commonly tag values with transaction versions. A speculative read records both key and version observed. Validation asks whether an earlier canonical transaction wrote that key after the read's snapshot. If so, the read is stale.
+
+```text
+ReadRecord  = (transaction, key, observed_version)
+WriteRecord = (transaction, key, new_value)
+```
+
+A retry must clear or supersede every tentative write and derived event from the aborted execution. Leaving one log, gas refund, message, or cache entry visible can create a state root that no sequential execution produces.
+
+### Dynamic access
+
+The scheduler may not know `T3` touches `C` until execution. Contract calls can compute keys from prior reads and invoke other contracts. Declared access lists improve planning, but the runtime must define behavior when a transaction touches an undeclared key: reject it, expand its lock set and retry, or execute it on a conservative path. Silently continuing breaks the scheduler's conflict assumptions.
+
+### Deterministic failure
+
+Transactions that revert still consume protocol-defined resources and may emit no durable writes. Parallel execution must reproduce the same success/revert decision and gas accounting as sequential execution. Sources of nondeterminism include host clocks, thread order, unordered map iteration, floating-point behavior, random number generators, external I/O, and races in native precompiles.
+
+Consensus inputs such as block time or randomness must enter through canonical block fields. The VM should expose no process-local value that differs among validators.
+
+### Scheduler invariants
+
+For each committed block, test:
+
+1. parallel and reference sequential execution produce identical state roots;
+2. receipts, events, gas totals, and return data also match;
+3. every committed read observes the newest earlier canonical write;
+4. aborted attempts leave no durable state or externally visible event;
+5. retries terminate or hit a deterministic block limit;
+6. worker crashes and restarts do not change the committed prefix;
+7. transaction outcome does not depend on worker count or thread interleaving.
+
+Differential testing should run the same generated block with one worker, several worker counts, randomized scheduling seeds, and the sequential reference. Persist the seed and access trace on failure so the race can be reproduced.
+
+## **Contention and Admission Control**
+
+Retries consume real CPU, memory bandwidth, and cache capacity without increasing committed throughput. An attacker can construct transactions that appear independent early, then converge on one key late in execution. Even reverted attempts may exhaust the executor.
+
+A production scheduler needs limits and pricing for speculative work. Options include capping attempts per transaction, charging for repeated execution under protocol rules, routing known-hot contracts to a serial lane, and using recent access history to avoid obviously conflicting speculation. Any heuristic may affect performance but must not affect the canonical outcome.
+
+Suppose 1,000 transactions each take 1 millisecond on the first attempt. With 16 workers and no conflicts, ideal execution time is about 62.5 milliseconds before serial overhead. If 40 percent abort once after completing their work, the executor performs 1,400 transaction-attempts, increasing ideal worker time to 87.5 milliseconds. If retries serialize on one hot key, the critical path can approach 400 milliseconds plus parallel work. Reporting only successful transactions hides this amplification.
+
+Expose attempt count, aborted work, conflict keys, serial-lane depth, validation time, commit time, and state-database stalls. Capacity is the rate of committed canonical work under the target contention distribution, not the rate of speculative starts.
+
 ## **Conclusion**
 
 Parallel execution turns transaction independence into throughput. Declared-access systems expose dependencies before execution; optimistic systems discover them during execution and retry conflicts. Both must preserve deterministic, sequentially valid results.
