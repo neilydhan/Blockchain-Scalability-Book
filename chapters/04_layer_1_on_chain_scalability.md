@@ -43,9 +43,9 @@ Gas per second is useful for EVM systems because it measures computational work 
 ## **Horizontal Scaling Through Sharding**
 
 <p align="center">
-  <img src="../assets/course/ch04_sharding_concept.png" width="760" alt="Sharding concept from database partitioning">
+  <img src="../assets/course/ch04_sharding_receipt.svg" width="760" alt="Cross-shard transfer using an authenticated receipt">
   <br>
-  <em>Figure 4.1: Sharding divides a key space so independent workers can process different partitions. Source: Neil Han, SC6019 Lecture 02, slide 5.</em>
+  <em>Figure 4.1: A source shard debits funds and emits a receipt; the destination verifies finality and inclusion, marks the nonce consumed, and credits once. Original figure for this book, based on the sharding workflow in SC6019 Lecture 02.</em>
 </p>
 
 
