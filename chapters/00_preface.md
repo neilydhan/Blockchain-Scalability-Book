@@ -1,48 +1,65 @@
 # Preface
 
-Welcome to the Blockchain Scalability Book. This community-driven effort represents a collaborative attempt to address one of the most pressing challenges in blockchain technology today: scalability.
+Blockchain scalability is often presented as a list of projects or a race for the largest throughput number. This book takes a different approach. It follows the work a system must perform, the assumptions that make the result trustworthy, and the recovery path when the fast path fails.
 
 ## Purpose of This Book
 
-As blockchain technology continues to evolve and gain mainstream adoption, the need for scalable solutions becomes increasingly critical. This book aims to bridge the gap between theoretical concepts and practical implementations, providing readers with a comprehensive understanding of blockchain scalability solutions. With the growing adoption of blockchain for applications like stablecoin payments, decentralized exchanges (DEXs), and even AI agents that accept cryptocurrency payments, the volume of on-chain transactions is increasing exponentially, underscoring the urgent need for effective scalability solutions.
+The goal is to connect research mechanisms with implementation and evaluation. Readers should finish able to trace a transaction from submission through execution, data publication, consensus, settlement, and finality; identify the first saturated resource; and explain what a user can do when an operator, prover, relayer, or validator set fails.
+
+The book covers Layer 1 optimization and sharding, channels and Plasma, optimistic and validity rollups, modular architectures, data availability, parallel execution, and consensus scaling. It treats bridges, upgrades, observability, state growth, and mass recovery as part of scalability rather than operational details outside the design.
 
 ## Who This Book Is For
 
-This book is designed for:
-- Blockchain developers seeking to understand and implement scalability solutions.
-- System architects evaluating different scaling approaches.
-- Researchers exploring the technical challenges and innovations in blockchain.
-- Industry professionals and students who need a thorough grounding in blockchain scalability.
-- Anyone interested in the rapid development of blockchain technology.
+The primary readers are:
 
-## My Journey and Motivation
+- developers implementing blockchain protocols, rollups, bridges, wallets, and applications;
+- architects comparing monolithic, modular, sharded, and layered systems;
+- researchers and students connecting papers to deployed mechanisms;
+- operators and reviewers testing performance, safety, liveness, and recovery claims.
 
-In 2023, I was invited as a guest lecturer at Nanyang Technological University, Singapore, where I designed and taught courses such as CZ4153/CE4153 Blockchain Technology for year 4 undergraduates and SC6019 Blockchain Privacy & Scalability for the Blockchain Master's program. These courses covered advanced topics like data sharding, rollups, zero-knowledge rollups, consensus mechanisms, and modular scaling.
+A reader should be comfortable with hashes, signatures, transactions, smart contracts, and basic distributed-systems vocabulary. The glossary defines the specialized terms used throughout the book.
 
-The inspiration to write this book stemmed from a real need I observed while lecturing—there were no comprehensive textbooks that could adequately address the fast-evolving field of blockchain scalability. As blockchain education becomes more prevalent in universities and more developers enter the blockchain industry, a specialized resource on scalability becomes indispensable. The content of this book is based on the lectures I delivered last year, which received enthusiastic feedback from students. This year, I continue to teach these concepts, ensuring that students have a reliable reference as they navigate this complex field.
+## Origin
 
-## Why a Community-Driven Book?
+I developed this material from blockchain courses taught at Nanyang Technological University in Singapore, including CZ4153/CE4153 Blockchain Technology and SC6019 Blockchain Privacy & Scalability. The lectures covered data sharding, rollups, zero-knowledge proofs, modular systems, parallel execution, and consensus.
 
-The blockchain industry is progressing at a breakneck pace, and maintaining the relevancy and accuracy of educational resources is challenging. By adopting a community-driven approach, this book aims to leverage the collective wisdom of the community, allowing it to stay up-to-date with the latest developments and include diverse perspectives and solutions.
+The book grew from a teaching need: students could find papers, documentation, and product descriptions, but few resources connected the full scaling stack and its failure modes. The figures and examples retain that classroom objective while adding implementation checklists, calculations, test plans, and primary references.
 
 ## How to Use This Book
 
-The chapters are structured to build upon each other, starting from fundamental concepts and progressing to advanced scaling solutions. While the book can be read sequentially, each chapter is also designed to stand alone, allowing readers to focus on specific topics of interest.
+Chapters 1-3 establish the measurement model and architecture vocabulary. Chapters 4-10 examine the main mechanisms. Chapter 11 looks at developing directions without treating research proposals as deployed facts.
 
-## Contributing to This Book
+The glossary supports reference use. Review questions test reasoning rather than recall. The practitioner handbook turns the book's methods into an evaluation procedure. Readers designing a system should work through the capstone and failure-injection exercises, not only the descriptive chapters.
 
-This is a living document that thrives on community contributions. We encourage you to participate in its development by sharing your knowledge and expertise. See our [Contributing Guide](../CONTRIBUTING.md) for more information on how you can help shape this resource.
-
-## Acknowledgments
-
-We extend our gratitude to all contributors who have helped shape this book, including students, professionals, and the broader blockchain community, whose ongoing innovation and feedback drive the continuous improvement of blockchain technology.
+Each chapter can be consulted independently, but later chapters assume the distinction among execution, settlement, consensus, and data availability introduced in Chapter 1.
 
 ## What This Book Measures
 
-This book treats scalability as an end-to-end property. A design must name the workload, hardware, network, security assumptions, finality boundary, and recovery path behind its performance. Each architecture is examined across execution, settlement, consensus, and data availability.
+A performance claim is incomplete unless it names:
+
+- the workload and state distribution;
+- offered load, sustained throughput, and tail latency;
+- the start and completion boundary;
+- hardware, client version, network topology, and duration;
+- validator, sequencer, prover, and data assumptions;
+- behavior during faults and the cost of recovery.
+
+The unit of analysis is the end-to-end user action. Faster execution does not help when data publication is saturated. A cheap normal transaction does not prove that mass exit is affordable. A validity proof establishes only the statement encoded by its program and public inputs.
 
 ## Conventions
 
-**Layer 1 (L1)** is the base chain whose consensus defines canonical history. **Layer 2 (L2)** is a protocol that executes or updates state outside the base chain while using it for settlement or enforcement. **Data availability (DA)** means the data needed to verify or reconstruct state was published and obtainable. **Finality** names the point after which a state is not expected to revert under a stated fault model.
+**Layer 1 (L1)** is the base chain whose consensus defines canonical history. **Layer 2 (L2)** performs work outside the base chain while using it for settlement or enforcement. **Data availability (DA)** means the information needed to verify or reconstruct state was published and obtainable. **Finality** is always relative to a stated protocol and fault model.
 
-Numbers in examples are illustrative unless a source and measurement context are given. Protocol rules and roadmaps change; links to specifications and primary papers are included so readers can check the current design.
+Example numbers are illustrative unless a source and measurement context are given. Protocol rules and roadmaps change. Current claims should be checked against the linked specification or primary paper before they drive a production decision.
+
+Code-like examples emphasize invariants and interfaces rather than one programming language. Terms such as *must* describe requirements for the design under discussion, not standards-language obligations unless a specification is cited.
+
+## Contributions and Corrections
+
+This is a living technical book. Corrections, reproducible measurements, protocol updates, implementation lessons, and original figures are welcome through the repository's [contribution process](../CONTRIBUTING.md).
+
+A useful contribution states its source and scope. Performance updates should include workload and hardware. Security corrections should name the violated assumption or invariant. Figures should have editable source and clear rights. Time-sensitive product claims should be replaced with protocol mechanisms or pinned to a dated primary source.
+
+## Acknowledgments
+
+This book builds on the work of protocol researchers, client engineers, auditors, operators, educators, and students. Classroom questions and implementation failures are especially valuable: they reveal where a paper-level description is not enough for someone who must build, operate, or rely on the system.

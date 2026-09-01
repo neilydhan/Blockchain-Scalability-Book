@@ -37,7 +37,7 @@ The Bitcoin Lightning Network connects bilateral channels. A payment can be rout
 
 ### **Strengths**
 
-- very low marginal cost for repeated payments;
+- low marginal cost for repeated payments;
 - fast confirmation between online participants;
 - limited data burden on the base chain;
 - more privacy than publishing every update on-chain.
