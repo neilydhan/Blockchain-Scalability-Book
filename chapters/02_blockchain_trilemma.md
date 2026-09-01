@@ -179,7 +179,7 @@ Operators should spread replicas only when the protocol permits redundant signin
 
 A custodian controls 31 percent, below a one-third Byzantine boundary but close enough that additional correlated stake can cross it. Determine whether the custodian controls withdrawal keys, validator signers, governance votes, or only delegates stake. Each permission produces a different attack.
 
-Economic security is not simply 31 percent of market capitalization. Measure stake that can actually be slashed, time to exit, borrowability, derivative hedges, and whether governance can cancel penalties.
+Economic security cannot be reduced to 31 percent of market capitalization. Measure stake that can actually be slashed, time to exit, borrowability, derivative hedges, and whether governance can cancel penalties.
 
 ### Scenario 4: block-building concentration
 

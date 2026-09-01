@@ -301,7 +301,7 @@ Rotating sequencers reduce dependence on one operator but require consensus on L
 
 Decentralization can worsen latency and make reorganization behavior visible to users. A protocol may separate fast preconfirmations from final L2 consensus. Wallets and applications must know which promise they received.
 
-Based sequencing inherits ordering from L1 proposers. Shared sequencing amortizes consensus across rollups. Each choice changes censorship, MEV, latency, and cross-rollup composition rather than simply making sequencing "more decentralized."
+Based sequencing inherits ordering from L1 proposers. Shared sequencing amortizes consensus across rollups. Each choice changes censorship, MEV, latency, and cross-rollup composition rather than producing one universal measure of sequencing decentralization.
 
 ## **Rollup Upgrade and Escape Testing**
 

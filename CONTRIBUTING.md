@@ -83,3 +83,7 @@ python3 scripts/check-book.py
 ```
 
 The checker rejects missing `SUMMARY.md` entries or targets, broken local links, duplicate figure numbers, and unmatched footnotes. A successful checker does not replace technical review or visual inspection of changed figures and print pages.
+
+## Editorial Style
+
+Follow [`STYLE.md`](STYLE.md) for canonical scalability terminology, units, benchmark reporting, security claims, and citation practice. New text should identify its trust and finality assumptions rather than calling a design "trustless" or "secure" without qualification.
