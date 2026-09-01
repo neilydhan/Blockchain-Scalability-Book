@@ -128,6 +128,57 @@ An integrated DA layer changes this. A block is accepted only after encoded shar
 
 Validity and availability are therefore complementary. The system needs both a rule for correct transitions and access to the information those rules operate on.
 
+## **Two-Dimensional Reed-Solomon Encoding**
+
+A common DAS construction arranges `k × k` original shares in a square. Each row is extended to `2k` shares with Reed-Solomon coding. Each resulting column is then extended to `2k`, producing a `2k × 2k` extended square. The block header commits to row and column roots.
+
+If a producer withholds enough shares to prevent reconstruction, it must hide a noticeable fraction of the square. Random sampling detects that fraction with increasing probability. If the producer encodes a row incorrectly, an encoding-fraud proof can identify inconsistent shares. Polynomial-commitment designs can instead prove that samples belong to correctly encoded polynomials.
+
+The network protocol matters as much as the code. A sampler requests coordinates from several peers. Full or bridge nodes reconstruct rows and columns when enough shares arrive, then redistribute recovered shares. Sampling success by one isolated client does not establish global dissemination; peer exchange and custody rules are designed to make selective disclosure difficult.
+
+## **Namespaced Data and Selective Retrieval**
+
+A general DA layer may carry batches for thousands of applications. A rollup should not download every other rollup's data. Namespace Merkle trees organize shares by namespace while allowing proofs that all shares for a namespace were returned.
+
+A namespaced commitment supports two statements: a share belongs to the block, and a range contains all data under a given namespace. This lets a rollup node retrieve its own batches while light clients sample across the full block.
+
+Namespaces are not access control. Data remains public; the namespace is an indexing and proof mechanism.
+
+## **Blob Commitments and Retention**
+
+EIP-4844 transactions carry blob commitments. Consensus clients disseminate blob sidecars alongside blocks and verify that commitments match the block. Execution sees a versioned hash of the commitment rather than the blob bytes.
+
+A rollup contract can therefore bind a batch assertion to blob data without making that data permanent EVM storage. Consensus nodes retain blobs for the protocol window; rollup nodes, indexers, and archives keep longer history according to application needs.
+
+The retention boundary creates an operational deadline. A new rollup node joining after blob expiry needs a snapshot or historical provider. Trust can be minimized by checking the reconstructed state against finalized roots, but availability of old history remains a service assumption.
+
+## **Implementing a DA Client**
+
+A light DA client should:
+
+1. follow finalized or appropriately confirmed headers;
+2. derive unpredictable sample coordinates;
+3. request samples from diverse peers;
+4. verify each share against the header commitment;
+5. reject the header if required samples are missing by deadline;
+6. store evidence of invalid encoding or inconsistent responses;
+7. expose confidence and peer health to dependent rollups.
+
+A rollup full node additionally fetches every share in its namespace, reconstructs missing data, decodes batches canonically, and confirms that the settlement assertion refers to that exact data.
+
+## **DA Threat Model Checklist**
+
+- What fraction of shares must be hidden to prevent reconstruction?
+- How many independent samples reach the desired failure probability?
+- Can a producer answer samplers selectively?
+- Who verifies correct erasure encoding?
+- How are samples distributed across peers?
+- When is a header considered final?
+- How long is consensus data retained?
+- Who serves historical data afterward?
+- What does the settlement layer do if the DA layer halts or reorganizes?
+- Can a governance key switch DA commitments retroactively?
+
 ## **Conclusion**
 
 Data availability scaling allows nodes to gain strong confidence that block data exists without downloading all of it. Erasure coding makes severe withholding easier to detect, while random sampling gives light clients a tunable confidence level.

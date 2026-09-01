@@ -143,6 +143,57 @@ End-to-end safety is bounded by the weakest assumption on the path. Correct exec
 
 A useful engineering artifact is a dependency graph. For each edge, document what is trusted, how failure is detected, what finality is assumed, and whether users can recover without cooperation from the failed component.
 
+## **Designing the Interfaces Between Modules**
+
+A modular architecture succeeds or fails at its interfaces. Each interface should carry enough authenticated information for the receiving layer to verify its responsibility without silently assuming another layer did the work.
+
+### **Execution to Settlement**
+
+An execution layer sends a state assertion containing the prior root, new root, input range, data commitment, and proof metadata. The settlement contract verifies a fault or validity proof and records the accepted root. It should not accept a root without binding it to an exact data range, because otherwise a proof about one batch may be replayed or interpreted against another.
+
+### **Execution to Data Availability**
+
+The rollup publishes a namespaced blob or batch and receives a commitment plus inclusion proof. Rollup nodes need a deterministic rule that maps a settlement assertion to the DA commitment. If the DA chain reorganizes after settlement accepts the assertion, recovery depends on the finality assumptions embedded in the bridge or oracle connecting them.
+
+### **Settlement to Bridge**
+
+A bridge verifies that a withdrawal message belongs to an accepted state root and has not already been consumed. The message needs source chain, destination chain, sender, recipient, asset, amount, nonce, and version. Domain separation is what keeps a proof from one rollup or deployment from being valid in another.
+
+### **Sequencer to User**
+
+A sequencer receipt is a promise, not necessarily final state. It should identify the ordered transaction, L2 block, sequencer signature, and expiry or reorganization policy. Wallets can then label it accurately as pending publication or pending settlement.
+
+## **Sovereign Rollup Fork Choice**
+
+A sovereign rollup does not ask a settlement contract to choose its canonical state. Full nodes read ordered data from the DA layer and apply the rollup's fork-choice and execution rules locally. An upgrade may be a social fork: users choose software interpreting the same data differently.
+
+This gives the community sovereignty but complicates light clients and bridges. A light client needs a way to identify the accepted rollup rules and validator or proof system. A bridge needs its own decision about which fork is canonical. A settled rollup outsources that decision to the settlement contract; a sovereign rollup cannot avoid defining it somewhere.
+
+## **Modular Liveness Matrix**
+
+| Failed component | Immediate effect | Safety impact | Recovery path |
+|---|---|---|---|
+| Sequencer | No fast ordering | Usually none if force inclusion works | Submit through fallback or L1 inbox |
+| Batch submitter | New state lacks published data | Unposted confirmations can disappear | Another submitter posts the batch |
+| DA network | New batches cannot be proven available | Accepting unavailable data can break recovery | Halt settlement, switch only through governed upgrade |
+| Prover | Validity finality stalls | Normally none | Another prover reconstructs witness |
+| Settlement chain | Withdrawals and finality stall | Depends on reorganization/finality failure | Wait or invoke documented social recovery |
+| Bridge relayer | Messages delayed | None if anyone can relay | Permissionless relay |
+| Upgrade multisig | Routine upgrades delayed | None | Governance replacement under existing rules |
+
+The matrix distinguishes safety from liveness. A component can be operationally centralized without being able to steal assets, yet its outage can still make the application unusable.
+
+## **Implementation Checklist for a Modular Stack**
+
+1. Pin protocol and verifier versions in every cross-layer message.
+2. Use chain and rollup domain identifiers in signatures and proofs.
+3. Define finality delays for each source chain before consuming messages.
+4. Make relaying permissionless where possible.
+5. Expose each pipeline stage in user receipts and monitoring.
+6. Reconstruct state from DA using an independent node before launch.
+7. Test sequencer, prover, submitter, DA, and settlement outages separately.
+8. Document coordinated upgrades when one interface changes.
+
 ## **Conclusion**
 
 Monolithic blockchains offer integrated security and composability but require validators to repeat all major work. Modular architectures separate execution, settlement, consensus, and data availability so each can specialize and many execution layers can share a base.

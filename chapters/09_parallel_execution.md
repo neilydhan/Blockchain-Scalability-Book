@@ -135,6 +135,71 @@ An exchange can partition markets so ETH/USDC trades do not conflict with BTC/US
 
 These designs trade immediate global consistency for parallel work and need explicit reconciliation rules. The VM cannot invent independence that the application's state model does not contain.
 
+## **Multi-Version State and Validation**
+
+Optimistic parallel execution needs a versioned view of state. When transaction `T_i` writes key `k`, the executor records version `(i, value)`. A later transaction reads the highest version with index less than its own canonical index.
+
+Workers may execute out of order, so a read can initially observe a speculative value. Validation checks whether the read version is still the correct predecessor after earlier transactions finish. If not, the transaction and dependent work are scheduled again.
+
+Conceptually:
+
+```text
+execute(i):
+    for each read(k):
+        v = latest_version_before(k, i)
+        record read_dependency(k, v.version)
+    buffer writes as version i
+
+validate(i):
+    for each recorded dependency (k, j):
+        require j == latest_committed_version_before(k, i)
+    if any requirement fails:
+        abort i and dependent transactions
+```
+
+A real implementation must coordinate incarnation numbers, speculative writes, memory reclamation, and dependency wake-ups without turning the scheduler itself into a bottleneck.
+
+## **Static Scheduling With Access Lists**
+
+Declared-access systems know conflicts before execution. Build a graph whose vertices are transactions and whose edges connect conflicting read/write sets. Transactions without edges between them can share a parallel wave.
+
+The declaration needs enforcement. If a transaction touches an undeclared writable account, execution must fail rather than silently access it. Over-declaration is safe but reduces parallelism. Users or builders therefore have an incentive to provide narrow access lists.
+
+Block construction can become concurrency-aware. A builder may choose a set of lower-fee independent transactions that uses all cores instead of a slightly higher-fee set contending on one account. This creates a new fee-market question: how should blockspace price scarce sequential state access versus abundant parallel capacity?
+
+## **Deterministic State Commitment**
+
+Even after execution, validators must compute one state root. If parallel workers update a shared Merkle tree with locks, root construction can serialize. Alternatives batch writes, sort them by key, and update independent subtrees concurrently before combining roots.
+
+The state-commitment scheme affects witness generation and stateless validation. Verkle or sparse Merkle structures have different update, proof, and storage costs. VM throughput measured without root computation can overstate full-block performance.
+
+## **Parallel Execution Failure Modes**
+
+**Abort storms.** Many speculative transactions read values repeatedly invalidated by earlier writes. Adaptive scheduling can serialize hot keys after conflicts are detected.
+
+**False conflicts.** Coarse account-level locks serialize transactions touching independent storage slots in one contract. Finer keys improve concurrency at the cost of tracking overhead.
+
+**Nondeterministic host behavior.** Time, random numbers, floating-point differences, or iteration over unordered structures can produce different results. The VM must define deterministic inputs and arithmetic.
+
+**Denial of service.** An attacker constructs transactions that trigger expensive speculative work and repeated aborts. Fees must cover wasted execution or the scheduler must bound speculation.
+
+**State-root bottleneck.** Execution scales across cores but commitment remains sequential. End-to-end benchmarks reveal this gap.
+
+## **Benchmark Matrix**
+
+A useful benchmark varies both transaction complexity and conflict rate:
+
+| Workload | Conflict pattern | What it measures |
+|---|---|---|
+| Independent transfers | Distinct accounts | Best-case scheduler scaling |
+| Hot counter | One shared write | Worst-case serialization |
+| DEX pairs | Partitioned markets | Application-level parallelism |
+| NFT mint | Shared supply plus user writes | Burst contention |
+| Mixed contracts | Read/write distribution from production | Realistic abort behavior |
+| Adversarial conflicts | Deliberate invalidations | DoS resilience |
+
+Report execution, validation, aborts, root computation, memory, and speedup against the same engine running one worker.
+
 ## **Conclusion**
 
 Parallel execution turns transaction independence into throughput. Declared-access systems expose dependencies before execution; optimistic systems discover them during execution and retry conflicts. Both must preserve deterministic, sequentially valid results.
