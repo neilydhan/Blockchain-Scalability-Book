@@ -249,6 +249,98 @@ A system is not finished when its fast path reaches mainnet. It approaches matur
 
 Roadmaps should track removal of trust assumptions alongside throughput. The final product is not maximum speed; it is sustained, verifiable service under realistic faults.
 
+## **Research-to-Production Gate**
+
+Future techniques are easiest to misread when a paper result, benchmark, testnet, and production service are described with the same tense. A deployment gate should require evidence at each level.
+
+### 1. Security statement
+
+Write the exact property and assumptions. For a preconfirmation, define what is promised, who signs, how conflicts are proven, and which collateral can be penalized. For an encrypted mempool, define confidentiality before ordering, the decryption threshold, withholding behavior, and metadata leakage. For a prover market, define correctness, deadline, witness privacy, and fallback.
+
+A proof in one model does not cover implementation bugs, economic griefing, key compromise, or dependencies omitted from the model. List those separately.
+
+### 2. Interoperable specification
+
+The specification needs canonical encodings, domains, state machines, error behavior, version negotiation, test vectors, and upgrade rules. Two teams should implement it without sharing code and agree on every accepted and rejected vector.
+
+Specifications should make unsafe ambiguity impossible. "Recent block," "sufficient collateral," or "available data" needs a parameter or verification rule. Unknown versions should fail closed while preserving a recovery path for in-flight work.
+
+### 3. Reference and independent implementations
+
+A reference client demonstrates one interpretation; an independent client tests whether the specification is complete. Differential tests compare outputs across generated and adversarial inputs. Reproducible builds, pinned dependencies, and public issue histories help reviewers distinguish protocol properties from one implementation.
+
+### 4. Adversarial network
+
+A testnet should inject withholding, equivocation, censorship, partitions, clock skew, key rotation, malformed proofs, worker loss, and overload. Rewards for breaking assumptions are useful only when the target and disclosure process are clear.
+
+Measure recovery, not only whether the network restarted. Did users retain assets? Could independent operators reconstruct state? Did queued work converge without duplicates? Which privileged action was required?
+
+### 5. Bounded production launch
+
+Limit value, throughput, upgrade delay, and dependency scope while incident response is still being learned. Publish the exact controls. A rate limit can bound loss but may also block honest exit. An emergency pause can protect funds but creates a governance key that belongs in the security model.
+
+Increase limits only after observing realistic workload, failures, and independent operation. Time in production is not evidence when one team still runs every critical role.
+
+### 6. Control reduction
+
+Maturity should remove powers and single dependencies: permissionless challengers and provers, multiple sequencers or a tested forced path, independent DA retrieval, client diversity, delayed upgrades, key separation, and user exit under old rules.
+
+A roadmap item is complete when its trust assumption is removed or bounded and the replacement path has survived failure tests, not when a governance vote changes a label.
+
+## **Worked Decision: Should an Exchange Use Preconfirmations?**
+
+Assume an exchange rollup wants 200-millisecond order acknowledgements while settlement finality takes minutes. A sequencer can sign a promise that a valid order will appear before slot `s` with a maximum position and fee.
+
+The promise improves user feedback but introduces questions:
+
+- Can the sequencer issue conflicting positions to two traders?
+- What evidence proves a missed inclusion deadline?
+- Is the penalty larger than the profit from breaking the promise?
+- Does a base-layer reorganization excuse performance?
+- Can users submit without accepting a preconfirmation?
+- Is the promise valid after an upgrade or sequencer-set change?
+
+A useful envelope is:
+
+```text
+Preconfirmation {
+  chain_id,
+  rollup_id,
+  transaction_hash,
+  promised_slot,
+  ordering_constraint,
+  max_fee,
+  sequencer_set_version,
+  expiry,
+  signer
+}
+```
+
+The exchange can display "preconfirmed" as a separate state, never as settled. Risk limits may allow small reversible actions after preconfirmation while withdrawals and cross-domain releases wait for stronger finality.
+
+Suppose a conflicting promise can earn the sequencer at most $50,000 during a stressed market. A $10,000 slash does not create credible deterrence. Collateral must cover plausible extractable value, and enforcement must be timely and objective. If a coalition controls both ordering and the evidence path, nominal collateral may not be reachable.
+
+The launch test should have the sequencer intentionally miss and conflict promises, rotate keys with outstanding promises, and operate through an L1 reorganization. Users should see the state change, claim process, and final outcome without relying on a private support decision.
+
+## **Technology Watch Template**
+
+Track developing mechanisms with a dated table:
+
+| Field | Question |
+|---|---|
+| Claim | What measurable improvement is promised? |
+| Stage | Paper, prototype, testnet, limited production, or permissionless production? |
+| Assumptions | Network, cryptography, honest parties, hardware, governance? |
+| Implementation | Which code and commit implement the claim? |
+| Evidence | Proof, benchmark, test vectors, audits, incidents? |
+| Dependencies | Sequencer, prover, DA, settlement, relayer, keys? |
+| Recovery | What happens when each dependency fails? |
+| Control | Who can upgrade, pause, censor, or change membership? |
+| User status | What can a wallet truthfully display at each boundary? |
+| Next gate | Which falsifiable test must pass before wider use? |
+
+Update the table when evidence changes. Do not silently convert a future roadmap into a present property. That discipline keeps a future-directions chapter useful after individual project timelines change.
+
 ## **Conclusion**
 
 The future is likely to combine rollups, real-time proofs, sampled data, parallel VMs, shared sequencing, and abstracted cross-chain interfaces. This stack can support far more activity than a single replicated machine.
