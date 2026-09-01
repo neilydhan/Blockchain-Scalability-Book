@@ -24,6 +24,8 @@ Status: Complete
 10. **[Consensus Scaling](chapters/10_consensus_scaling.md)**: Scaling blockchain consensus mechanisms.
 11. **[Future Directions](chapters/11_future_directions.md)**: Emerging trends and future scalability solutions.
 
+The additional material includes a glossary, review questions with solution sketches, a practitioner evaluation handbook, figure credits, and reusable threat-model worksheets.
+
 > Note: This is a living technical book. Protocols and roadmaps change, so contributions that correct, update, or deepen the material are welcome.
 
 
