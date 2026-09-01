@@ -143,6 +143,45 @@ Putting every action on Ethereum L1 gives strong settlement but poor cost and la
 
 The rollup is not automatically the answer. If the game state is too large to publish economically, a validium or external DA layer may be considered. That lowers cost but adds a withholding assumption. If the game requires every player action to synchronously interact with DeFi on Ethereum, asynchronous messaging may make the experience unacceptable. The design decision follows the workload and recovery requirements, not a universal ranking of technologies.
 
+## **Forced Transactions and Censorship Recovery**
+
+A layered system should let users bypass the normal operator. An L1 inbox can accept canonically encoded L2 transactions. The sequencer must include them within a bounded period; otherwise another party advances state, the protocol changes mode, or the user exits.
+
+The deadline balances responsiveness and cost. A short timeout turns temporary outages into expensive L1 recovery. A long timeout gives a censor more power. Test the mechanism under L1 congestion, when many users may invoke it together.
+
+## **Deposits, Withdrawals, and Finality**
+
+An L2 should wait for sufficient L1 finality before crediting a deposit. Otherwise an L1 reorganization can remove collateral after its L2 representation has moved. In the other direction, a canonical bridge verifies an accepted L2 withdrawal message and replay protection before releasing L1 assets.
+
+Optimistic withdrawals wait for the challenge rule; validity withdrawals wait for proof acceptance. Liquidity bridges can pay earlier but introduce separate solvency and message risk. A full fee and latency estimate follows the user's entire deposit-action-withdrawal journey.
+
+## **Fee Anatomy Across Layers**
+
+```text
+L2 fee = execution charge
+       + allocated publication charge
+       + proving or challenging and operating charge
+       + margin or congestion premium
+```
+
+Batching spreads publication over many transactions. An appchain may subsidize validators or DA through inflation or treasury spending. "Low fee" should identify who pays the remainder. Recovery and canonical withdrawal costs matter for one-time users.
+
+## **L3s and Recursive Layering**
+
+An L3 executes above an L2 and uses that L2 for settlement, data, or both. A withdrawal may wait for L3 proof, L2 publication, L2 proof or challenge, and Ethereum finality. If the L2 operator is offline, the L3 must state whether its fallback can reach L1 directly.
+
+Layer numbers do not define security. Apply the same transaction-path and recovery-path analysis at every boundary.
+
+## **Migration and Upgrade Strategy**
+
+Applications may move from L1 to a shared rollup and then an appchain. A safe migration announces source and destination versions, freezes or snapshots finalized source state, publishes a commitment to migrated balances, allows verification or challenge, activates destination state, and preserves an exit for users who decline migration.
+
+Without a verifiable state mapping, migration becomes administrator custody.
+
+## **Architecture Decision Record**
+
+Record workload, latency objective, assets at risk, composability needs, execution and DA requirements, sequencing, proof or challenge rules, normal and forced message paths, fee subsidies, upgrade authority, and shutdown plan. Revisit the record as demand changes.
+
 ## **Chapter Summary**
 
 Layer 1 scales the base protocol; Layer 2 reduces the work the base layer performs per user action while retaining a settlement or enforcement relationship. Sidechains add independent capacity but carry independent consensus and bridge risk. Channels specialize in repeated interactions; rollups specialize in batched general-purpose execution.

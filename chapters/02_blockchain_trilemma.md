@@ -158,6 +158,44 @@ The trade is architectural rather than a simple sacrifice of security. State val
 
 This is why later chapters use a layered threat model rather than labeling a whole system decentralized or secure.
 
+## **Security Budgets and Participation Costs**
+
+Decentralization and security are connected through participation cost. If validation requires rare hardware or privileged networking, fewer independent operators can check the chain. If production requires large stake, specialized proving hardware, or exclusive order flow, control concentrates even when entry is formally permissionless.
+
+Every design has a security budget. Proof-of-work miners spend energy and hardware. Proof-of-stake validators lock capital and risk penalties. Rollups pay for data and challengers or provers. Bridges pay committees, relayers, or light-client verification. A system claiming dramatically lower cost should identify which security work became cheaper and which work was delegated.
+
+The relevant budget includes stake liquidity, concentration among custodians, correlated software, cloud dependence, governance capture, and response time, not token price alone.
+
+## **Decentralization Across Roles**
+
+Modern stacks divide power among RPC providers, sequencers, builders, validators, provers or challengers, DA nodes, relayers, bridge contracts, and governance. A system can be decentralized in one role and centralized in another. Permissionless validators do not compensate for one instant upgrade key. Multiple provers do not help if one sequencer can censor the fallback path.
+
+Build a role matrix. For each role, ask what it can do alone, what coalition is dangerous, how users detect abuse, and whether the system can recover without it.
+
+## **Asymmetric Verification**
+
+One way to improve the trilemma frontier is to make verification much cheaper than production. Digital signatures make authorization cheap to check. Succinct proofs compress large computations. Data sampling gives confidence about a large block after downloading random pieces.
+
+Asymmetry lets many ordinary participants verify work produced by stronger machines. It does not remove assumptions. A proof depends on its encoded program. Sampling depends on correct encoding and dissemination. Cheap verification can coexist with centralized production. The target is competitive production, cheap independent verification, and permissionless recovery.
+
+## **Failure Domains, Not Key Counts**
+
+One hundred validator keys do not create one hundred independent replicas if eighty run one client, seventy share one cloud region, or most stake is controlled by two custodians. Client diversity, hosting, operator control, network paths, jurisdiction, and signing infrastructure form different correlation graphs.
+
+A decentralization report should show these distributions and the protocol actions each concentration enables. This is more useful than a single node count.
+
+## **Worked Comparison: Scaling an Exchange**
+
+A larger monolithic L1 preserves synchronous shared state but asks every validator to process more data. An appchain isolates exchange traffic and can use a small fast committee, but its assets inherit that committee and bridge. A rollup batches execution and uses an L1 for settlement, while adding sequencer, data, proof, and bridge dependencies.
+
+None has one trilemma score. The correct comparison lists roles, participation cost, assets at risk, finality, and recovery for the exchange's workload.
+
+## **Governance as a Fourth Axis**
+
+The trilemma usually treats rules as fixed, but deployed systems change. Governance can replace a verifier, pause a bridge, increase block limits, or rotate a committee. Fast emergency action can protect security while concentrating power; slow action improves predictability but delays fixes.
+
+For every upgradeable system, evaluate current code and the process that can replace it. The latter is part of the security boundary from launch.
+
 ## Chapter Summary
 
 The trilemma is a disciplined way to ask where the cost of scale is paid. It is not a scorecard with one winner. Better designs improve the frontier, but every claim must state its workload, validator burden, adversary model, control structure, and recovery path.
