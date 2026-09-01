@@ -11,9 +11,9 @@ The problem is not merely starting several threads. Transactions can read and wr
 ## **Why the EVM Is Commonly Sequential**
 
 <p align="center">
-  <img src="../assets/course/ch09_parallel_execution.png" width="760" alt="Parallel execution and transaction conflicts">
+  <img src="../assets/course/ch09_parallel_scheduler.svg" width="760" alt="Parallel execution scheduler, conflicts, and deterministic commit">
   <br>
-  <em>Figure 9.1: Parallel execution needs a scheduler, dependency detection, and deterministic state merging when transactions conflict. Source: Neil Han, SC6019 Lecture 05, slide 46.</em>
+  <em>Figure 9.1: Independent transactions can run on different workers, while conflicting reads wait or retry and commitment preserves the canonical result. Original figure for this book, based on Block-STM and SC6019 Lecture 05.</em>
 </p>
 
 
