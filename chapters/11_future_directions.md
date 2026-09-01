@@ -103,6 +103,123 @@ Proposer-builder separation divides block construction from consensus proposal. 
 
 ---
 
+## **Proposer-Builder Separation in Practice**
+
+Proposer-builder separation (PBS) divides block construction from consensus proposal. Specialized builders search transaction orderings and assemble payloads; a proposer chooses among bids and publishes the winning block. This can improve block construction and isolate some MEV work, but it creates a new market and relay path whose failure behavior must be designed.
+
+A minimal blinded flow is:
+
+1. users submit transactions to public or private orderflow endpoints;
+2. builders simulate transactions and construct candidate payloads;
+3. a builder commits to a payload and bids for the right to have it proposed;
+4. relays validate the payload and show the proposer a header and bid without revealing the full body;
+5. the proposer signs the selected header;
+6. the winning payload is revealed and propagated;
+7. consensus validates that the revealed payload matches the signed commitment.
+
+The proposer should not sign two headers for one slot. The builder should not receive proposer commitment and then withhold the body. The relay should not be able to substitute a different payload after the signature.
+
+### Bid object
+
+```text
+BuilderBid {
+  chain_id,
+  slot,
+  parent_hash,
+  payload_commitment,
+  fee_recipient,
+  gas_or_resource_limits,
+  builder_pubkey,
+  bid_value,
+  protocol_version,
+  signature
+}
+```
+
+Bind every bid to chain, slot, parent, payload, fee recipient, limits, and version. A high bid for a stale parent is not executable value. Compare bids only after validating their common domain and the proposer's policy constraints.
+
+### Relay validation
+
+A relay commonly simulates payload validity before forwarding a bid. Validation should include parent availability, state transition, transaction signatures, resource limits, fee accounting, withdrawals or system operations, and commitment consistency.
+
+Simulation introduces latency and denial-of-service exposure. Builders can send expensive invalid blocks to consume relay capacity. Relays need admission control, reputation or bonds, parallel validation, strict deadlines, and specific error metrics. They must not weaken validation near the slot deadline merely to show more bids.
+
+Relays also see commercially sensitive bids and payloads. Log access, operator conflicts, data retention, and information leakage matter. Multiple relay URLs do not create independence if they share one operator, codebase, cloud, or upstream builder set.
+
+### Builder payment and value
+
+The bid value must be enforceable in the payload. If the builder promises 2 ETH but constructs a payment that can fail, the proposer receives less than the advertised bid. Validation should compute the effective balance change under protocol rules rather than trust an off-chain number.
+
+A rational proposer compares expected value after failure risk, not only face value:
+
+```text
+expected value = bid × probability of timely valid reveal - failure penalty
+```
+
+Suppose builder A bids 2.0 ETH with a 99.95 percent timely-reveal rate and builder B bids 1.99 ETH with 99.999 percent reliability. Ignoring other costs:
+
+```text
+A: 2.0 × 0.9995 = 1.9990 ETH
+B: 1.99 × 0.99999 ≈ 1.98998 ETH
+```
+
+A still has greater expected value, but the calculation omits the consensus and reputational cost of a missed slot. A proposer may rationally apply a larger failure penalty than lost payment alone.
+
+### Withholding and fallback
+
+After a proposer signs a blinded header, a builder or relay may fail to reveal the body. The proposer cannot safely construct another body for the same signed commitment. The result may be a missed slot.
+
+A fallback policy must operate before signing: query independent relays, maintain a locally built payload, reject bids after a deadline that leaves too little reveal time, and choose local production when no bid clears a risk-adjusted threshold. Once a header is signed, fallback cannot change its committed body.
+
+Test relay disconnection before bid selection, during signature submission, and after header commitment. Measure missed-slot rate, reveal latency percentiles, time remaining for propagation, and whether local fallback remains valid on the selected parent.
+
+### Censorship
+
+PBS can concentrate transaction inclusion decisions among builders even while proposers remain numerous. Measure the share of slots, bids, and winning value by builder and relay; exclusive orderflow; transaction inclusion delay; and whether compliant transactions excluded by leading builders enter through local construction or an inclusion mechanism.
+
+An inclusion list can require the final payload to contain eligible transactions named by the proposer, subject to validity and resource rules. The specification must prevent a proposer from listing invalid or deliberately conflicting transactions and prevent a builder from claiming the block was full when it strategically displaced listed items.
+
+Censorship resistance depends on transaction visibility. Private orderflow can improve user execution but starve public builders and monitoring. Applications should disclose who receives orders, what those parties can do with them, how long exclusivity lasts, and what fallback returns an order to a public path.
+
+### Builder concentration
+
+Builders benefit from low-latency orderflow, proprietary search, capital, simulation infrastructure, and cross-domain inventory. Winning-builder count can therefore fall even when anyone is technically allowed to connect.
+
+Report concentration by blocks and value, not registration count. Examine common ownership, financing, colocated infrastructure, exclusive orderflow, and relay preference. Simulate the sudden loss of the largest builder and the largest relay set; the chain should continue producing valid blocks, even if revenue falls.
+
+### Timing budget
+
+For a 12-second slot, allocate an explicit budget:
+
+```text
+bid collection             7.5 s
+selection and signing      0.3 s
+payload reveal             0.5 s
+validation and propagation 2.2 s
+safety margin              1.5 s
+                           ------
+                           12.0 s
+```
+
+These numbers are illustrative. Measure geographic p99s and correlated delays. Extending bid collection may raise revenue while reducing propagation margin and increasing fork risk. Optimize the full consensus outcome rather than auction revenue in isolation.
+
+### Production assertions
+
+Before enabling a PBS path, assert that:
+
+- signed headers bind every consensus-critical payload field;
+- effective payment equals the validated bid under success and failure cases;
+- stale-parent and wrong-slot bids are rejected;
+- no relay can make invalid payloads valid;
+- the proposer never signs conflicting headers;
+- late reveal produces a measured missed-slot outcome, not an unsafe fallback;
+- local construction remains tested and ready;
+- builder, relay, and orderflow concentration are observable;
+- censorship alarms use inclusion delays and eligible transaction tests;
+- upgrades preserve domain separation across bid and payload versions.
+
+PBS should be judged as a consensus-adjacent market with safety, liveness, timing, privacy, and competition requirements. Higher bids are useful only when the block is valid, arrives in time, propagates safely, and does not make transaction inclusion depend on a small hidden supply chain.
+
 ## **How to Judge Future Claims**
 
 New systems should be evaluated across the entire stack:
