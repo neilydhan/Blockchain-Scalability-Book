@@ -343,7 +343,7 @@ For each cut, assert conservation of assets, one terminal outcome, permissionles
 
 Monolithic blockchains offer integrated security and composability but require validators to repeat all major work. Modular architectures separate execution, settlement, consensus, and data availability so each can specialize and many execution layers can share a base.
 
-The gain is flexibility and scale. The cost is fragmentation and a larger set of dependencies. The next chapter examines the least intuitive of these services – proving that block data is actually available without requiring every node to download all of it.
+The gain is flexibility and scale. The cost is fragmentation and a larger set of dependencies. The next chapter examines the least intuitive of these services - proving that block data is actually available without requiring every node to download all of it.
 
 ## **References**
 
