@@ -1,11 +1,11 @@
 # Blockchain Scalability Book
 
-Welcome to the Blockchain Scalability Book project! This book is a community-driven effort to explore, elucidate, and solve the scalability issues that blockchain technologies, especially Ethereum, face today. By leveraging the collective wisdom and expertise of the blockchain community, this book aims to provide comprehensive insights into scalability solutions like Layer 2 rollups, modular chains, and parallel execution.
+The Blockchain Scalability Book explains how blockchains increase capacity while preserving verifiability, security, and credible recovery. It connects Layer 1 changes, channels, rollups, modular data availability, parallel execution, and consensus through end-to-end transaction and failure paths.
 
 Start with our [Preface](chapters/00_preface.md) to learn more about the book's purpose and structure.
 
 ## Why This Book?
-Blockchain scalability is a critical challenge that impedes the widespread adoption of this revolutionary technology. This book seeks to demystify the technical complexities and present scalable solutions in a way that is accessible to both newcomers and seasoned professionals in the field.
+Scaling is a resource and systems problem, not a contest for the largest transactions-per-second number. This book gives readers the mechanisms, calculations, threat models, and evaluation methods needed to compare designs on equal terms.
 
 ## Chapters
 The book is divided into chapters, each focusing on a specific aspect of scalability. The chapters form a complete first edition and remain open to corrections, new evidence, and technical improvements.
@@ -28,7 +28,7 @@ Status: Complete
 
 
 ## How to Contribute
-We welcome contributions from anyone interested in making blockchain more scalable. Whether you're a developer, researcher, writer, or enthusiast, your insights are valuable!
+Corrections, reproducible measurements, primary-source updates, original diagrams, and implementation experience are welcome.
 
 ### Getting Started
 1. **Read the Contribution Guidelines**: Check out our [Contributing Guide](CONTRIBUTING.md) for detailed instructions on how to contribute.
@@ -56,19 +56,17 @@ The first command creates a clean HTML build. The second starts a local server, 
 
 ## Donations
 
-Thank you for considering a donation to the Blockchain Scalability Book project! Your support not only helps fund our efforts but also motivates the community to contribute and collaborate.
+Donations support maintenance and continued technical review of the book.
 
 We use [GitHub Sponsors](https://github.com/sponsors/neilydhan), or you can send USDT or USDC to the following address directly:
 
 - **USDT/USDC Address**: 0x8B12f280f997308B98c2a820279Faf61Aa54345c
 - **Network**: Ethereum (ERC-20)
 
-Your donations help sustain our project and encourage further contributions!
+
 
 ## License
 This work is licensed under the [MIT License](LICENSE.md). By contributing to this book, you agree to abide by its terms.
 
 ## Stay Connected
-Star this repository and follow the progress! Share your thoughts and connect with other contributors by starting discussions in the issues section.
-
-Thank you for being part of this open-source journey to solve blockchain scalability!
+Use repository issues and discussions for corrections, technical questions, and proposed improvements.
