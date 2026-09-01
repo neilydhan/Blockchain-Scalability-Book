@@ -13,9 +13,9 @@ The course groups the main approaches into channels, sidechains and commit-chain
 ## **The General Off-Chain Pattern**
 
 <p align="center">
-  <img src="../assets/course/ch05_channel_workflow.png" width="760" alt="Generic state-channel workflow">
+  <img src="../assets/course/ch05_channel_state_machine.svg" width="760" alt="State channel opening, signed updates, settlement, and dispute">
   <br>
-  <em>Figure 5.1: A channel opens on-chain, advances through signed off-chain states, and returns on-chain only for settlement or dispute. Source: Neil Han, SC6019 Lecture 03, slide 7.</em>
+  <em>Figure 5.1: A channel locks assets on Layer 1, advances through newer jointly signed states, and returns to Layer 1 for cooperative settlement or dispute. Original figure for this book, based on the state-channel protocol described in SC6019 Lecture 03.</em>
 </p>
 
 
