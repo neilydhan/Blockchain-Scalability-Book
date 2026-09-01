@@ -1,0 +1,173 @@
+# **Glossary**
+
+This glossary defines terms as they are used in this book. Some projects use the same word differently; the surrounding security model always takes precedence over the label.
+
+## **Architecture and State**
+
+**Application chain (appchain)**  
+A blockchain or rollup dedicated to one application or a related group of applications. It can customize execution, fees, sequencing, and governance, but must supply or rent consensus, data availability, settlement, and bridging.
+
+**Bridge**  
+A protocol that authenticates messages or assets between security domains. A canonical rollup bridge is enforced by its settlement contracts. A sidechain bridge normally depends on the sidechain's consensus, a light client, a committee, or a multisignature account.
+
+**Commitment**  
+A short cryptographic value binding a party to larger data. A Merkle root and a polynomial commitment are examples. A commitment proves integrity when data is revealed; it does not by itself prove that data is available.
+
+**Composability**  
+The ability of applications or contracts to interact. Synchronous composability allows several calls to complete atomically in one transaction. Asynchronous composability uses messages and requires explicit handling of delay and partial completion.
+
+**Execution**  
+Applying ordered transactions to prior state to compute new state.
+
+**Finality**  
+The point after which a block or state should not revert under a stated fault model. Sequencer confirmation, proof acceptance, consensus finality, and economic finality are different boundaries.
+
+**Layer 1 (L1)**  
+The base blockchain whose consensus defines its canonical history and native state.
+
+**Layer 2 (L2)**  
+A protocol that updates state outside an L1 while using that L1 for settlement, correctness enforcement, or exits. Merely connecting a separate chain with a bridge does not make it inherit L1 security.
+
+**Monolithic blockchain**  
+A system whose validator network performs execution, settlement, consensus, and data availability.
+
+**Modular blockchain**  
+An architecture that separates one or more of execution, settlement, consensus, and data availability into specialized systems.
+
+**Settlement**  
+The function that accepts canonical state commitments and resolves disputes. Rollups commonly settle to an L1 smart contract.
+
+**State root**  
+A cryptographic commitment to the full application or blockchain state at a point in history.
+
+## **Layer 2 Systems**
+
+**Canonical bridge**  
+The bridge enforced by a rollup's settlement contracts rather than an external liquidity provider.
+
+**Challenge period**  
+The interval during which an optimistic state assertion can be disputed.
+
+**Channel**  
+A protocol in which a fixed or constrained set of participants exchange signed state updates and use the blockchain to open, close, or resolve disputes.
+
+**Commit-chain**  
+An operator-based off-chain system that posts state commitments to a base chain and provides an exit or challenge mechanism. The exact term is used inconsistently, so data and validation assumptions must be stated.
+
+**Fault proof or fraud proof**  
+Evidence that an asserted state transition is invalid. Interactive systems narrow a disagreement to a small computation that the settlement contract checks.
+
+**Force inclusion**  
+A mechanism allowing a user to bypass a sequencer, usually by submitting a transaction through the settlement layer.
+
+**Optimistic rollup**  
+A rollup that accepts state assertions unless they are successfully challenged with a fault proof.
+
+**Plasma**  
+A family of child-chain designs that commit roots to a parent chain while users retain proofs and use exit games. Data withholding and mass exits are central design problems.
+
+**Rollup**  
+A system that executes transactions outside its settlement layer, publishes the data needed to reconstruct its state, and uses fraud or validity proofs to enforce correctness.
+
+**Sequencer**  
+The party or protocol that orders L2 transactions and produces L2 blocks. It can provide low-latency confirmation but may introduce censorship, liveness, and ordering risks.
+
+**Sidechain**  
+A separate blockchain connected by a bridge. It normally has independent consensus and does not automatically inherit the base chain's security.
+
+**State channel**  
+A channel for arbitrary application state rather than payments alone.
+
+**Validity rollup**  
+A rollup whose state commitments must be accompanied by a cryptographic proof of correct execution. Often called a ZK rollup, even when the proof is not used for privacy.
+
+**Validium**  
+A validity-proof system that stores transaction data outside the settlement layer. Correctness can remain proven while data withholding prevents users from reconstructing state.
+
+**Volition**  
+A system that lets users or applications choose between on-chain and off-chain data availability.
+
+**Watchtower**  
+A service that monitors the chain and responds to dishonest or stale channel closures for an offline user.
+
+## **Data Availability and Proofs**
+
+**Blob**  
+In Ethereum, a temporary data object introduced by EIP-4844 for rollup publication. Consensus commits to blobs, while EVM execution cannot directly read their contents.
+
+**Data availability (DA)**  
+The property that data required to verify or reconstruct a state was disseminated and obtainable during the protocol's required window.
+
+**Data availability committee (DAC)**  
+A set of parties attesting that off-chain data is available. It reduces publication cost but introduces a threshold trust assumption.
+
+**Data availability sampling (DAS)**  
+A method by which light nodes request random pieces of erasure-coded data to gain confidence that the full block can be reconstructed.
+
+**Erasure coding**  
+Encoding that expands data into redundant shares so the original can be reconstructed from a threshold subset.
+
+**KZG commitment**  
+A polynomial commitment scheme used by Ethereum blob transactions. It binds a proposer to blob data and supports compact evaluation proofs.
+
+**SNARK**  
+A succinct non-interactive argument of knowledge. Different SNARKs make different setup, cryptographic, proof-size, and prover-cost trade-offs.
+
+**STARK**  
+A scalable transparent argument of knowledge. STARKs avoid a trusted setup and use hash-based assumptions, generally with larger proofs than many SNARK systems.
+
+**Validity proof**  
+A cryptographic proof that a computation or state transition followed specified rules. Validity does not by itself prove data availability.
+
+**Witness**  
+Auxiliary data proving that a computation used particular state values. Stateless validation gives validators witnesses instead of requiring all state locally.
+
+**Zero knowledge**  
+A property allowing a proof to reveal that a statement is true without revealing its private witness. Succinct validity proofs do not have to be zero knowledge.
+
+## **Execution and Consensus**
+
+**Block-STM**  
+An optimistic parallel execution engine that speculates on transactions, detects invalidated reads, and retries conflicts while preserving a canonical order.
+
+**Byzantine fault**  
+Arbitrary faulty behavior, including conflicting messages, collusion, and malicious deviation from protocol.
+
+**Committee**  
+A subset of validators assigned to vote on or process part of the system.
+
+**Consensus**  
+Agreement on an ordered canonical history among independent nodes despite faults.
+
+**Hot state**  
+State accessed by many concurrent transactions. Hot state creates conflicts and limits parallel execution.
+
+**Liveness**  
+The guarantee that the protocol eventually continues to process and finalize valid work under stated conditions.
+
+**MEV**  
+Maximum extractable value: value captured by controlling transaction inclusion, exclusion, or ordering.
+
+**Nakamoto consensus**  
+Longest- or heaviest-chain consensus introduced by Bitcoin, with probabilistic finality and Sybil resistance based on proof of work.
+
+**Pacemaker**  
+The component of a leader-based BFT protocol that manages timeouts and view changes.
+
+**Parallel execution**  
+Executing independent transactions concurrently while producing a deterministic result equivalent to the protocol's canonical semantics.
+
+**Quorum certificate (QC)**  
+Aggregated evidence that a quorum of replicas voted for a proposal.
+
+**Safety**  
+The guarantee that honest participants do not finalize conflicting states.
+
+**Sharding**  
+Partitioning validators, transactions, execution, or state so different groups process different work concurrently.
+
+**Synchronous, partially synchronous, asynchronous**  
+Network models. A synchronous protocol assumes a known message-delay bound. Partial synchrony assumes a bound eventually holds. An asynchronous model assumes no timing bound.
+
+**View change**  
+The process that replaces a stalled or faulty consensus leader and carries forward the certificates or locks needed for safety.

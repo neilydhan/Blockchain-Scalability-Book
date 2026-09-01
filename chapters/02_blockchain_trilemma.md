@@ -4,7 +4,7 @@
 
 The blockchain trilemma is one of the most fundamental concepts in understanding the design constraints of decentralized systems. Coined by Ethereum co-founder Vitalik Buterin, the trilemma posits that blockchain networks can only optimize for two out of three key properties at any given time: **decentralization**, **security**, and **scalability** [^1]. This trade-off encapsulates the inherent challenges of building a blockchain that is simultaneously open to all participants, resistant to attacks, and capable of processing transactions at scale.
 
-In Chapter 1, we explored the scalability gap between blockchain networks like Ethereum (~20 TPS) and centralized systems like VISA (~24,000 TPS). The blockchain trilemma provides a lens through which we can understand why this gap exists and why achieving all three properties—decentralization, security, and scalability—is so elusive. This chapter will break down each component of the trilemma, examine real-world examples, and set the stage for later discussions on Layer 1 and Layer 2 solutions that attempt to mitigate these trade-offs.
+In Chapter 1, we saw why payment-network and blockchain throughput numbers are not directly comparable without matching workload, finality, and security assumptions. The blockchain trilemma provides a lens through which we can understand why this gap exists and why achieving all three properties—decentralization, security, and scalability—is so elusive. This chapter will break down each component of the trilemma, examine real-world examples, and set the stage for later discussions on Layer 1 and Layer 2 solutions that attempt to mitigate these trade-offs.
 
 ## What Is the Blockchain Trilemma?
 
@@ -13,7 +13,7 @@ At its core, the blockchain trilemma is a framework that highlights the interdep
 <p align="center">
   <img src="../assets/trilemma.png" width="500" alt="Blockchain Trilemma">
   <br>
-  <em>Figure 1: The Blockchain Trilemma - Decentralization, Security, and Scalability Trade-offs</em>
+  <em>Figure 2.1: The Blockchain Trilemma - Decentralization, Security, and Scalability Trade-offs</em>
 </p>
 
 1. **Decentralization**: The extent to which a blockchain operates without a central authority, relying instead on a distributed network of nodes to validate transactions and maintain the ledger.
@@ -30,13 +30,13 @@ To fully grasp the blockchain trilemma, let’s examine each component and its i
 
 Decentralization is the bedrock of blockchain technology, distinguishing it from centralized systems like PayPal or VISA. In a decentralized network, no single entity controls the system; instead, a global network of nodes collaborates to validate transactions and maintain the ledger. Bitcoin and Ethereum exemplify this principle, with thousands of nodes worldwide ensuring that no central authority can manipulate the system.
 
-However, decentralization comes with a cost. Every node must process and store every transaction, leading to replicated computation and storage (as discussed in Chapter 1). This redundancy ensures trustlessness but severely limits scalability. For example, Ethereum’s requirement that all nodes validate every smart contract execution caps its throughput at ~20 TPS—a stark contrast to centralized systems that rely on a single, optimized server [^3].
+However, decentralization comes with a cost. Every node must process and store every transaction, leading to replicated computation and storage (as discussed in Chapter 1). This redundancy ensures trustlessness but severely limits scalability. For example, Ethereum requires every validating node to reproduce canonical EVM execution. This deliberate replication limits execution capacity compared with a centralized database but removes dependence on one operator [^3].
 
 ### Security
 
 Security in blockchain refers to the system’s ability to resist attacks and maintain the integrity of its ledger. This is achieved through consensus mechanisms like Proof of Work (PoW) or Proof of Stake (PoS), which ensure that malicious actors cannot alter the blockchain without overwhelming computational or economic costs. Bitcoin’s PoW, for instance, requires attackers to control more than 50% of the network’s hash rate—a feat that becomes increasingly expensive as the network grows [^4].
 
-Yet, security can conflict with scalability. PoW’s energy-intensive mining process slows down transaction confirmation times (Bitcoin averages ~7 TPS), while requiring broad participation to maintain decentralization. Reducing the number of validators to speed up consensus might boost scalability but could weaken security by making it easier for a small group to collude.
+Yet, security can conflict with scalability. Proof-of-work mining and Bitcoin’s conservative block parameters limit transaction capacity, while broad independent verification supports decentralization. Reducing the number of validators to speed up consensus might boost scalability but could weaken security by making it easier for a small group to collude.
 
 ### Scalability
 
@@ -50,28 +50,21 @@ The blockchain trilemma is not a theoretical abstraction—it manifests in the d
 
 ### Bitcoin: Prioritizing Decentralization and Security
 
-Bitcoin is designed to maximize decentralization and security at the expense of scalability. Its PoW consensus ensures robust security by making attacks prohibitively expensive, while its open network of nodes preserves decentralization. However, this comes at a cost: Bitcoin processes only ~7 TPS, and its 1 MB block size limits transaction throughput. Attempts to increase scalability (e.g., larger blocks) have sparked debates about centralization risks, as seen in the Bitcoin Cash fork [^5].
+Bitcoin is designed to maximize decentralization and security at the expense of scalability. Its proof-of-work consensus makes history expensive to rewrite, while its open node network supports independent verification. Conservative block weight and interval limit transaction throughput. Attempts to increase block capacity have repeatedly raised questions about validator cost and network fragmentation.
 
 ### Ethereum: Balancing Flexibility and Scalability Challenges
 
-Ethereum aims for a balance between decentralization and security while supporting a versatile smart contract platform. Its PoW (pre-Merge) and now PoS consensus maintain security, and its global node network ensures decentralization. However, this design limits scalability to ~20 TPS, leading to high gas fees and congestion during peak usage (e.g., the CryptoKitties surge in 2017). Ethereum’s roadmap, including sharding and rollups (covered in later chapters), seeks to address this trade-off [^6].
+Ethereum aims for a balance between decentralization and security while supporting a versatile smart contract platform. Its PoW (pre-Merge) and now PoS consensus maintain security, and its global node network ensures decentralization. However, globally replicated execution limits capacity, leading to high gas fees and congestion during peak usage (e.g., the CryptoKitties surge in 2017). Ethereum’s roadmap, including sharding and rollups (covered in later chapters), seeks to address this trade-off [^6].
 
 ### Binance Smart Chain: Sacrificing Decentralization for Scalability
 
-Binance Smart Chain (BSC) prioritizes scalability and security over decentralization. By using a Proof of Staked Authority (PoSA) consensus with only 21 validators, BSC achieves higher throughput and lower fees than Ethereum. However, this small validator set raises centralization concerns, as a handful of entities control the network, potentially compromising its trustlessness [^7].
+Binance Smart Chain (BSC) prioritizes scalability and security over decentralization. By using Proof of Staked Authority with a small active validator set, BNB Smart Chain can reduce consensus overhead and offer lower fees than Ethereum. The smaller active validator set reduces communication overhead while concentrating block-production power relative to a larger permissionless set.
 
 ### Solana: High Scalability with Trade-Offs
 
-Solana pushes scalability to the extreme, boasting ~4,000 TPS through its Proof of History (PoH) and parallel transaction processing. However, this comes with trade-offs in decentralization (fewer validators due to high hardware requirements) and security (network outages during peak demand). Solana’s design illustrates how aggressive scalability can strain other trilemma components [^8].
+Solana pursues high throughput through a high-performance runtime, explicit account access, and parallel transaction processing. However, this comes with trade-offs in decentralization (fewer validators due to high hardware requirements) and security (network outages during peak demand). Solana’s design illustrates why execution throughput, validator requirements, and operational resilience must be evaluated together [^8].
 
 Here’s a summary of these trade-offs:
-
-| Blockchain         | Decentralization | Security | Scalability (TPS) | Trade-Off Notes                          |
-|--------------------|------------------|----------|-------------------|------------------------------------------|
-| Bitcoin            | High             | High     | ~7                | Sacrifices scalability for security      |
-| Ethereum           | High             | High     | ~20               | Balances flexibility with limited scale  |
-| Binance Smart Chain| Low              | Medium   | ~100+             | Centralizes for speed and low fees       |
-| Solana             | Medium           | Medium   | ~4,000            | High throughput with stability risks     |
 
 ### The Evolution of Exchanges and the Trilemma
 
@@ -83,14 +76,14 @@ In Bitcoin’s early days (2009–2011), trading was purely peer-to-peer, conduc
 
 #### Rise of Centralized Exchanges
 
-As Bitcoin gained traction, the limitations of peer-to-peer trading became apparent. Scalability demanded faster, more efficient systems, and security required protections against fraud. This led to the rise of centralized exchanges like Mt. Gox (launched 2010), which dominated early crypto trading. CEXs operated off-chain, matching buy/sell orders in a centralized database and settling trades internally, only occasionally interacting with the blockchain for deposits and withdrawals. This design sacrificed decentralization for scalability and security: Mt. Gox could handle thousands of trades per day with custodial security measures, far outpacing Bitcoin’s ~7 TPS. However, centralization introduced single points of failure—Mt. Gox’s infamous 2014 hack, losing 850,000 BTC, underscored the risks of trusting a centralized entity [^10].
+As Bitcoin gained traction, the limitations of peer-to-peer trading became apparent. Scalability demanded faster, more efficient systems, and security required protections against fraud. This led to the rise of centralized exchanges like Mt. Gox (launched 2010), which dominated early crypto trading. CEXs operated off-chain, matching buy/sell orders in a centralized database and settling trades internally, only occasionally interacting with the blockchain for deposits and withdrawals. This design sacrificed decentralization for scalability and security: Mt. Gox could handle thousands of trades per day with custodial security measures, far outpacing the rate at which Bitcoin could settle on-chain transfers. However, centralization introduced single points of failure—Mt. Gox’s infamous 2014 hack, losing 850,000 BTC, underscored the risks of trusting a centralized entity [^10].
 <p align="center">
   <img src="../assets/cex_architecture.jpg" width="500" alt="CEX Architecture">
   <br>
-  <em>Figure 2: Centralized Exchange (CEX) Architecture</em>
+  <em>Figure 2.2: Centralized Exchange (CEX) Architecture</em>
 </p>
 
-The trilemma explains this shift: Bitcoin’s decentralized and secure base layer couldn’t scale to meet growing demand, pushing users toward centralized solutions. Ethereum’s launch in 2015 amplified this trend, as smart contracts enabled DeFi but strained the network’s ~20 TPS capacity, driving traders to CEXs like Binance for speed and lower costs.
+The trilemma explains this shift: Bitcoin’s decentralized and secure base layer couldn’t scale to meet growing demand, pushing users toward centralized solutions. Ethereum’s launch in 2015 amplified this trend, as smart contracts enabled DeFi but strained the network’s limited shared execution capacity, driving traders to CEXs like Binance for speed and lower costs.
 
 #### DEXs and the Scalability Revolution
 
@@ -99,19 +92,10 @@ Decentralized exchanges emerged to reclaim decentralization, leveraging blockcha
 <p align="center">
   <img src="../assets/dex_architecture.jpg" width="500" alt="DEX Architecture">
   <br>
-  <em>Figure 3: Decentralized Exchange (DEX) Architecture</em>
+  <em>Figure 2.3: Decentralized Exchange (DEX) Architecture</em>
 </p>
 
 The evolution of scaling solutions transformed DEXs. Layer 2 rollups (e.g., Optimism, Arbitrum) and high-throughput Layer 1 chains (e.g., BSC, Solana) enabled DEXs like Uniswap and PancakeSwap to process thousands of trades efficiently. Uniswap V3, for instance, uses Ethereum’s Layer 1 for security and decentralization while offloading computation to Layer 2 for scalability, reducing fees and latency. Similarly, Serum on Solana leverages PoH to achieve CEX-like speeds without sacrificing on-chain settlement [^11]. These advancements illustrate how scaling innovations mitigate the trilemma, allowing DEXs to compete with CEXs while retaining blockchain’s core principles.
-
-Here’s a comparison of exchange evolution through the trilemma lens:
-
-| Exchange Type       | Decentralization | Security | Scalability       | Notes                                      |
-|---------------------|------------------|----------|-------------------|--------------------------------------------|
-| Peer-to-Peer (Early)| High             | Low      | Very Low (~1 TPS) | Trust-dependent, slow                     |
-| CEX (e.g., Mt. Gox) | Low              | Medium   | High (~1000s TPS) | Centralized, vulnerable to hacks          |
-| Early DEX (EtherDelta)| High          | High     | Low (~20 TPS)     | On-chain, limited by gas fees             |
-| Modern DEX (Uniswap)| High            | High     | Medium (~100s TPS)| Leverages Layer 2 for scale               |
 
 ### The Trilemma in Context: Lessons from Traditional Systems
 
@@ -137,16 +121,55 @@ While the trilemma frames blockchain design as a zero-sum game, it also inspires
 
 These strategies don’t eliminate the trilemma but seek to mitigate its constraints, as seen in the evolution of DEXs, offering hope for a future where blockchains can scale without sacrificing their foundational values.
 
+
+## The Trilemma Is a Constraint, Not a Theorem
+
+The blockchain trilemma is a design heuristic, not a mathematical impossibility result with one universal definition. A protocol can improve all three dimensions through better cryptography, networking, or hardware. The constraint appears when it scales one dimension by increasing the burden on another.
+
+For example, larger blocks improve transaction capacity but raise bandwidth and storage requirements, which may reduce the population able to validate independently. Smaller committees improve communication latency but concentrate consensus power. A rollup improves execution capacity while introducing a sequencer, bridge, proof system, and data-publication path that each need separate analysis.
+
+The proper question is not whether a project has "solved" the trilemma. It is which costs moved, which assumptions changed, and whether users can verify those assumptions.
+
+## Quantifying the Three Axes
+
+No single metric captures an axis, but a measurement set makes comparisons less subjective.
+
+**Scalability** includes sustained throughput for a stated workload, finality latency, fee behavior under demand, state growth, and recovery performance.
+
+**Decentralization** includes the concentration of stake or hash power, number of independent operators, client and hosting diversity, entry cost, governance and upgrade control, and whether users can verify with ordinary hardware.
+
+**Security** includes the cost or fraction required to violate safety, the network model, resistance to censorship and data withholding, bridge and smart-contract risk, and the time and cost of recovery.
+
+The measurements can conflict. Reducing validator hardware may improve participation but lower capacity. Adding a committee may improve latency but add a bribery target. The purpose of the framework is to expose those choices.
+
+## Worked Example: Increasing the Block Size
+
+Assume a chain doubles its block payload from 2 MB to 4 MB while keeping the block interval fixed. If transaction size and execution cost remain constant, nominal throughput may nearly double. But each validator now receives, verifies, and stores twice the block data.
+
+A validator with a 20 Mbps connection needs at least 1.6 seconds just to receive 4 MB under ideal conditions, before gossip overhead and verification. Validators with slower links see blocks later and are more likely to build on stale state. Block producers with private high-speed links gain an advantage. Archive growth also doubles, increasing long-run operating cost.
+
+The change may still be worthwhile. The point is that it occupies a different trilemma position. A complete proposal includes propagation measurements, stale-block behavior, hardware distribution, state-growth projections, and the effect on home validators.
+
+## Worked Example: A Rollup's Trade
+
+A rollup moves execution away from every Ethereum validator. One sequencer may execute thousands of transactions and Ethereum verifies a compressed commitment. This improves throughput and fees without asking every L1 node to replay the work.
+
+The trade is architectural rather than a simple sacrifice of security. State validity may inherit Ethereum through fraud or validity proofs, while liveness initially depends on the sequencer. Data may be published to Ethereum blobs, inherited from another DA layer, or held by a committee. Upgrade keys may override contracts. The rollup occupies several points on the trilemma at once, depending on the property examined.
+
+This is why later chapters use a layered threat model rather than labeling a whole system decentralized or secure.
+
+## Chapter Summary
+
+The trilemma is a disciplined way to ask where the cost of scale is paid. It is not a scorecard with one winner. Better designs improve the frontier, but every claim must state its workload, validator burden, adversary model, control structure, and recovery path.
+
+Bitcoin, Ethereum, high-throughput Layer 1s, sidechains, and rollups choose different operating points. Understanding those choices prepares us to compare Layer 1 and Layer 2 mechanisms directly.
+
 ## Conclusion
 
 The blockchain trilemma encapsulates the core challenge of decentralized systems: balancing decentralization, security, and scalability. By dissecting this framework, we gain insight into why Bitcoin prioritizes security over speed, why Ethereum struggles with gas fees, why high-throughput chains like Solana face centralization risks, and how exchanges evolved from centralized hubs to scalable DEXs. As we progress through this book, the trilemma will serve as a guiding principle for evaluating scalability solutions and understanding their trade-offs.
 
 In the next chapter, we’ll compare Layer 1 and Layer 2 approaches, building on the trilemma to explore how the blockchain community is tackling this enduring challenge.
 
----
-
-*Status: Work in Progress*  
-*Contributions Welcome*: Feel free to expand this chapter with additional examples, diagrams, or research insights. See the [Contributing Guide](#) for details.
 
 ## References
 
@@ -154,9 +177,7 @@ In the next chapter, we’ll compare Layer 1 and Layer 2 approaches, building on
 [^2]: Hill, Mark D. "What is Scalability?" *ACM SIGARCH Computer Architecture News* (1990). Referenced in Chapter 1.
 [^3]: Wood, Gavin. "Ethereum: A Secure Decentralised Generalised Transaction Ledger." *Ethereum Yellow Paper* (2014). Available at: <https://ethereum.github.io/yellowpaper/paper.pdf>.
 [^4]: Nakamoto, Satoshi. "Bitcoin: A Peer-to-Peer Electronic Cash System" (2008). Available at: <https://bitcoin.org/bitcoin.pdf>.
-[^5]: Hertig, Alyssa. "The Bitcoin Cash Fork: What It Means and What Happens Next." *CoinDesk* (2017). Available at: <https://www.coindesk.com/markets/2017/08/01/bitcoin-cash-fork-explained/>.
 [^6]: Buterin, Vitalik. "Ethereum Roadmap: Sharding and Rollups." *Ethereum Foundation Blog* (2021). Available at: <https://ethereum.org/en/roadmap/>.
-[^7]: Binance. "Binance Smart Chain Whitepaper." (2020). Available at: <https://www.binance.com/resources/BNB-Chain-Whitepaper.pdf>.
 [^8]: Yakovenko, Anatoly. "Solana: A New Architecture for a High Performance Blockchain." *Solana Whitepaper* (2018). Available at: <https://solana.com/solana-whitepaper.pdf>.
 [^9]: Narayanan, Arvind, et al. "Bitcoin and Cryptocurrency Technologies." *Princeton University Press* (2016).
 [^10]: McMillan, Robert. "The Inside Story of Mt. Gox, Bitcoin’s $460 Million Disaster." *Wired* (2014). Available at: <https://www.wired.com/2014/03/bitcoin-exchange/>.
