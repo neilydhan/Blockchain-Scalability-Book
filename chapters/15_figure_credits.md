@@ -10,7 +10,8 @@ Figures are part of the technical argument, not decoration. Captions identify th
 - **Figure 4.1, Cross-shard receipt lifecycle.** Original diagram created for this edition based on SC6019 Lecture 02.
 - **Figure 5.1, State-channel lifecycle and dispute path.** Original diagram created for this edition based on SC6019 Lecture 03.
 - **Figure 6.1, Rollup lifecycle and completion boundaries.** Original diagram created for this edition.
-- **Figure 7.1 / Figure 11.1, Shared rollup and appchain trade-off.** Original diagram created for this edition based on the architecture discussion in SC6019 Lecture 06.
+- **Figure 7.1, Modular transaction and message boundaries.** Original diagram created for this edition.
+- **Figure 11.1, Shared rollup and appchain trade-off.** Original diagram created for this edition based on the architecture discussion in SC6019 Lecture 06.
 - **Figure 8.1, Data availability sampling workflow.** Original diagram created for this edition based on Celestia's design.
 - **Figure 9.1, Parallel scheduling and deterministic commitment.** Original diagram created for this edition based on Block-STM and SC6019 Lecture 05.
 - **Figure 10.1, Leader-based BFT normal path.** Original diagram created for this edition based on the HotStuff protocol paper.

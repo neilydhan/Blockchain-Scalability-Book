@@ -27,9 +27,9 @@ The weakness is replicated work. Increasing capacity raises the requirements of 
 ## **The Modular Stack**
 
 <p align="center">
-  <img src="../assets/course/ch11_appchain_tradeoff.svg" width="760" alt="Shared rollup and appchain trade-off">
+  <img src="../assets/course/ch07_modular_message.svg" width="760" alt="Execution, data availability, settlement, and destination message path">
   <br>
-  <em>Figure 7.1: Moving from shared blockspace to an appchain buys control and dedicated capacity but creates another interoperability boundary. Original figure for this book, based on SC6019 Lecture 06.</em>
+  <em>Figure 7.1: A modular transaction crosses execution, data availability, settlement, and destination interfaces. A domain-separated message envelope binds the evidence carried between them. Original figure for this book.</em>
 </p>
 
 
