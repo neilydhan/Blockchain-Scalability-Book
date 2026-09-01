@@ -56,9 +56,9 @@ This produces an unusual scaling property: as more light nodes join and sample, 
 ## **Celestia's Approach**
 
 <p align="center">
-  <img src="../assets/course/ch08_celestia_das.png" width="760" alt="Celestia data availability sampling">
+  <img src="../assets/course/ch08_das_sampling.svg" width="760" alt="Data availability sampling workflow">
   <br>
-  <em>Figure 8.1: Celestia light nodes sample small parts of an erasure-coded block rather than downloading the full block. Source: Neil Han, SC6019 Lecture 05, slide 29.</em>
+  <em>Figure 8.1: Erasure coding forces an availability attacker to hide many shares, while independent light clients test random positions. Original figure for this book, based on Celestia's data availability design.</em>
 </p>
 
 

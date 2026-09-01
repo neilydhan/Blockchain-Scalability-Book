@@ -11,9 +11,9 @@ This design separates three questions: who orders transactions, who executes the
 ## **The Rollup Lifecycle**
 
 <p align="center">
-  <img src="../assets/course/ch06_rollup_transition.png" width="760" alt="Optimistic rollup state transition">
+  <img src="../assets/course/ch06_rollup_lifecycle.svg" width="760" alt="Rollup transaction lifecycle and completion boundaries">
   <br>
-  <em>Figure 6.1: Users submit signed transactions, the rollup executes them, and a commitment to the new state is posted to Layer 1. Source: Neil Han, SC6019 Lecture 04, slide 6.</em>
+  <em>Figure 6.1: A rollup transaction moves through sequencing, data publication, proof, and settlement. Applications should name which boundary they treat as complete. Original figure for this book.</em>
 </p>
 
 
