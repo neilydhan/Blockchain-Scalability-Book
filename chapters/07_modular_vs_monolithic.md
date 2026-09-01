@@ -257,6 +257,88 @@ The application pays several providers: sequencer, execution nodes, DA layer, pr
 
 Unit economics should allocate batch and proof cost by the resource each transaction consumes, not divide equally. A large data-heavy transaction should pay more DA cost; a computation-heavy transaction should pay more proving cost. Mispricing invites denial of service against the subsidized resource.
 
+## **Worked Failure Trace: A Cross-Rollup Swap**
+
+Consider a user swapping an asset on rollup `R1` for an asset on rollup `R2`. Both rollups publish data to DA network `D` and settle to chain `S`. A solver provides liquidity and a relayer carries proofs. The desired outcome is atomic from the user's perspective: either the user receives the minimum output on `R2`, or the input on `R1` remains recoverable.
+
+A safe intent can bind:
+
+```text
+SwapIntent {
+  source_domain,
+  destination_domain,
+  input_asset,
+  max_input,
+  output_asset,
+  min_output,
+  beneficiary,
+  nonce,
+  expiry,
+  refund_address
+}
+```
+
+The signature covers domains, assets, bounds, beneficiary, expiry, and refund. It should not authorize arbitrary calls chosen later by a solver. A settlement design may escrow input on `R1`, accept evidence that output was delivered on `R2`, then release input to the solver.
+
+### Normal path
+
+1. the user signs the bounded intent and escrows input on `R1`;
+2. `R1` publishes the escrow transition to `D` and later anchors its state to `S`;
+3. a solver pays the beneficiary on `R2` before expiry;
+4. `R2` publishes and settles the output transition;
+5. the solver submits authenticated `R2` evidence to the escrow contract or verifier;
+6. after the required finality policy, the input releases to the solver;
+7. the intent nonce is marked consumed on every accepting domain.
+
+Fast execution on both rollups does not make this path synchronously atomic. It is a state machine with pending, paid, claimable, released, expired, and refunded states.
+
+### Partial failures
+
+**Solver disappears before paying.** The escrow remains locked until expiry, after which the user calls refund. The expiry must account for clock semantics and source-chain finality. A solver acknowledgement is not evidence of payment.
+
+**Solver pays, but the relayer fails.** Any party should be able to carry the same proof. The relayer is replaceable because destination verification checks authenticated state, not relayer identity. If only one allowlisted relayer can complete the claim, it is part of the liveness boundary.
+
+**Output appears in an unfinalized `R2` block that reorganizes.** Releasing input immediately can leave the solver paid on neither canonical history while the user receives a refund or double benefit. The claim rule must name `R2` finality, settlement finality on `S`, and how conflicting preconfirmations are treated.
+
+**`R2` data is unavailable.** A state root or validity proof may show a transition while independent parties cannot reconstruct user state. The escrow contract may still verify a succinct proof, but the system's user-recovery claim has weakened. The product should not label this state equivalent to one with published, retrievable data.
+
+**Settlement chain `S` halts.** Both rollups may continue offering provisional execution while cross-domain claims cannot achieve the required finality. Operators need a policy for pausing new intents, extending expiries, or letting existing escrows refund without accepting contradictory histories.
+
+**One rollup upgrades its message format.** Version and verifier identity belong in the envelope. A decoder should reject an unknown version rather than interpret fields under the old layout. Upgrade timing must leave already-open intents claimable or refundable.
+
+### Safety and liveness matrix
+
+| Dependency | Safety role | Liveness role | Recovery |
+|---|---|---|---|
+| `R1` execution | correct escrow and refund state | accepts user and claim transactions | forced inclusion or exit |
+| `R2` execution | correct beneficiary payment | accepts solver payment | alternate solver or refund |
+| DA network `D` | data bound to settled transitions | reconstruction and proof generation | independent retrieval/repair; halt if unavailable |
+| Settlement `S` | authentic final state for both rollups | advances finality and bridge claims | wait, bounded emergency rule, or social recovery |
+| Solver | cannot exceed signed bounds | supplies destination liquidity | competition and expiry refund |
+| Relayer | no correctness power if proof is complete | transports claim evidence | permissionless replacement |
+| Upgrade governance | can alter verifiers and formats | can repair broken deployment | timelock, monitoring, old-version exit |
+
+### Observability
+
+The user interface should report the current state and its controlling deadline:
+
+- **escrow pending publication**;
+- **escrow final on source**;
+- **solver payment observed, not final**;
+- **destination payment final**;
+- **claim submitted to source**;
+- **input released**;
+- **refund available at a named time**;
+- **blocked by DA, settlement, or verifier condition**.
+
+Retries are safe only when operations are idempotent. The intent nonce, output payment identifier, and claim identifier must make duplicate submissions converge on one state rather than pay twice.
+
+### Integration tests
+
+Test every cut between steps: crash after escrow but before publication, pay output twice, relay the same proof twice, cross the expiry while a claim waits in the mempool, reorganize each unfinalized chain, withhold DA data, stop settlement finality, and upgrade one decoder with in-flight intents.
+
+For each cut, assert conservation of assets, one terminal outcome, permissionless proof delivery, bounded lock time, and an observable recovery action. A cross-domain protocol is ready only when partial completion is a designed state, not an exception handled by an administrator.
+
 ## **Conclusion**
 
 Monolithic blockchains offer integrated security and composability but require validators to repeat all major work. Modular architectures separate execution, settlement, consensus, and data availability so each can specialize and many execution layers can share a base.
