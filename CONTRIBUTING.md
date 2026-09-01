@@ -72,3 +72,14 @@ Thank you for your interest in contributing to the Blockchain Scalability Book! 
 - Reach out to maintainers
 
 Thank you for helping make blockchain scalability knowledge accessible to everyone!
+
+## Validate the Book
+
+Before opening a pull request, run:
+
+```bash
+python3 scripts/check-book.py
+./scripts/build-book.sh
+```
+
+The checker rejects missing `SUMMARY.md` entries or targets, broken local links, duplicate figure numbers, and unmatched footnotes. A successful checker does not replace technical review or visual inspection of changed figures and print pages.
