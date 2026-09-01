@@ -355,6 +355,6 @@ The emerging architecture is layered: the base layer supplies secure settlement 
 ## **References**
 
 [^1]: Skidanov, Alex, Illia Polosukhin, and Bowen Wang. "Nightshade: NEAR Protocol Sharding Design." <https://near.org/papers/nightshade>.
-[^2]: Cosmos. "IBC Protocol Overview." <https://ibc.cosmos.network/main/ibc/overview.html>.
+[^2]: Cosmos. "IBC Protocol Overview." <https://docs.cosmos.network/ibc/latest/intro>.
 [^3]: Buterin, Vitalik, et al. "EIP-4844: Shard Blob Transactions." <https://eips.ethereum.org/EIPS/eip-4844>.
 [^4]: Ethereum.org. "Danksharding." <https://ethereum.org/roadmap/danksharding/>.
