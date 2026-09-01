@@ -74,9 +74,9 @@ Optimistic rollups use a dispute window and at least one honest party able to re
 
 An L1 capacity increase benefits every application sharing that protocol, but requires broad coordination and may raise validator cost. An L2 can specialize and upgrade faster, but users must cross a bridge and reason about an additional operator, contract, data, and finality path.
 
-Ethereum's proof-of-stake transition changed consensus economics and energy use; it was not by itself a throughput multiplier. EIP-4844 is a clearer example of L1 scaling for L2: separate blob capacity lowers rollup data cost while preserving a base-layer availability commitment. Rollups then amortize publication and verification across batches.
+Ethereum's proof-of-stake transition changed consensus economics and energy use; it was not by itself a throughput multiplier. EIP-4844 is a clearer example of L1 scaling for L2: separate blob capacity lowers rollup data cost while preserving a base-layer availability commitment.[^1] Rollups then amortize publication and verification across batches.
 
-In an optimistic rollup, the security condition is not that every user watches the chain. The condition is that at least one independent challenger can access the data and successfully use the fault-proof path before the deadline. A validity rollup replaces that challenge assumption with proof-system, circuit, verifier, and prover-liveness dependencies.
+In an optimistic rollup, the security condition is not that every user watches the chain. The condition is that at least one independent challenger can access the data and successfully use the fault-proof path before the deadline.[^2] A validity rollup replaces that challenge assumption with proof-system, circuit, verifier, and prover-liveness dependencies.
 
 ---
 
@@ -147,7 +147,7 @@ The rollup is not automatically the answer. If the game state is too large to pu
 
 ## **Forced Transactions and Censorship Recovery**
 
-A layered system should let users bypass the normal operator. An L1 inbox can accept canonically encoded L2 transactions. The sequencer must include them within a bounded period; otherwise another party advances state, the protocol changes mode, or the user exits.
+A layered system should let users bypass the normal operator. An L1 inbox can accept canonically encoded L2 transactions. The sequencer must include them within a bounded period; otherwise another party advances state, the protocol changes mode, or the user exits. In the OP Stack, for example, L1 deposits form part of the derivation inputs used to construct the L2 chain.[^3]
 
 The deadline balances responsiveness and cost. A short timeout turns temporary outages into expensive L1 recovery. A long timeout gives a censor more power. Test the mechanism under L1 congestion, when many users may invoke it together.
 
@@ -155,7 +155,7 @@ The deadline balances responsiveness and cost. A short timeout turns temporary o
 
 An L2 should wait for sufficient L1 finality before crediting a deposit. Otherwise an L1 reorganization can remove collateral after its L2 representation has moved. In the other direction, a canonical bridge verifies an accepted L2 withdrawal message and replay protection before releasing L1 assets.
 
-Optimistic withdrawals wait for the challenge rule; validity withdrawals wait for proof acceptance. Liquidity bridges can pay earlier but introduce separate solvency and message risk. A full fee and latency estimate follows the user's entire deposit-action-withdrawal journey.
+Optimistic withdrawals wait for the challenge rule; validity withdrawals wait for proof acceptance. A concrete optimistic withdrawal specification separates initiation on L2, proof on L1, finalization delay, and execution.[^4] Liquidity bridges can pay earlier but introduce separate solvency and message risk. A full fee and latency estimate follows the user's entire deposit-action-withdrawal journey.
 
 ## **Fee Anatomy Across Layers**
 
@@ -189,3 +189,11 @@ Record workload, latency objective, assets at risk, composability needs, executi
 Layer 1 scaling changes the shared protocol and its validator resource envelope. Layer 2 scaling reduces the base-layer work per user action while retaining a defined enforcement or settlement path. Sidechains add independent capacity rather than inheriting correctness merely because they have a bridge.
 
 A sound choice starts with workload and follows one transaction through ordering, execution, data publication, proof or dispute, finality, fees, and failure recovery. Chapter 4 now examines the base-layer mechanisms in detail.
+
+
+## **References**
+
+[^1]: Buterin, Vitalik, et al. "EIP-4844: Shard Blob Transactions." <https://eips.ethereum.org/EIPS/eip-4844>.
+[^2]: Ethereum.org. "Optimistic Rollups." <https://ethereum.org/developers/docs/scaling/optimistic-rollups/>.
+[^3]: Optimism. "Derivation." *OP Stack Specification*. <https://specs.optimism.io/protocol/derivation.html>.
+[^4]: Optimism. "Withdrawals." *OP Stack Specification*. <https://specs.optimism.io/protocol/withdrawals.html>.
