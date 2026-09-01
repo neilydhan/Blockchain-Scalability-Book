@@ -7,115 +7,34 @@ Blockchain technology promises a decentralized, secure, and transparent approach
 Scalability is critical not just for financial transactions but also for broader applications like gaming, AI-driven agents, and supply chain tracking. This chapter introduces blockchain scalability issues, examining real-world bottlenecks, past challenges, and industry efforts to redefine what scalability means in a decentralized system.
 
 ---
-## **The Scalability Gap: A Comparative View**  
+## **Why Naive Comparisons Fail**
 
-To understand blockchain’s scalability problem, we must compare its performance with traditional financial networks:  
+A payment network, an exchange database, and a public blockchain perform different work under different trust assumptions. A card network may authorize a payment quickly while settlement, fraud handling, and bank reconciliation occur later. A public blockchain validates signatures, executes shared state, propagates data, and reaches Byzantine consensus before offering its strongest finality.
 
-| **System**       | **Transactions Per Second (TPS)** | **Notes** |
-|-----------------|-------------------------------|----------|
-| **VISA**       | 24,000                        | Centralized payment network |
-| **PayPal**     | 193                            | Centralized digital payments |
-| **Ethereum**   | ~20                            | General-purpose smart contracts |
-| **Bitcoin**    | ~7                             | Secure but slow settlement |
-| **Solana**     | ~4,000                         | High TPS, but network outages |
-| **Aptos**      | ~160,000                       | Uses parallel execution (MoveVM) |
+This does not make performance comparison useless. It means the comparison must hold the workload and completion boundary constant. A transfer-only TPS figure cannot be compared with arbitrary smart-contract execution. A sequencer acknowledgement cannot be compared with L1 finality. A laboratory cluster cannot be compared with a geographically distributed validator network without reporting the difference.
 
+The immediate symptoms of insufficient capacity are familiar: transactions wait, fee markets rise, users retry, and applications become unreliable. Historic events such as the CryptoKitties congestion episode made those symptoms visible. Their precise fees and shares of network traffic are less important than the mechanism: demand exceeded scarce blockspace, so inclusion latency and price rose together.
 
-Ethereum is the **second-largest cryptocurrency by market cap after Bitcoin**, but it is much more than just a digital asset. **Ethereum is a decentralized computing platform capable of running a wide variety of applications, including an entire ecosystem of decentralized finance (DeFi) protocols.** However, despite its versatility, Ethereum's ability to process **only 20 TPS** presents a major bottleneck.  
+## **Gas and the Price of Shared Computation**
 
-As a decentralized **world computer**, Ethereum facilitates **smart contracts, DeFi applications, and NFT transactions**. If it is to serve as the backbone of an **open, global financial system**, it must be capable of handling a significantly higher transaction load. However, in its current form, Ethereum's **execution model requires network-wide consensus for every transaction**, which severely limits throughput.  
+Ethereum meters execution in **gas**. Every operation consumes a defined gas amount, and a transaction supplies a gas limit that bounds its work. This prevents a Turing-complete program from consuming validator resources forever.
 
-This limitation raises two fundamental concerns:  
-1. **Network Congestion:** When too many users submit transactions simultaneously, the network struggles to handle the load.  
-2. **Gas Fees:** Increased competition for block space leads to rising transaction fees, making blockchain transactions costly.  
+Since EIP-1559, an Ethereum transaction pays a protocol-determined **base fee** that is burned and may add a **priority fee** to reward inclusion. The base fee changes with block utilization. The transaction's execution payment is approximately:
 
-However, scalability is not unique to Ethereum. It is a **universal challenge** faced by virtually all blockchain networks, from Bitcoin’s 7 TPS to high-throughput chains like Solana and Aptos. Each blockchain approaches scalability differently, often making trade-offs between **throughput, decentralization, and security** —a concept we will explore in detail in later chapters.
+> `gas used × (base fee + priority fee)`
 
-This book is not just about Ethereum’s scalability; It is about **blockchain scalability as a whole**. Blockchain researchers are exploring Layer 2 scaling solutions, sharding, and alternative consensus mechanisms. This book will examine these approaches in depth.
+Blob-carrying transactions use a separate blob fee market. This separation matters for scaling: rollup data demand can change without pricing every EVM operation identically.
 
----
-## **Understanding Gas Fees and Transaction Costs in Ethereum**  
+Gas is both metering and congestion pricing. It approximates execution and state cost well enough for the protocol to ration resources, but it is not a perfect hardware benchmark. An opcode's gas schedule is a governance and security parameter, while actual client performance changes with software and hardware.
 
-Ethereum and many other blockchains operate as a **decentralized computing platform**, enabling smart contracts and decentralized applications (dApps) to execute code in a trustless manner. However, executing computations and storing data on Ethereum requires resources, which leads us to the concept of **gas**.  
+## **Case Study: Congestion and Application Design**
 
-### **What Is Gas?**  
+When one popular application fills blocks, every application sharing the fee market competes for the same capacity. Users who need immediate inclusion bid more; users with low-value actions wait or leave. This is the practical consequence of synchronous composability: applications share one state and can interact atomically, but they also share congestion.
 
-Gas is a fundamental unit in Ethereum that **measures the computational work required to process transactions and execute smart contracts**. Every operation performed by the **Ethereum Virtual Machine (EVM)** consumes a certain amount of gas.  
+Scaling designs respond differently. A larger L1 block admits more shared activity but raises validator load. An application-specific chain isolates congestion but fragments state and security. A rollup batches application execution and shares the cost of data publication. A state channel avoids publishing repeated interactions but works only for a constrained participant set.
 
-For example:  
-- **A simple ETH transfer** (sending ETH from one address to another) **costs 21,000 gas**.  
-- **Interacting with smart contracts** (e.g., swapping tokens on Uniswap) may require significantly **more gas**, depending on the complexity of the operation.  
+The right design depends on whether the application needs global synchronous state, how valuable its assets are, what latency users need, and how they recover from operator failure.
 
-Gas itself is not a currency—it is just a measurement unit. However, gas must be **paid for** using **ETH** for Ethereum, and this cost fluctuates based on network demand.  
-
-### **Why Do Gas Fees Fluctuate?**  
-
-Ethereum transactions do not process at a fixed cost. Instead, users must **bid** for block space by offering a gas price, measured in **gwei** (1 gwei = 0.000000001 ETH). When the network is congested, users must compete to get their transactions included in the next block, leading to higher fees. For example, during the 2021 NFT boom, minting an NFT could cost upwards of $200 in gas fees, making it inaccessible for many users.
-
-Gas fees depend on three main factors:  
-
-1. **Gas Limit:** The maximum amount of gas a transaction is allowed to consume.  
-2. **Base Fee:** A dynamically adjusted minimum fee set by Ethereum’s protocol based on network congestion.  
-3. **Priority Fee (Tip):** An optional tip paid to miners/validators to prioritize transactions.  
-
-### **The Impact of Gas Fees on dApps and Users**  
-
-Gas fees play a **crucial role in network security**—they prevent spam attacks by making transactions costly. However, they also pose significant challenges:  
-- **High costs** make small transactions impractical (e.g., buying a $5 NFT with a $50 gas fee).  
-- **Variable fees** lead to unpredictable transaction costs.  
-- **Smart contract interactions** (e.g., DeFi swaps, NFT minting) can be prohibitively expensive during peak congestion.  
-
-### **Ethereum Gas Fees and scalability in Action**  
-
-To better understand how gas fees and scalability impact the network, let’s examine a real-world example: **CryptoKitties**, one of the first dApps to expose Ethereum’s scalability limitations.  
-
----
-## **Case Study: CryptoKitties and Network Congestion**  
-
-CryptoKitties, one of Ethereum's earliest viral dApps, allowed users to breed and trade digital cats on-chain. The architecture was simple:  
-
-- A **frontend** connected to Ethereum smart contracts.  
-- Smart contracts handled **breeding, trading, and storage** of NFT assets.
-![CryptoKitties Architecture](../assets/crypto_kitties_architecture.png)
-
-Unlike traditional applications with centralized databases and backends, **CryptoKitties relied entirely on Ethereum smart contracts for logic execution**.  
-
-### **The Scaling Problem**  
-
-At launch, CryptoKitties' popularity **overloaded the Ethereum network**, causing:  
-- **Severe network congestion** as thousands of users submitted transactions simultaneously.  
-- **Spikes in gas fees**, making simple transactions expensive.  
-- **Delays in transaction confirmation**, leading to a poor user experience.  
-
-At its peak, CryptoKitties accounted for over 10% of Ethereum’s total transaction volume, causing gas fees to spike by 500%. This event highlighted the limitations of blockchain scalability and prompted the industry to search for better performance metrics.  
-
-While Ethereum’s gas fees are a well-known example of transaction costs, other blockchains face similar challenges. Here’s how some popular networks handle fees and the trade-offs involved:
-
-#### Bitcoin: Simplicity at a Cost
-Bitcoin uses a fee market where users bid for block space. While this model is simple, it can lead to high fees during periods of congestion, as seen in December 2017 when average fees reached $55.
-
-#### Solana: Low Fees, High Throughput
-Solana offers extremely low fees (e.g., $0.00025 per transaction) due to its high throughput. However, its network has experienced congestion and outages during peak demand, highlighting the challenges of scaling without compromising reliability.
-
-#### Binance Smart Chain: Lower Fees, Fewer Validators
-BSC’s gas fees are paid in BNB and are generally lower than Ethereum’s. However, its smaller validator set raises concerns about centralization, and fees can still spike during periods of high demand.
-
-#### Cardano: Predictable Fees
-Cardano uses a fixed fee structure (e.g., 0.17 ADA per transaction), making costs predictable. However, its current throughput of ~250 TPS may limit its ability to handle large transaction volumes.
-
-These examples illustrate that transaction costs and scalability challenges are universal in blockchain technology, though each network approaches them differently.
-
-| **Blockchain**       | **Fee Mechanism**               | **Average Fee**       | **Challenges**                              |
-|-----------------------|----------------------------------|-----------------------|---------------------------------------------|
-| Ethereum             | Gas fees (bid-based)            | $10–$50 (varies)     | High fees during congestion                 |
-| Bitcoin              | Fee market (bid-based)          | $1–$50 (varies)      | High fees during congestion                 |
-| Solana               | Fixed fee                       | $0.00025             | Network congestion, outages                 |
-| Binance Smart Chain  | Gas fees (paid in BNB)          | $0.10–$0.50          | Centralization concerns                     |
-| Cardano              | Fixed fee                       | 0.17 ADA             | Limited throughput                          |
-| Avalanche            | Gas-like fees (paid in AVAX)    | $0.01–$0.10          | Complexity of subnets                       |
-| Polygon              | Layer 2 fees (settled on Ethereum) | $0.01–$0.05       | Reliance on Ethereum for final settlement   |
-
----
 ## **What Does “Scalability” Really Mean?**  
 
 The term **scalability** is frequently used in blockchain discussions, but defining it precisely is challenging. Does it mean:  
@@ -327,3 +246,93 @@ Standardizing blockchain benchmarks will require ongoing collaboration between *
 Understanding **database scalability** provides a useful benchmark for evaluating **blockchain scalability**. However, the **decentralized nature** of blockchains introduces unique constraints that require **innovative solutions**. By addressing the fundamental problems of **replicated computation, replicated storage, and consensus overhead**, and tackling the fundamental challenges of **state validity, data availability, and Byzantine adversary resistance**, the blockchain community can pave the way for **scalable, high-performance systems**.  
 
 In the next section, we’ll explore how these challenges are being addressed through **Layer 1 and Layer 2 solutions**, as well as technologies like **sharding** and **rollups**.
+
+---
+
+## **A Scalability Model for This Book**
+
+The word *scalability* is often used when a team really means peak throughput. This book uses a stricter definition:
+
+> A blockchain scales when it can support increasing useful demand while keeping verification, participation, and failure recovery within acceptable cost and latency bounds.
+
+This definition has four consequences. First, the workload must be specified. Ten thousand independent transfers are not equivalent to ten thousand swaps that all modify one liquidity pool. Second, resources must be specified: CPU model, core count, memory, storage, network bandwidth, validator count, and geographic distribution. Third, security must remain comparable. A system that replaces 1,000 independent validators with one database has increased capacity but has not demonstrated blockchain scalability. Fourth, the result must survive failure. Normal-path TPS says little about a sequencer outage, leader change, data withholding attack, or mass exit.
+
+### **Throughput, Latency, and Capacity**
+
+*Throughput* is completed work per unit time. *Latency* is the time one request takes. *Capacity* is the maximum sustainable load before latency or failure rate becomes unacceptable. They interact but are not interchangeable.
+
+A batching system illustrates the distinction. Waiting to collect 1,000 transactions may increase throughput and reduce cost per transaction, but the first user in the batch waits longer. A pipelined consensus protocol may commit one block per round after warming up even though each block needs several rounds to reach finality. Always ask which quantity improved.
+
+### **Vertical and Horizontal Scaling**
+
+Vertical scaling extracts more work from one machine by using faster hardware or better software. Horizontal scaling divides work among machines. Blockchains need both, but horizontal scaling is harder because machines may be faulty or adversarial and must agree on shared state.
+
+A useful mental model is a replicated state machine. If every validator executes every transaction, adding validators increases redundancy and security but does not add execution capacity. Sharding, rollups, and parallel execution change which work is repeated, where it is performed, or how independent work is scheduled.
+
+## **A Transaction as a Resource Vector**
+
+TPS treats every transaction as one unit. In reality, a transaction consumes several resources:
+
+- signature verification and EVM computation;
+- state reads and writes;
+- bytes propagated across the network;
+- bytes retained temporarily or permanently;
+- consensus votes and block space;
+- proof generation or verification in a validity system.
+
+Represent a workload as a vector rather than a count. A calldata-heavy rollup batch stresses data bandwidth. A zero-knowledge application may stress proving. A hot DeFi contract stresses sequential state access. The sustainable transaction rate is bounded by the first exhausted resource.
+
+Ethereum gas captures part of computation and storage cost, which makes gas per second more informative than transfer TPS. It is still not a universal metric because gas schedules approximate resource usage and exclude consensus and off-chain proving.
+
+## **Worked Example: Benchmarking Two Chains**
+
+Chain A reports 20,000 TPS using simple transfers on eight validator machines in one data center. Chain B reports 4,000 TPS using contract calls across 200 geographically distributed validators. Chain A is faster for the measured workload, but the headline does not establish that its architecture is more scalable.
+
+A fair experiment fixes or reports the transaction mix, validator hardware, network topology, state size, block size, duration, client version, and tolerated failure rate. It measures p50 and p99 latency, not only the average. It runs long enough to expose state growth and database compaction. It introduces a faulty leader or network delay and records recovery.
+
+The output should be a curve. At low load, latency is stable. As offered load approaches capacity, queues form and tail latency rises. Beyond the knee, throughput may flatten while failures increase. The knee of that curve under a realistic workload is more useful than one peak number.
+
+## **The Four-Layer Evaluation Framework**
+
+<p align="center">
+  <img src="../assets/course/ch01_scalability_stack.svg" width="760" alt="Execution, settlement, consensus, and data availability">
+  <br>
+  <em>Figure 1.4: A blockchain transaction depends on execution, settlement, consensus, and data availability. Monolithic chains combine them; modular systems separate some roles. Original figure for this book.</em>
+</p>
+
+
+The chapters ahead repeatedly separate four functions:
+
+1. **Execution** computes state transitions.
+2. **Settlement** decides which transition is accepted and resolves disputes.
+3. **Consensus** orders data and finalizes a history.
+4. **Data availability** ensures that the information needed for verification can be obtained.
+
+A monolithic chain performs all four together. A rollup may execute elsewhere while Ethereum supplies settlement, consensus, and data. A modular DA layer may order and publish data without knowing an application's execution rules. Keeping these functions separate prevents category errors, such as assuming a validity proof also proves data availability or assuming a bridge gives a sidechain Layer 1 security.
+
+## **Security and Decentralization Measurements**
+
+Decentralization is not a raw node count. Nodes operated by one company, hosted in one cloud, or controlled by one key do not provide independent failure domains. Relevant measures include stake or hash-power concentration, client diversity, hosting and geographic distribution, hardware requirements, governance power, and the ability of an ordinary user to verify and exit.
+
+Security should be expressed as an adversary model. What fraction of validators can be Byzantine? Can the attacker delay the network, corrupt participants adaptively, or withhold data? Which guarantees fail first: liveness, safety, censorship resistance, or data retrieval? A protocol is secure only relative to those assumptions.
+
+## **How to Read Performance Claims**
+
+When a project claims a large scalability gain, ask:
+
+- What transactions were executed?
+- Was the number measured, simulated, or projected?
+- Which hardware and network were used?
+- How many independent validators participated?
+- Which finality boundary ended the timer?
+- Was data publication included?
+- Did the test include proof generation, state storage, and failures?
+- Can users recover if the normal operator disappears?
+
+These questions do not dismiss performance work. They make results reproducible and comparable.
+
+## **Chapter Summary**
+
+Blockchain scalability is sustained useful capacity under explicit workload, resource, security, and recovery assumptions. TPS alone omits transaction complexity, latency, hardware, decentralization, and data. The central difficulty comes from globally replicated execution and storage plus the communication required for Byzantine consensus.
+
+The rest of the book studies ways to divide or compress that work: sharding at Layer 1, channels and rollups at Layer 2, modular data availability, parallel execution, and more efficient consensus.

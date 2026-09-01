@@ -36,3 +36,13 @@ This is a living document that thrives on community contributions. We encourage 
 ## Acknowledgments
 
 We extend our gratitude to all contributors who have helped shape this book, including students, professionals, and the broader blockchain community, whose ongoing innovation and feedback drive the continuous improvement of blockchain technology.
+
+## What This Book Measures
+
+This book treats scalability as an end-to-end property. A design must name the workload, hardware, network, security assumptions, finality boundary, and recovery path behind its performance. Each architecture is examined across execution, settlement, consensus, and data availability.
+
+## Conventions
+
+**Layer 1 (L1)** is the base chain whose consensus defines canonical history. **Layer 2 (L2)** is a protocol that executes or updates state outside the base chain while using it for settlement or enforcement. **Data availability (DA)** means the data needed to verify or reconstruct state was published and obtainable. **Finality** names the point after which a state is not expected to revert under a stated fault model.
+
+Numbers in examples are illustrative unless a source and measurement context are given. Protocol rules and roadmaps change; links to specifications and primary papers are included so readers can check the current design.

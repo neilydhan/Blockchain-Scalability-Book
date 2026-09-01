@@ -14,10 +14,14 @@
 - [Modular vs Monolithic](chapters/07_modular_vs_monolithic.md)
 - [Data Availability Scaling](chapters/08_data_availability_scaling.md)
 - [Parallel Execution](chapters/09_parallel_execution.md)
-- [Consensus Scaling](chapters/10_consensus_scalling.md)
+- [Consensus Scaling](chapters/10_consensus_scaling.md)
 - [Future Directions](chapters/11_future_directions.md)
 
 # Additional Information
 
 - [Contributing Guide](CONTRIBUTING.md)
 - [License](LICENSE.md)
+- [Glossary](chapters/12_glossary.md)
+- [Review Questions and Design Exercises](chapters/13_review_questions.md)
+- [Practitioner Evaluation Handbook](chapters/14_evaluation_handbook.md)
+- [Figure Credits](chapters/15_figure_credits.md)

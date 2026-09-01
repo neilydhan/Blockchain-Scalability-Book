@@ -1,0 +1,144 @@
+# **Chapter 11: Future Directions**
+
+## **Introduction**
+
+Blockchain scalability is moving from one-chain throughput contests toward specialized stacks. Execution, proving, sequencing, data availability, settlement, and interoperability are becoming separate services that can improve independently.
+
+The next bottleneck is therefore not one number such as TPS. It is coordination: making many fast execution environments feel like one secure, usable system.
+
+---
+
+## **Real-Time Validity Proving**
+
+Validity proofs once required long proving times and specialized circuits. Faster provers, hardware acceleration, recursive aggregation, and general-purpose zkVMs are reducing that delay.
+
+Real-time proving would let a validity proof arrive within one block interval. This could shorten finality, simplify bridges, and allow even base-layer execution to be re-verified succinctly. The remaining constraints are prover cost, memory bandwidth, circuit correctness, and the centralization risk of specialized hardware.
+
+A future proof market may separate block production from proving. Multiple provers compete to generate a proof, while the chain verifies only the winning result. This needs mechanisms for redundancy and censorship resistance so one prover outage does not stop the chain.
+
+---
+
+## **Shared Sequencing and Cross-Rollup Composability**
+
+<p align="center">
+  <img src="../assets/course/ch11_appchain_tradeoff.svg" width="760" alt="From a shared rollup to an application chain">
+  <br>
+  <em>Figure 11.1: The future appchain trade-off: dedicated execution and customization versus bridges and fragmented liquidity. Original figure for this book, based on SC6019 Lecture 06.</em>
+</p>
+
+
+
+Independent sequencers fragment ordering. A transaction cannot easily execute atomically across rollups, and cross-rollup messages wait for settlement.
+
+Shared sequencers aim to order transactions for several rollups. If the same sequencer sees both sides, it can offer stronger inclusion guarantees and forms of atomic execution. Based rollups go further by deriving ordering from the base-layer proposer.
+
+The benefit is interoperability and reduced sequencer trust. The risk is moving concentration into a shared service. A shared sequencer must define leader selection, failure recovery, fees, and what a rollup can do when the service censors it.
+
+---
+
+## **Proof Aggregation**
+
+Instead of verifying every rollup proof separately, an aggregator can recursively prove that many proofs were valid. Layer 1 then verifies one proof.
+
+Aggregation reduces settlement cost and lets small rollups share proving economies. It may also support canonical bridges between rollups that settle through the same proof system. The design must preserve data availability and identify which state roots were actually covered.
+
+---
+
+## **More Data Through Sampling**
+
+EIP-4844 created blobspace for rollups. PeerDAS and full danksharding aim to increase capacity without requiring every node to download all blob data.[^1]
+
+Dedicated data layers will also compete on throughput, sampling security, retention, and integration. The market may support different tiers: tightly integrated base-layer blobs for high-value settlement and cheaper external availability for applications willing to accept another consensus assumption.
+
+---
+
+## **Statelessness and State Expiry**
+
+Data availability concerns recent block data, while state growth concerns the long-lived database of accounts and contracts. If state grows forever, running a validator becomes increasingly expensive.
+
+Stateless validation moves toward blocks that include witnesses proving the state values they touch. Verkle trees were proposed to make these witnesses smaller. State expiry or rent would remove or charge for inactive state.
+
+These ideas reduce validator storage but move responsibility elsewhere. Users or archival services may need to retain old state and provide proofs when it becomes active again.[^2]
+
+---
+
+## **Parallel and Specialized Virtual Machines**
+
+Block-STM, object-centric execution, and declared access lists show how multi-core hardware can be used. Future VMs may make state dependencies explicit and provide programming tools that warn about hot-state bottlenecks.
+
+Application-specific rollups will specialize further. An exchange may build native order-book primitives, a game may use an object model, and an AI-agent network may optimize frequent micropayments and verifiable computation. The trade-off is portability: specialized execution makes applications faster but less interchangeable.
+
+---
+
+## **Chain Abstraction**
+
+Users should not need to know which chain holds gas, which bridge route is safe, or when a message changes finality domains. Chain abstraction combines smart accounts, intent systems, solvers, and cross-chain messaging to present one interface.
+
+The security challenge is making hidden routing legible. A solver can improve price and speed but introduces execution and censorship questions. Interfaces should show which chain settles a transaction, when it is final, and which recovery path exists.
+
+---
+
+## **Decentralizing the Full Stack**
+
+Many scaling systems launch with centralized sequencers, provers, upgrade keys, or data committees. This can be a practical deployment stage, but decentralization should be measured rather than promised.
+
+Useful milestones include:
+
+- permissionless proof or fault-proof participation;
+- force inclusion and forced withdrawal;
+- multiple independent sequencers;
+- delayed and transparent upgrades;
+- distributed data custody;
+- open-source clients from more than one team.
+
+Decentralizing one component can expose another. A decentralized sequencer does not fix a multisig-controlled bridge, and a permissionless prover does not fix unavailable data.
+
+---
+
+## **MEV and Proposer-Builder Separation**
+
+Scaling creates more blockspace but does not remove maximum extractable value. Faster sequencing and cross-domain transactions create new opportunities for reordering and latency advantages.
+
+Proposer-builder separation divides block construction from consensus proposal. Specialized builders compete to assemble valuable blocks while validators choose among bids. Protocol designs must prevent builder concentration, censorship, and timing games. Encrypted mempools and inclusion lists are possible counterweights.
+
+---
+
+## **How to Judge Future Claims**
+
+New systems should be evaluated across the entire stack:
+
+1. What workload produced the throughput result?
+2. What hardware and validator count were used?
+3. Where are execution and data stored?
+4. How is invalid state rejected?
+5. Can users force inclusion and exit?
+6. Which keys can upgrade the system?
+7. What finality does the quoted latency represent?
+8. What happens during sequencer, prover, bridge, or DA failure?
+
+A scalability result is meaningful only when its security and operating assumptions are stated beside it.
+
+## **A Plausible End-State Architecture**
+
+A future wallet may accept an intent – "swap this asset and pay that merchant" – without asking which chain should execute it. Solvers compete to route the action. A shared sequencer reserves positions across two rollups. Each rollup executes in a parallel VM. Its prover produces a recursive proof. Blob data is dispersed through PeerDAS, and an aggregate proof settles on Ethereum. The wallet shows one confirmation while tracking several finality stages.
+
+Every component exists in an early form. Composition is the hard part. If one rollup reverts, atomic settlement must unwind the other. If a solver disappears, the user needs a refund. If the shared sequencer censors the intent, each rollup needs independent inclusion. If data is available but proving stalls, another prover must take over.
+
+Scalability comes from dividing work, but division creates interfaces. Future systems will be judged by whether those interfaces remain verifiable during failure.
+
+## **Research Problems Still Open**
+
+Cross-rollup atomicity is difficult without a shared trust or timing domain. Decentralized sequencing must resist censorship without recreating global consensus latency. Proof systems need lower hardware barriers and stronger circuit assurance. Data sampling needs resilient peer-to-peer networking at larger scale. State expiry needs a usable way to revive old state. MEV mitigation must operate across several domains, not one mempool.
+
+The field also has a measurement problem. Theoretical capacity, testnet bursts, and sustained mainnet throughput are routinely presented as equivalent. Reproducible workloads, hardware disclosure, adversarial tests, and measurements of recovery and decentralization are needed alongside speed.
+
+## **Conclusion**
+
+The future is likely to combine rollups, real-time proofs, sampled data, parallel VMs, shared sequencing, and abstracted cross-chain interfaces. This stack can support far more activity than a single replicated machine.
+
+Its central challenge is preserving verifiability while complexity moves between layers. The successful systems will not be those with the largest TPS claim. They will make their assumptions visible, provide credible recovery paths, and let ordinary users benefit from scale without becoming experts in every layer beneath them.
+
+## **References**
+
+[^1]: Feist, Dankrad, et al. "EIP-7594: PeerDAS." <https://eips.ethereum.org/EIPS/eip-7594>.
+[^2]: Ethereum.org. "The Verge." <https://ethereum.org/roadmap/verkle-trees/>.
