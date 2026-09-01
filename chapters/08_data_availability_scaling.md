@@ -217,6 +217,100 @@ A useful integration test creates a batch, encodes and publishes it, samples it 
 
 Testing only successful upload verifies storage API behavior, not data availability security.
 
+## **Worked Integration Trace: Publishing a Rollup Batch**
+
+A rollup integrating an external DA layer needs more than an upload API. The state commitment accepted by settlement must be cryptographically tied to the bytes that DA nodes encoded and made available.
+
+Assume the rollup constructs canonical batch bytes `B`. Canonical means every verifier agrees on field order, integer encoding, compression, and version. The publisher computes or receives a commitment `C(B)` and submits `B` to the DA network under a namespace.
+
+```text
+BatchReference {
+  rollup_id,
+  batch_number,
+  parent_state_root,
+  post_state_root,
+  da_network_id,
+  da_height,
+  namespace,
+  data_commitment,
+  encoding_version
+}
+```
+
+The settlement transition should bind the state roots to `data_commitment`, DA domain, and encoding version. Binding only `da_height` is ambiguous because a DA block contains many items. Binding a commitment without a network identity enables cross-domain substitution when two systems use compatible proof formats.
+
+### Publisher path
+
+1. deterministically encode the ordered L2 transactions into `B`;
+2. compute a local digest and retain it with the batch job;
+3. submit `B` to several independent DA ingress peers;
+4. wait for the protocol-defined inclusion and availability evidence;
+5. verify that returned evidence commits to the local digest;
+6. submit the batch reference and state proof to settlement;
+7. continue serving `B` during the required reconstruction window.
+
+The publisher must treat an RPC acknowledgement as receipt, not availability. It should not discard local bytes after one gateway says "accepted." Evidence may require a finalized DA header, inclusion proof, namespace proof, or availability certificate, depending on the network.
+
+### Verifier path
+
+A verifier obtains the authenticated DA header through a light client or settlement integration, verifies inclusion of `C(B)`, retrieves enough shares or the full namespace data, reconstructs `B`, and recomputes the rollup state transition.
+
+```text
+verify(reference):
+    header = authenticate_da_header(reference.da_height)
+    verify_inclusion(header, reference.namespace, reference.data_commitment)
+    bytes = retrieve_and_reconstruct(reference)
+    assert commit(bytes) == reference.data_commitment
+    assert execute(reference.parent_state_root, decode(bytes))
+           == reference.post_state_root
+```
+
+A validity-rollup verifier may use a succinct proof instead of locally executing. It still needs the data for users and future state reconstruction unless the design explicitly accepts a validium-style withholding assumption.
+
+### Failure matrix
+
+| Failure | Detection | Safe response |
+|---|---|---|
+| Gateway accepts but never broadcasts | Independent peers cannot retrieve or prove inclusion | Retry through another ingress; do not post state reference |
+| Blob is included but encoding is invalid | Share or encoding proof fails | Reject availability; retain evidence |
+| Publisher cites wrong namespace | Commitment cannot be found under bound namespace | Reject batch reference |
+| DA chain reorganizes before finality | Authenticated header is replaced | Re-evaluate inclusion; do not finalize dependent message |
+| Some peers selectively withhold shares | Random sampling or reconstruction reports missing positions | Diversify peers, gossip requests, and follow rejection threshold |
+| Certificate signers attest unavailable bytes | Retrieval fails despite threshold signature | Halt dependent state; invoke slashing/governance only under specified evidence |
+| Data expires from consensus nodes | Archival retrieval no longer succeeds | Use separately funded archives; this is permanence, not publication availability |
+| Rollup decoder version differs | Reconstructed bytes yield divergent transactions | Bind encoding version and publish cross-client vectors |
+
+### Capacity calculation
+
+Suppose batches arrive every 8 seconds and average 600 kB after compression. The mean publication rate is:
+
+```text
+600 kB / 8 s = 75 kB/s
+```
+
+Mean rate is insufficient for provisioning. If the p99 batch is 1.8 MB and the system must catch up three missed batches within 16 seconds, recovery traffic alone is:
+
+```text
+3 × 1.8 MB / 16 s = 337.5 kB/s
+```
+
+Add erasure-coding expansion, inclusion proofs, peer overhead, sampling responses, retransmission, and unrelated DA tenants. Capacity tests should drive this burst while one ingress peer and one retrieval peer are unavailable.
+
+### Integration assertions
+
+A release test should prove that:
+
+- identical batch inputs produce identical bytes and commitments across clients;
+- changing any transaction or ordering changes the bound commitment;
+- an inclusion proof for another namespace, height, or network is rejected;
+- settlement does not accept a post-state root before required DA evidence;
+- verifiers can reconstruct from independent peers after publisher shutdown;
+- a DA reorganization rolls back or delays dependent state under policy;
+- archived bytes remain retrievable for the application's stated history period;
+- alerts distinguish publication delay, inclusion failure, sampling failure, and archival loss.
+
+This trace separates four events often collapsed into "posted": an ingress accepted bytes, consensus included a commitment, the data was available for reconstruction, and an archive can still retrieve it later. Each event supports a different claim.
+
 ## **Conclusion**
 
 Data availability scaling allows nodes to gain strong confidence that block data exists without downloading all of it. Erasure coding makes severe withholding easier to detect, while random sampling gives light clients a tunable confidence level.
