@@ -132,6 +132,73 @@ Cross-rollup atomicity is difficult without a shared trust or timing domain. Dec
 
 The field also has a measurement problem. Theoretical capacity, testnet bursts, and sustained mainnet throughput are routinely presented as equivalent. Reproducible workloads, hardware disclosure, adversarial tests, and measurements of recovery and decentralization are needed alongside speed.
 
+## **Based and Shared Sequencing Protocols**
+
+A based rollup lets the L1 proposer order rollup transactions. Users submit through L1-aware builders or inclusion mechanisms, and rollup execution follows the L1 order. This inherits L1 liveness and censorship properties more directly but ties latency and throughput to L1 proposal timing.
+
+A shared sequencer runs a separate ordering protocol for several rollups. It can promise atomic bundles such as "execute on rollup A only if the corresponding action is ordered on rollup B." The promise is meaningful only if both rollups verify the same ordering certificate and define compatible failure behavior.
+
+A shared-sequencing message may bind:
+
+```text
+AtomicBundle {
+    bundle_id
+    participating_rollups[]
+    transactions[]
+    common_ordering_height
+    expiry
+}
+```
+
+Each rollup must decide what happens if another rollup rejects its transaction during execution. True atomicity may require preconditions, escrow, or a later settlement protocol; common ordering alone does not make arbitrary state transitions atomic.
+
+## **Proof Markets and Aggregation Trees**
+
+A proof market separates execution from the right to prove. Executors publish traces or commitments, and provers bid to generate proofs before a deadline. Redundant provers reduce liveness dependence on one operator.
+
+Aggregation combines proofs in a tree. Leaf proofs cover rollup blocks; intermediate proofs verify groups; a root proof covers many rollups. The settlement layer verifies one root and records the list or commitment of included state roots.
+
+The market needs data access, deterministic witness formats, payment rules, and a fallback when no bid arrives. Aggregation also creates latency: waiting for more leaves lowers verification cost per block but delays settlement. Operators choose an aggregation window much like batchers choose a transaction window.
+
+## **Intents and Solver Safety**
+
+An intent expresses an outcome rather than exact transactions. A user might authorize receiving at least 100 units of asset B before a deadline in exchange for at most 1 unit of asset A. Solvers choose routes across exchanges and chains.
+
+The signed intent must bound solver authority:
+
+- input asset and maximum amount;
+- minimum output and recipient;
+- permitted chains or settlement contracts;
+- expiry and nonce;
+- fee limit;
+- whether partial fill is allowed;
+- cancellation rule.
+
+Settlement should be atomic from the user's perspective: either the output condition is proven and payment releases, or the input remains recoverable. Off-chain solver reputation is not a substitute for enforceable bounds.
+
+Chain abstraction can make routing invisible while keeping the signed conditions visible. Wallets should still report which domains hold funds and when the result reaches finality.
+
+## **Stateless Validation Pipeline**
+
+A stateless block includes or makes available witnesses for every state access. Validators begin with the prior state root, verify each witness, execute transactions, update touched commitments, and compute the new root without storing the entire state.
+
+Block builders now carry more responsibility: they need state to generate witnesses. If only a few builders maintain complete state, validation becomes cheap while block production centralizes. Distributed state providers, witness markets, and state expiry rules aim to balance this.
+
+A state-expiry design must answer how dormant state returns. A user may present the old value plus a proof against an archived root, pay to reactivate it, and place it in current state. The archive can be untrusted for correctness if proofs verify, but it must remain available.
+
+## **Research Evaluation Milestones**
+
+A future technology should move through increasingly strong evidence:
+
+1. **Correct model.** Security and liveness are proved under explicit assumptions.
+2. **Reference implementation.** The protocol runs and interoperates against test vectors.
+3. **Adversarial testnet.** Faults, withholding, reorganization, and overload are injected.
+4. **Independent implementations.** More than one team reproduces the protocol.
+5. **Measured production.** Sustained workloads and recovery paths are published.
+6. **Reduced control.** Sequencing, proving, DA, and upgrades gain independent operators.
+
+Roadmap language often mixes these stages. Readers should distinguish a research proposal from deployed, permissionless, failure-tested infrastructure.
+
 ## **Conclusion**
 
 The future is likely to combine rollups, real-time proofs, sampled data, parallel VMs, shared sequencing, and abstracted cross-chain interfaces. This stack can support far more activity than a single replicated machine.

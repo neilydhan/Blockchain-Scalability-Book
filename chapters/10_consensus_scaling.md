@@ -135,6 +135,66 @@ Timeouts that are too short cause needless view changes during latency spikes. T
 
 Pipelining can commit one block per round after the pipeline fills even if each block needs several rounds to become final. Throughput measures spacing between committed blocks; latency measures one transaction's journey. Benchmarks should report both, plus validator count, geography, payload size, signature scheme, and failure conditions.
 
+## **HotStuff State and Voting Rules**
+
+A HotStuff replica tracks more than the latest block. It stores the current view, the highest quorum certificate it knows, and a lock that prevents votes creating conflicting commits.
+
+A proposal contains a block extending a parent and a justify QC. A replica votes only when the proposal is safe according to the locking rule. A simplified check is:
+
+```text
+safe_to_vote(proposal):
+    return proposal.extends(locked_block)
+        or proposal.justify_qc.view > locked_qc.view
+```
+
+The first condition follows the current lock. The second permits progress when the proposal carries newer quorum evidence. Exact protocol variants differ, but the invariant is the same: honest replicas do not vote in a way that lets two conflicting chains both satisfy the commit rule.
+
+In chained HotStuff, each proposal can serve as a phase for an earlier block. Consecutive QCs pipeline prepare, pre-commit, and commit evidence. Once the required certified chain exists, an ancestor commits. The pipeline raises throughput because a new proposal advances several blocks' phases at once.
+
+## **Pacemaker and View Synchronization**
+
+Safety can hold in a fully asynchronous period, but liveness requires honest replicas to spend enough time in the same view with an honest leader. The pacemaker creates this overlap.
+
+When a timer expires, a replica broadcasts a timeout containing its highest QC. A timeout certificate or threshold of timeout messages justifies moving to the next view. The new leader collects the highest safety evidence and proposes an extension.
+
+Timeout selection is adaptive. A fixed timeout small enough for normal operation may cause endless view changes during an outage. An exponential backoff eventually exceeds actual delay after the network stabilizes. Implementations reset or reduce timeouts carefully after progress so latency returns to normal without synchronizing replicas into another failure cycle.
+
+## **Threshold Signatures and Accountability**
+
+A threshold signature compresses `2f + 1` votes into one constant-size certificate. Validators first participate in distributed key generation or receive shares under another trusted process. No coalition below the threshold can sign.
+
+Aggregation saves bandwidth, but a single threshold signature can hide individual signers. Systems needing slashing evidence may carry signer bitmaps or use aggregate signatures that preserve attribution. Key rotation, lost shares, and membership changes also add operational cost.
+
+A consensus design should say whether a QC proves only quorum weight or also identifies every signer. This affects forensic analysis and punishment after equivocation.
+
+## **DAG Mempools**
+
+Consensus proposals often carry large transaction batches. If every leader retransmits those bytes, bandwidth and leader performance dominate. A DAG mempool separates dissemination:
+
+1. each validator broadcasts a transaction batch;
+2. peers sign availability acknowledgements;
+3. a certificate proves enough peers received the batch;
+4. later consensus proposals order compact certificates rather than raw transactions.
+
+The DAG records causal references among certificates. Ordering can continue with small messages after data dissemination has completed. Safety still depends on the ordering consensus, while availability depends on the certificate threshold and retrieval protocol.
+
+This architecture adds queues and garbage collection. Nodes must retain certified batches until committed, recover missing parents, and prevent an attacker from flooding unreferenced data.
+
+## **Consensus Implementation Checklist**
+
+- Define the exact block, vote, QC, timeout, and view-change messages.
+- Domain-separate every signature by chain, epoch, message type, and view.
+- Persist locks and safety state before sending votes.
+- Test crash recovery between persistence and network send.
+- Bound proposal and certificate sizes.
+- Measure leader change under packet loss and skew.
+- Include real block dissemination in benchmarks.
+- Specify validator-set transitions and old-key retirement.
+- Expose highest QC, lock, current view, and timeout metrics.
+- Run conflicting-message and malformed-certificate tests across all clients.
+
+The most dangerous consensus bugs live in rare transitions: restart, epoch change, delayed old messages, and view changes during partial network recovery.
+
 ## **Conclusion**
 
 Consensus scaling is the engineering of messages, signatures, leaders, committees, and timing assumptions. HotStuff makes the normal path linear and pipeline-friendly. Sync HotStuff shows what becomes possible under synchrony. DAG-based systems separate data dissemination from ordering.
