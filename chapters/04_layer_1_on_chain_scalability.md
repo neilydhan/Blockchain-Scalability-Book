@@ -204,6 +204,67 @@ Before claiming horizontal scale, a design should answer:
 7. Which workloads create hot shards?
 8. Does aggregate throughput include cross-shard communication and state sync?
 
+## **State Sharding Design Choices**
+
+A state-sharded chain must choose a partition key. Hash partitioning spreads addresses evenly but ignores application locality. Range partitioning keeps related keys together but can create hot ranges. Application-aware partitioning can reduce cross-shard calls but gives protocol designers or developers more responsibility.
+
+Contracts complicate ownership. If a contract's code lives on one shard but its users' balances live elsewhere, calls become messages. If the complete contract state stays together, a popular application becomes a hot shard. If storage slots are split, one contract invocation may need several asynchronous reads.
+
+There is no partition function that makes every workload local. A protocol can expose placement hints, support dynamic resharding, or encourage applications to model state as independent objects. Each choice moves complexity between the protocol and application.
+
+### **Dynamic Resharding**
+
+Dynamic resharding splits a busy shard or combines quiet shards. A safe split needs a finalized boundary:
+
+1. choose a source checkpoint;
+2. partition its state into child commitments;
+3. assign new committees;
+4. route new transactions by the new mapping;
+5. forward or transform receipts created under the old mapping;
+6. retain proofs linking child roots to the source root.
+
+During transition, clients may hold stale routing information. Gateways can forward requests, but signatures and receipts should bind logical destination state rather than a transient network endpoint. Migrations also need backpressure; moving a large state database while processing peak load can worsen the congestion that triggered the split.
+
+## **Stateless Validation and Witnesses**
+
+A stateless validator receives the values and authentication paths needed for a block's reads. Starting from the prior state root, it verifies each witness, executes the block, applies writes, and obtains the new root.
+
+If an account proof contains `O(log n)` hashes, a block touching many unrelated accounts carries many paths. Multiproofs share common branches. Verkle trees use vector commitments to reduce witness size for wide state. Smaller witnesses lower validator storage needs but increase builder duties and cryptographic verification.
+
+Witness availability becomes part of block validity. A proposer that announces a header without witnesses can stall validators even when transaction data is available. Builders need full or distributed state access to construct witnesses, creating a risk that cheap validation centralizes production.
+
+## **Cross-Shard Contract Pattern: Request and Callback**
+
+Synchronous code might write:
+
+```text
+price = oracle.read(pair)
+settle_trade(price)
+```
+
+Across shards, the caller sends a request and returns. The oracle later sends a callback:
+
+```text
+request_id = send oracle.read(pair)
+store PendingTrade(request_id, user, limits, expiry)
+
+on_oracle_reply(request_id, price):
+    trade = load PendingTrade(request_id)
+    require not trade.completed
+    require now <= trade.expiry
+    require price satisfies trade.limits
+    mark trade.completed
+    settle_trade(price)
+```
+
+The application must handle duplicate, late, missing, and reordered replies. It should not lock unrelated global state while waiting. This pattern resembles distributed services, with the added need for authenticated receipts and deterministic execution.
+
+## **Sharding and Composability Economics**
+
+Cross-shard calls consume source execution, consensus on the source receipt, network delivery, destination verification, and destination execution. Pricing only the source call subsidizes remote work and invites flooding. A fee can reserve destination capacity or let the receipt carry a budget refunded when unused.
+
+Developers then face locality economics. Contracts interacting frequently have an incentive to share a shard; popular clusters become hot. Dynamic placement may improve throughput but changes latency and fees. Tooling should profile cross-shard call graphs before deployment and show developers which state edges dominate cost.
+
 ## **Conclusion**
 
 Layer 1 scaling is not simply making blocks larger. It redesigns execution, storage, networking, data availability, and consensus so the system can grow without excluding independent validators. Sharding provides horizontal capacity; client and protocol optimization push vertical limits.
