@@ -353,6 +353,101 @@ Differentially compare full-state execution with witness-only execution for gene
 
 Statelessness succeeds when ordinary validators can verify and synchronize cheaply while block building and state service remain competitive, observable, and recoverable.
 
+## **State Expiry and Revival Operations**
+
+State expiry bounds the active state by removing data that has not been touched for a defined horizon. It is different from history expiry: history concerns old blocks and receipts, while state determines what the next transaction can read and change.
+
+An expiry design needs four precise rules:
+
+1. which objects expire: accounts, storage slots, contract code, or tree segments;
+2. which event refreshes them: read, write, proof submission, or fee payment;
+3. which commitment preserves expired values;
+4. how a transaction revives data and who supplies the proof.
+
+If these rules are vague, clients can disagree about whether a key is active and derive different state roots.
+
+### Epoch transition
+
+Consider 90-day expiry epochs. At the transition from epoch `e` to `e+1`, untouched leaves are removed from the active tree, but their values remain committed by an expiry accumulator root `E_e`. Active state root `A_e` and expiry roots jointly define the valid state universe.
+
+```text
+BlockState {
+  active_root,
+  expiry_roots[],
+  expiry_policy_version,
+  current_epoch
+}
+```
+
+The number and retention of expiry roots must be bounded. Otherwise a client trades one ever-growing state structure for an ever-growing list of commitments.
+
+### Revival transaction
+
+Suppose Alice's account expired with nonce 17 and balance 4 ETH. A transaction that needs it carries:
+
+- the historical value;
+- a proof to the applicable expiry root;
+- enough active-tree path data to insert the revived leaf;
+- a transaction whose signature and nonce are checked against the revived value;
+- any revival fee required by protocol rules.
+
+The validator verifies the expiry proof, confirms the leaf has not already been revived or superseded, inserts it into active state, and then executes the transaction. An attacker must not be able to revive an older version of a key after a newer version exists.
+
+### Worked revival cost
+
+Assume a revival witness includes a 1,250-byte account proof, 600 bytes of code metadata, and 2,400 bytes for four storage slots. If calldata-equivalent accounting prices witness bytes at 8 gas each, the data component is:
+
+```text
+(1,250 + 600 + 2,400) B × 8 gas/B = 34,000 gas
+```
+
+Add 28,000 gas for proof verification and tree insertion:
+
+```text
+34,000 + 28,000 = 62,000 gas
+```
+
+At 20 gwei, that is `0.00124 ETH`, before the transaction's ordinary execution. This example is a cost model, not a recommendation: real pricing must track verification CPU, bandwidth, retained-state burden, and denial-of-service limits.
+
+### Who retains expired data?
+
+A commitment does not make values available. Users need archival nodes, wallets, applications, state-service markets, or their own backups to recover values and proofs. Protocol designers should state the recovery assumption explicitly.
+
+A wallet that creates an account or contract can retain a compact recovery package: key identifiers, values, code, relevant expiry epoch, and proof-service hints. But proofs can become stale as commitment schemes migrate, so recovery tooling needs versioning and conversion paths.
+
+Applications with many users cannot assume each user will preserve every storage value. They may sponsor state rent, refresh required keys, maintain proof services, or redesign storage so critical claims can be reconstructed from durable logs or user-held receipts.
+
+### Incentives and abuse resistance
+
+If touching a key refreshes its lifetime for free, an attacker can cheaply keep a large state set alive. Charge refresh according to the burden imposed, cap witness decoding, and decide whether a read refreshes state or only a write/payment does.
+
+Revival also creates burst risk. A popular dormant application may revive thousands of keys after a news event. Benchmark epoch boundaries and revival storms, not just steady-state transactions.
+
+State providers can extort users through availability rather than invalid data. Mitigations include redundant archives, standardized proof APIs, erasure-coded snapshots, periodic recovery drills, and application-level export tools.
+
+### Reorganizations and epoch boundaries
+
+A reorganization across an expiry boundary can change which keys expired and which root authenticates them. Clients must retain rollback information for the maximum reorganization window and avoid deleting values immediately at transition. Finalization should gate irreversible pruning.
+
+A transaction prepared against one expiry root may become stale after a reorganization. Its failure should be explicit and safely retryable; a wallet should fetch a fresh proof rather than repeatedly rebroadcasting invalid data.
+
+### Migration and release checklist
+
+Before enabling expiry:
+
+- publish object-level refresh and expiry semantics;
+- prove that old values cannot overwrite newer ones;
+- provide at least two independent archival/revival implementations;
+- test recovery without the original full node;
+- measure normal witnesses, revival storms, and epoch transitions;
+- specify reorganization rollback and pruning delays;
+- version commitment and proof formats;
+- expose wallet warnings before state becomes costly to revive;
+- document which data availability promises are protocol guarantees and which depend on services;
+- rehearse commitment migration and archive-provider failure.
+
+State expiry is operationally credible only when a user can return after the horizon, obtain the right data from more than one source, verify it against consensus commitments, and safely resume activity.
+
 ## **Worked Resharding Trace: Moving a Hot Account Range**
 
 Static shards eventually become unbalanced. A popular application can saturate one shard while others remain idle. Dynamic resharding changes the partition map without losing, duplicating, or accepting transactions against two owners of the same state.
