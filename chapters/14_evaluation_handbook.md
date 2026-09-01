@@ -227,6 +227,99 @@ Use this short form before adopting or comparing a scaling system:
 | What fails under load? | Capacity curves and queues |
 | What happens during failure? | Injection results and recovery time |
 
+## **Incident Readiness and Postmortems**
+
+A scaling system should be evaluated for diagnosability before an incident. When several layers are involved, the first visible symptom may be far from the failed component. A wallet reports a pending withdrawal, while the underlying cause is a DA retrieval gap, proof queue, settlement reorganization, or bridge verifier pause.
+
+### Evidence to retain
+
+Every component should emit durable identifiers that join one user action across layers:
+
+```text
+user transaction hash
+sequencer request and L2 block
+batch and data commitment
+proof or dispute job
+settlement transaction and state root
+message and withdrawal nonce
+destination execution
+protocol, client, and verifier versions
+```
+
+Logs need synchronized clocks but must not treat timestamps as consensus truth. Retain signed protocol messages, state roots, commitments, queue transitions, and configuration changes. Protect private transaction content and prover witnesses according to the application's privacy model.
+
+### Alert design
+
+Alert on violated objectives, not every transient event. Examples include an oldest-unpublished batch beyond its deadline, proof queue work increasing for several intervals, finality lag beyond the recovery budget, sampling failure above threshold, force-inclusion backlog, or bridge messages past expiry.
+
+Each alert should name the affected boundary, assets or batches at risk, safe automated actions, and operator actions requiring approval. A generic "rollup unhealthy" page forces responders to rediscover the architecture under pressure.
+
+### Runbooks
+
+A runbook for each critical dependency states:
+
+1. how to confirm the symptom from an independent source;
+2. which safety invariant must not be violated while restoring liveness;
+3. which actions are reversible and which require governance or user notice;
+4. how to preserve forensic evidence;
+5. how to fail over without processing an item twice;
+6. when to stop new activity and when existing users can exit;
+7. how to verify recovery end to end.
+
+Do not make "restart everything" the default. Simultaneous restarts can remove consensus quorum, discard useful caches, create proof duplication, or erase the timing evidence needed to understand a split.
+
+### Postmortem structure
+
+A useful postmortem includes:
+
+- user-visible impact and exact time interval;
+- detection source and delay;
+- normal path and recovery path affected;
+- timeline using protocol identifiers and versions;
+- triggering event, contributing conditions, and latent design weaknesses;
+- why safeguards did or did not contain impact;
+- manual and automated actions taken;
+- verification that funds, state, messages, and queues reconciled;
+- corrective actions with owners, tests, and completion evidence.
+
+Avoid attributing a distributed failure to one operator mistake when missing validation, unsafe defaults, poor observability, or shared infrastructure allowed that mistake to become an incident.
+
+## **Worked Adoption Decision**
+
+Assume a team is choosing between a monolithic L1, an L1-settled validity rollup, and an appchain with external DA for a high-value exchange. The exchange expects 1,500 mixed transactions per second, sub-second trading feedback, and withdrawals whose final settlement can take several minutes.
+
+Start with hard requirements:
+
+| Requirement | Threshold |
+|---|---|
+| Trading acknowledgement | p99 below 800 ms |
+| Canonical withdrawal | p99 below 10 min |
+| Data recovery | independent reconstruction of every accepted batch |
+| Safety | no single operator can create an unbacked withdrawal |
+| Recovery | users can exit without the normal sequencer |
+| Change control | routine upgrades delayed at least 7 days |
+
+Then score evidence, not architecture labels:
+
+| Evidence | Monolithic L1 | Validity rollup | Appchain + external DA |
+|---|---|---|---|
+| Mixed workload reaches 1,500 tx/s | measured result required | measured result required | measured result required |
+| Sub-second feedback | block/preconfirmation policy | sequencer preconfirmation | appchain consensus/preconfirmation |
+| Withdrawal safety | native state | verifier, bridge, and L1 finality | appchain consensus, bridge, DA, settlement |
+| Forced path | native transaction submission | L1 inbox and escape path | chain/bridge-specific recovery |
+| Independent reconstruction | L1 data/history | rollup data publication | DA proof plus retrieval and archive |
+| Upgrade boundary | protocol governance | rollup contracts and verifier | appchain, bridge, DA integration |
+
+A decision cannot be completed from this table alone. Run the same exchange generator against each candidate, disclose hardware and topology, and inject sequencer or leader loss, proof delay, DA withholding, settlement reorganization, and withdrawal congestion.
+
+Suppose the monolithic L1 reaches only 900 transactions per second at the latency objective. The rollup reaches 2,000 but its proof queue becomes unstable after one prover loss. The appchain reaches 4,000 but its bridge uses an immediate small multisignature upgrade. None yet meets every requirement.
+
+The next action is not to pick the largest number. For the rollup, add prover redundancy and repeat the failure test. For the appchain, require delayed bridge upgrades and an old-version exit. For the L1, decide whether workload partitioning or lower demand is acceptable. Adoption follows the first candidate that supplies evidence for the full operating envelope.
+
+### Decision record
+
+The final record names the selected commit and deployment, rejected alternatives, measured workload, finality policy, trust and key inventory, unresolved risks, launch limits, rollback trigger, and date for reassessment. A decision is temporary when protocols, control structures, or workloads change.
+
 ## **Conclusion**
 
 Scalability engineering begins after the headline number. A defensible evaluation starts with workload, traces the transaction and recovery paths, models each resource, tests the real stack under failure, and publishes enough detail for another team to reproduce the result.
