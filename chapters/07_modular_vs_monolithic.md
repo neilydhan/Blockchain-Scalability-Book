@@ -194,6 +194,69 @@ The matrix distinguishes safety from liveness. A component can be operationally 
 7. Test sequencer, prover, submitter, DA, and settlement outages separately.
 8. Document coordinated upgrades when one interface changes.
 
+## **Cross-Layer Message Envelopes**
+
+A modular stack should standardize the envelope carried across layers. One conceptual format is:
+
+```text
+MessageEnvelope {
+    protocol_version
+    source_domain
+    destination_domain
+    source_height
+    nonce
+    sender
+    target
+    payload_hash
+    expiry
+}
+```
+
+The source-domain state commits to the envelope. A relay supplies the envelope plus proof to the destination. The destination verifies source finality, domain and version, expiry, and replay status before dispatching the payload.
+
+Versioning belongs in the signed or committed message. Otherwise an upgrade can cause two layers to decode the same bytes differently. `payload_hash` avoids ambiguous variable-length encodings; the full payload follows a canonical serialization. Nonces can be global, per sender, or per channel, but the destination must enforce exactly one model.
+
+### **Ordered and Unordered Channels**
+
+An ordered channel processes nonce `n` only after `n-1`. This is easy for applications needing sequence, but one missing message blocks all later work. An unordered channel accepts any unused nonce and requires the application to manage dependencies.
+
+IBC makes this distinction explicit. Modular rollup systems need the same clarity. A token bridge may use unordered transfers, while a replicated state machine may require order.
+
+## **Relayers Are Replaceable, Not Trusted**
+
+A relayer observes a source event and submits its proof to a destination. If the proof is complete and verification is on-chain, a dishonest relayer cannot forge a message; it can only delay or censor its own delivery.
+
+This liveness property depends on permissionless replacement. Message data and proofs must be publicly retrievable, and another relayer must be allowed to submit them. Exclusive relayers turn a replaceable service into a trust boundary.
+
+Fee design pays relayers without letting them alter recipients or amounts. The source message can name a maximum fee, or the destination can reimburse the submitter under protocol rules. Applications should handle duplicate relay attempts safely.
+
+## **Cross-Layer Reorganizations**
+
+A destination consuming a message before source finality risks accepting an event that later disappears. Waiting longer reduces this risk but increases latency. Different source chains provide deterministic finality, probabilistic confirmations, or optimistic assertions.
+
+A bridge policy maps source evidence to destination acceptance. For probabilistic chains, it may require a confirmation depth. For BFT chains, it verifies a finality certificate. For rollups, it waits for challenge or validity-proof completion. This policy should be explicit and upgradeable only with a delay because changing it alters the security budget of every pending message.
+
+## **Operating a Modular Stack**
+
+Observability should correlate one transaction across every layer. Assign a stable journey identifier and record:
+
+- sequencer receipt and L2 block;
+- DA transaction and commitment;
+- proof job, version, and completion;
+- settlement transaction and accepted root;
+- outbound message nonce;
+- relay submission and destination execution.
+
+Alerts should name which service owns the delay. Service-level objectives can then distinguish fast confirmation, publication deadline, proof deadline, settlement deadline, and message-delivery deadline.
+
+Runbooks need safe halt conditions. If DA finality is uncertain, settlement should stop accepting new assertions rather than guess. If the prover is down, sequencing may continue only within a bounded unpublished or unproven window. If a bridge verifier has a bug, a pause key may limit loss, but its scope and recovery governance must be documented.
+
+## **Modular Cost Accounting**
+
+The application pays several providers: sequencer, execution nodes, DA layer, prover, settlement chain, and relayers. Some costs are variable per transaction; others are fixed infrastructure or security subsidies.
+
+Unit economics should allocate batch and proof cost by the resource each transaction consumes, not divide equally. A large data-heavy transaction should pay more DA cost; a computation-heavy transaction should pay more proving cost. Mispricing invites denial of service against the subsidized resource.
+
 ## **Conclusion**
 
 Monolithic blockchains offer integrated security and composability but require validators to repeat all major work. Modular architectures separate execution, settlement, consensus, and data availability so each can specialize and many execution layers can share a base.
