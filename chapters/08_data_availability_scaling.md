@@ -82,10 +82,10 @@ PeerDAS extends the design so nodes custody and request subsets of blob data ins
 
 Rollups can publish data in several places:
 
-- **Layer 1 calldata or blobs** – stronger integration with settlement, generally higher cost;
-- **dedicated DA network** – greater capacity and lower cost, with a separate consensus assumption;
-- **data availability committee** – cheap and simple, but a small group can withhold data;
-- **local storage** – suitable only when users accept operator trust or have another recovery path.
+- **Layer 1 calldata or blobs** - stronger integration with settlement, generally higher cost;
+- **dedicated DA network** - greater capacity and lower cost, with a separate consensus assumption;
+- **data availability committee** - cheap and simple, but a small group can withhold data;
+- **local storage** - suitable only when users accept operator trust or have another recovery path.
 
 EigenDA and similar systems use restaked or dedicated operators to disperse encoded data and attest to availability. The main evaluation questions are who signs, what threshold is required, how data is retrieved, and what happens after withholding.
 

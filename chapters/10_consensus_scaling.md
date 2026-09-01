@@ -12,9 +12,9 @@ Consensus scaling therefore seeks lower communication cost and faster finality w
 
 A consensus protocol must separate three properties:
 
-- **Safety** – honest nodes do not finalize conflicting blocks.
-- **Liveness** – the protocol continues to finalize blocks.
-- **Finality** – once finalized, a block cannot be reverted without violating the fault assumption.
+- **Safety** - honest nodes do not finalize conflicting blocks.
+- **Liveness** - the protocol continues to finalize blocks.
+- **Finality** - once finalized, a block cannot be reverted without violating the fault assumption.
 
 Network timing matters. A synchronous model assumes a known message-delay bound. A partially synchronous model assumes the bound eventually holds but its starting time is unknown. An asynchronous model makes no timing bound.
 

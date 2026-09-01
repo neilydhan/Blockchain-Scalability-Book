@@ -25,7 +25,7 @@ A workload statement should include:
 
 Draw two diagrams. The **transaction path** follows a normal transaction from signing to finality. The **recovery path** follows the same asset when each privileged service is offline or malicious.
 
-For a rollup, the normal path may be wallet → RPC → sequencer → batcher → DA publication → prover or challenger → settlement contract. The recovery path may be wallet → L1 force-inclusion contract → timeout → forced withdrawal. Both diagrams need identities for upgrade administrators and bridge relayers.
+For a rollup, the normal path may be wallet -> RPC -> sequencer -> batcher -> DA publication -> prover or challenger -> settlement contract. The recovery path may be wallet -> L1 force-inclusion contract -> timeout -> forced withdrawal. Both diagrams need identities for upgrade administrators and bridge relayers.
 
 At every edge, ask:
 

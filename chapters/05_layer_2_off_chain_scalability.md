@@ -86,7 +86,7 @@ Plasma made a major conceptual contribution: computation can happen elsewhere wh
 
 ---
 
-## **Rollups as the Dominant General-Purpose Layer 2**
+## **Rollups for General-Purpose Layer 2 Execution**
 
 A rollup executes transactions outside Layer 1 and posts compressed transaction data plus a state commitment to Layer 1. Because the data is available, independent nodes can reconstruct and verify the rollup state.
 
@@ -113,11 +113,11 @@ Rollups reduce cost by amortizing Layer 1 data and verification across a batch. 
 
 The phrase "secured by Ethereum" can hide important differences. A mature assessment separates:
 
-1. **State validity** – can an invalid transition be finalized?
-2. **Data availability** – can users obtain the inputs needed to verify or exit?
-3. **Censorship resistance** – can users force a transaction or withdrawal through Layer 1?
-4. **Finality** – when is a transaction economically and cryptographically irreversible?
-5. **Upgrade control** – can a small group change the contracts or proof rules?
+1. **State validity** - can an invalid transition be finalized?
+2. **Data availability** - can users obtain the inputs needed to verify or exit?
+3. **Censorship resistance** - can users force a transaction or withdrawal through Layer 1?
+4. **Finality** - when is a transaction economically and cryptographically irreversible?
+5. **Upgrade control** - can a small group change the contracts or proof rules?
 
 A protocol may use Ethereum for settlement while relying on a centralized sequencer for liveness, an external committee for data, or a multisig for upgrades. These do not make the system useless, but they must be visible in the trust model.
 
@@ -333,7 +333,7 @@ Test breach response while the client is offline, the tower restarts, the fee ma
 
 Layer 2 systems scale by avoiding global replication of every interaction. Channels are efficient for stable participants, sidechains provide independent capacity, Plasma uses exit games, and rollups combine off-chain execution with verifiable state commitments and available data.
 
-No Layer 2 is free of trade-offs. Its safety depends on its exit path, data model, proof system, sequencer, and governance. The next chapter focuses on rollups, the leading general-purpose design in Ethereum's scaling roadmap.
+No Layer 2 is free of trade-offs. Its safety depends on its exit path, data model, proof system, sequencer, and governance. The next chapter focuses on rollups, a general-purpose design in Ethereum's rollup-centric roadmap.
 
 ## **References**
 

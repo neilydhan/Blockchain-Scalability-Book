@@ -14,10 +14,10 @@ The course frames the problem around replicated computation, replicated storage,
 
 A general-purpose blockchain performs four related jobs:
 
-1. **Execution** – applying transactions to the current state.
-2. **Settlement** – deciding which state transition is canonical and resolving disputes.
-3. **Consensus** – ordering blocks and finalizing them despite faulty participants.
-4. **Data availability** – ensuring that the data needed to verify a block can be obtained.
+1. **Execution** - applying transactions to the current state.
+2. **Settlement** - deciding which state transition is canonical and resolving disputes.
+3. **Consensus** - ordering blocks and finalizing them despite faulty participants.
+4. **Data availability** - ensuring that the data needed to verify a block can be obtained.
 
 A monolithic chain performs all four within one validator network. Every full validator repeats much of the same work. Scaling one job can expose another bottleneck: faster execution is of limited value if block propagation or consensus cannot keep up.
 
