@@ -167,6 +167,101 @@ A realistic generator samples prices and sizes, creates bursts around market mov
 
 A useful claim states workload, duration, validator topology, hardware, latency, finality, and failure behavior. "This system sustains the published mixed workload for one hour across 100 distributed validators while p99 finality stays below ten seconds and one leader failure recovers within thirty seconds" can be tested. "Up to 100,000 TPS" cannot.
 
+## **Worked Capacity Envelope**
+
+Assume a chain targets a mixed workload of 70 percent transfers, 20 percent swaps, and 10 percent contract deployments. Measurements on disclosed hardware produce these per-transaction averages:
+
+| Transaction | Execution gas | Published bytes | Net state growth |
+|---|---:|---:|---:|
+| Transfer | 21,000 | 110 | 16 B |
+| Swap | 140,000 | 260 | 80 B |
+| Deployment | 1,200,000 | 8,000 | 6,000 B |
+
+The weighted average execution demand is:
+
+```text
+0.70 × 21,000 + 0.20 × 140,000 + 0.10 × 1,200,000
+= 162,700 gas/transaction
+```
+
+The weighted published data is:
+
+```text
+0.70 × 110 + 0.20 × 260 + 0.10 × 8,000
+= 929 bytes/transaction
+```
+
+The weighted state growth is:
+
+```text
+0.70 × 16 + 0.20 × 80 + 0.10 × 6,000
+= 627.2 bytes/transaction
+```
+
+Suppose the measured system sustains 60 million execution gas per second, 500 kB/s of canonical data, and 25 kB/s of acceptable long-run state growth. Each resource implies a different transaction ceiling:
+
+```text
+execution: 60,000,000 / 162,700 ≈ 369 tx/s
+data:        500,000 / 929     ≈ 538 tx/s
+state:        25,000 / 627.2   ≈ 40 tx/s
+```
+
+Under these assumptions, long-run state growth is the tightest policy limit even though CPU and block data could support much more short-term throughput. If the state-growth budget is a governance objective rather than a hard protocol limit, the report should say so and project the resulting database size.
+
+At 40 transactions per second, annual net state growth is approximately:
+
+```text
+40 × 627.2 B × 31,536,000 s ≈ 791 GB/year
+```
+
+That result should trigger questions: can inactive state expire, do updates overwrite existing values rather than add new ones, how large are witnesses, who serves snapshots, and is the 10 percent deployment mix realistic? A surprising calculation is a reason to inspect the workload, not hide the number.
+
+### Add latency and headroom
+
+Capacity is not the same as a safe operating target. If the state database, block propagation, and leader changes become unstable above 70 percent of the measured limit, target load should remain below that knee. Use the minimum across resources after applying their own headroom policies:
+
+```text
+safe rate = min(
+  execution capacity × execution headroom,
+  data capacity × data headroom,
+  state budget × state headroom,
+  consensus capacity × consensus headroom,
+  proving capacity × proving headroom
+)
+```
+
+Headroom is resource-specific. Data publication may need burst capacity after an outage. Consensus needs time for a failed leader. A prover fleet needs capacity after one worker fails. State growth is cumulative and may need a policy margin rather than an operational utilization target.
+
+### Workload sensitivity
+
+If deployments fall from 10 percent to 1 percent while swaps increase to 29 percent, both average gas and state growth change sharply. Report a sensitivity table instead of one mix:
+
+| Scenario | Transfer | Swap | Deployment | Purpose |
+|---|---:|---:|---:|---|
+| Typical | 70% | 20% | 10% | Expected mean |
+| Mature application | 70% | 29% | 1% | Fewer deployments |
+| Launch burst | 45% | 35% | 20% | Contract-heavy stress |
+| Hot market | 20% | 80% | 0% | Shared-state contention |
+
+A weighted average also hides variance. One maximum-size deployment can delay many transfers even when the mean fits. Run burst and adversarial scenarios, and publish p50, p95, and p99 completion latency at each offered load.
+
+### Reproducibility record
+
+A reviewer should be able to reconstruct every number from:
+
+```text
+client commit and protocol parameters
+transaction generator and random seed
+initial state snapshot and working-set distribution
+hardware, storage, operating system, and compiler
+validator count, regions, latency, loss, and bandwidth
+run duration, warm-up, offered-load schedule, and errors
+raw block, queue, resource, and finality measurements
+calculation script and unit conventions
+```
+
+Keep decimal and binary byte units distinct. State whether `kB` means 1,000 bytes and `KiB` means 1,024. Define whether throughput counts submitted, included, executed, successful, or finalized transactions. Unit discipline catches many performance claims that are numerically correct but semantically incomparable.
+
 ## **Chapter Summary**
 
 Blockchain scalability is sustained useful capacity under explicit workload, resource, security, and recovery assumptions. TPS alone omits transaction complexity, latency, hardware, decentralization, and data. The central difficulty comes from globally replicated execution and storage plus the communication required for Byzantine consensus.
