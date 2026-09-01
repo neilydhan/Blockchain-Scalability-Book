@@ -331,6 +331,48 @@ When a project claims a large scalability gain, ask:
 
 These questions do not dismiss performance work. They make results reproducible and comparable.
 
+## **From Transaction Submission to Finality**
+
+A blockchain performance measurement needs a precise start and finish. A transaction passes through construction and signing, RPC admission, peer-to-peer propagation, block inclusion, execution and fork choice, then finality. "Transaction latency" may stop at any one of these boundaries.
+
+A wallet often shows block inclusion because it is fast and useful. A bridge waits for stronger finality because releasing assets against a reverted source transaction can create an unbacked claim. A rollup adds further milestones: sequencer acknowledgement, L2 inclusion, data publication, proof acceptance, and settlement finality.
+
+This path explains why VM throughput is not chain throughput. The result still has to be encoded, propagated, agreed upon, committed to state, indexed, and served back to users.
+
+## **Queueing and the Capacity Knee**
+
+When transactions arrive more slowly than the system processes them, queues remain short. Near capacity, ordinary variance produces bursts faster than blocks or batches can absorb. Waiting time rises even before average demand exceeds average service.
+
+Let work arrive at rate `λ` and be processed at sustainable rate `μ`. A basic queue becomes unstable when `λ ≥ μ`. Blockchains add batches, heterogeneous transactions, and fee priority, but the lesson holds: running continuously at advertised peak throughput creates poor tail latency.
+
+A sound capacity plan reserves headroom for larger witnesses, failed leaders, prover retries, database compaction, and recovery traffic. Fee markets act as admission control. When demand exceeds scarce blockspace, users bid for priority while low-value work waits. The fee spike is the mechanism allocating congestion, not an unrelated symptom.
+
+## **State, History, and Working Sets**
+
+**History** is the ordered record of blocks and transactions. **State** is the latest value of live accounts, contracts, or objects. The **working set** is the portion current execution touches. Pruning history does not shrink live state. Stateless validation reduces a validator's need to store state by supplying witnesses, but a builder or state provider still needs data to produce those witnesses.
+
+Benchmark duration matters because caches hide storage cost. A short test may keep its working set in memory. A long-running chain reads cold state, compacts databases, creates snapshots, and serves synchronization. Sustainable performance includes these tasks.
+
+## **A Reproducible Benchmark Procedure**
+
+1. Define completion: execution, inclusion, optimistic confirmation, proof acceptance, or consensus finality.
+2. Publish transaction templates, state size, locality, and conflict rate.
+3. Record client commits, protocol parameters, validator count, hardware, geography, and network shaping.
+4. Warm representative state under a published rule.
+5. Sweep offered load while measuring queue depth, failures, resource usage, fees, and p50/p95/p99 latency.
+6. Inject a faulty leader, sequencer outage, delayed region, data withholding event, and prover crash.
+7. Report the highest load meeting the latency and error objective, not the largest transient burst.
+
+### **Worked Benchmark: A Rollup Exchange**
+
+Suppose an exchange sees 60% limit-order placements, 30% cancellations, and 10% market orders. Placements write an order and one price level. Market orders can touch many levels and accounts. A transfer benchmark misses this shared state.
+
+A realistic generator samples prices and sizes, creates bursts around market moves, and records sequencer acknowledgement, L2 inclusion, publication, proof completion, and settlement. The first limit may be a hot price level. After partitioning markets, blob publication may dominate. After compression, proof generation may queue. Each optimization requires another end-to-end test.
+
+## **Scalability Claims as Falsifiable Statements**
+
+A useful claim states workload, duration, validator topology, hardware, latency, finality, and failure behavior. "This system sustains the published mixed workload for one hour across 100 distributed validators while p99 finality stays below ten seconds and one leader failure recovers within thirty seconds" can be tested. "Up to 100,000 TPS" cannot.
+
 ## **Chapter Summary**
 
 Blockchain scalability is sustained useful capacity under explicit workload, resource, security, and recovery assumptions. TPS alone omits transaction complexity, latency, hardware, decentralization, and data. The central difficulty comes from globally replicated execution and storage plus the communication required for Byzantine consensus.
