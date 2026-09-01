@@ -309,6 +309,103 @@ Before an upgrade, operators should replay historical blocks against the new imp
 
 The upgrade announcement should publish code hashes, verifier addresses, activation time, audit results, and user exit deadline. Emergency changes need narrower scope and a postmortem. An escape hatch that an upgrade can silently disable is not independent protection.
 
+## **End-to-End Implementation Example: A Rollup Payment**
+
+Consider a minimal account-based rollup supporting deposits, transfers, and withdrawals. The example is intentionally small enough to audit, but its boundaries match production systems.
+
+### State and transaction format
+
+The L2 state maps an account identifier to a balance, nonce, and public key. A transfer contains:
+
+```text
+Transfer {
+  chain_id,
+  rollup_contract,
+  sender,
+  receiver,
+  amount,
+  fee,
+  nonce,
+  expiry,
+  signature
+}
+```
+
+`chain_id` and `rollup_contract` prevent the signature from being replayed on another deployment. The nonce prevents replay within this rollup. Expiry bounds how long a censored or delayed transaction remains valid. The signed payload includes fee and receiver so an intermediary cannot change either.
+
+A deposit is not an ordinary signed L2 transfer. It begins as an L1 event emitted after the bridge receives funds. The rollup derives a unique deposit identifier from the source block, transaction, and event position. The state transition marks that identifier consumed before crediting the account. A reorganization policy defines how much L1 finality is required before the deposit can enter a batch.
+
+### Batch construction
+
+The sequencer validates syntax and signatures, rejects stale nonces, selects an order, and executes against a parent state root. It creates a batch header:
+
+```text
+BatchHeader {
+  rollup_id,
+  batch_number,
+  parent_state_root,
+  post_state_root,
+  transaction_data_commitment,
+  inbox_cursor,
+  timestamp,
+  protocol_version
+}
+```
+
+The batch number and parent root make the state chain explicit. The inbox cursor proves which forced L1 messages and deposits have been consumed. The protocol version chooses one deterministic transition function. The data commitment binds the encoded transactions used to reproduce the post-state root.
+
+Before signing the header, an implementation checks three invariants: the parent is the last accepted state, every mandatory inbox item through the cursor was processed exactly once, and re-execution from published data produces the proposed post-state root.
+
+### Publication and proof
+
+The operator publishes compressed transaction data to the chosen DA path and submits the header to the settlement contract. These actions must be linked. A contract that accepts a state root without binding it to available transaction data can leave users unable to reconstruct state.
+
+An optimistic design starts a challenge window. Challengers download the data, reproduce execution, and dispute an invalid transition. A validity design proves a statement equivalent to:
+
+```text
+given parent_state_root and committed batch data,
+valid decoding + signatures + nonce rules + balance rules
+produce post_state_root and inbox_cursor
+```
+
+The public inputs must bind the rollup identity, protocol version, roots, data commitment, and inbox position. Omitting one can make a proof valid for the wrong deployment, program, or batch.
+
+### Withdrawal lifecycle
+
+A withdrawal transition debits L2 funds and inserts a message leaf containing source rollup, destination chain, recipient, asset, amount, and unique nonce. After the batch is accepted under the rollup's proof rule, the user supplies a Merkle proof to the L1 bridge.
+
+The bridge verifies the accepted state or message root, checks domain separation and finality, marks the message consumed, then transfers the asset. Marking before transfer follows checks-effects-interactions and blocks reentrancy-based replay. The consumed key should bind every field that distinguishes one withdrawal from another.
+
+A wallet should not show one undifferentiated "complete" state. Useful statuses are:
+
+1. **received** - sequencer accepted the signed transfer;
+2. **included** - transaction appears in an L2 block;
+3. **data published** - independent nodes can reconstruct it;
+4. **state accepted** - proof or challenge rule accepted the batch;
+5. **settlement final** - the relevant L1 block is final under policy;
+6. **withdrawal executed** - the destination bridge consumed the message.
+
+### Failure and recovery table
+
+| Failure | Safe behavior | Recovery path |
+|---|---|---|
+| Sequencer stops before inclusion | User funds and nonce remain unchanged | Submit through forced inbox or another sequencer |
+| Sequencer equivocates on soft confirmations | Conflicting promises are visible but not final | Follow canonical published batch; apply preconfirmation penalty if defined |
+| Batch data is missing | Do not accept a state that depends on unavailable data | Reconstruct from DA network or reject/halt under protocol rule |
+| Optimistic batch is invalid | Challenger prevents final acceptance | Execute fault-proof game before deadline |
+| Validity proof is unavailable | State cannot advance, but prior accepted state remains safe | Fail over to another prover or use delayed escape mode |
+| Settlement chain reorganizes | Do not release against the reverted commitment | Re-evaluate batch and message after required finality |
+| Bridge transaction is replayed | Consumed-message check rejects it | No recovery needed; retain evidence and alert |
+| Upgrade changes transition rules | Old and new versions must not silently diverge | Timelocked activation, shadow execution, and user exit window |
+
+### Test harness
+
+An end-to-end test starts from a known L1 and L2 genesis, deposits funds, transfers them, publishes a batch, proves or challenges it, withdraws, and verifies final balances on both layers. Repeat the flow after process restarts and at every persistence boundary.
+
+Then inject faults: reorder inbox messages, duplicate a deposit, change one encoded amount after commitment, prove against the wrong program version, withhold data, stop the primary prover, reorganize an unfinalized deposit, replay a withdrawal, and activate an incompatible upgrade. Assert both a safety result and an observable status. "The transaction failed" is insufficient; the user and operator need to know which boundary failed and which recovery action is valid.
+
+This small example demonstrates why rollup correctness is not one proof or contract. It is an agreement among transaction encoding, deterministic execution, data publication, proof rules, settlement finality, bridge replay protection, operator persistence, and user-facing status.
+
 ## **Conclusion**
 
 Rollups scale execution by batching work and turning Layer 1 into a verifier and data-publication layer. Optimistic rollups use disputes; validity rollups use cryptographic proofs. Their real security also depends on sequencers, bridges, data availability, upgrades, and exit mechanisms.
