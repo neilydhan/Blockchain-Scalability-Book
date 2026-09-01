@@ -265,6 +265,94 @@ Cross-shard calls consume source execution, consensus on the source receipt, net
 
 Developers then face locality economics. Contracts interacting frequently have an incentive to share a shard; popular clusters become hot. Dynamic placement may improve throughput but changes latency and fees. Tooling should profile cross-shard call graphs before deployment and show developers which state edges dominate cost.
 
+## **Stateless Validation: Witness Construction and Update**
+
+Stateless validation replaces a validator's full local state lookup with a witness proving the values a block reads and changes. It reduces validation storage requirements, but moves witness production and bandwidth into the critical path.
+
+Assume the prior state is committed by root `R0`. A transaction reads account `A`, checks its nonce and balance, debits it, and credits account `B`. The block builder supplies values plus authentication paths from each touched key to `R0`.
+
+```text
+StateWitness {
+  pre_state_root,
+  keys[],
+  pre_values[],
+  proof_nodes[],
+  access_order,
+  commitment_version
+}
+```
+
+The validator verifies each pre-value under `R0`, executes the canonical transaction, replaces the changed leaves, and recomputes root `R1`. The block is valid only if `R1` equals its declared post-state root.
+
+### Multiproofs
+
+Independent Merkle proofs repeat nodes near the root. A multiproof shares common branches across many keys. Witness size depends on how accesses cluster: 1,000 adjacent keys can share more path material than 1,000 uniformly random keys.
+
+Canonical multiproof encoding matters. The verifier needs an unambiguous rule for node order, omitted siblings, duplicate keys, empty values, and tree depth. Two encodings that prove the same leaves may be acceptable, but they must calculate one root and have bounded decoding work.
+
+### Reads after writes
+
+A block can read a value written by an earlier transaction in the same block. The witness authenticates the value at the block's pre-state; the executor's in-block state overlay supplies later reads. Builders should not provide a second contradictory "pre-state" proof for a value already changed in the block.
+
+Access order and transaction order determine this overlay. Parallel execution may speculate, but final witness verification must reproduce canonical semantics.
+
+### Missing and extra witness data
+
+A missing proof node makes the block unverifiable and should reject it. Extra unused nodes consume bandwidth and parsing work; charge or cap them to prevent denial of service. Duplicate or cyclic references in a compressed witness must not cause unbounded memory or CPU.
+
+The runtime can discover an undeclared key through a dynamic contract call. The block builder must include its witness. Access lists can help prefetching, but consensus validity follows actual execution, not a sender's incomplete prediction.
+
+### State providers and builder concentration
+
+Validators can be stateless while someone still stores state to build blocks and witnesses. If one state provider serves every builder, storage centralization moves rather than disappears. A production design supports multiple providers, snapshot reconstruction, authenticated queries, and a way for a new builder to acquire current state.
+
+A provider cannot forge a value when proofs are checked, but it can censor or selectively delay keys. Builders need redundant queries and enough time to assemble witnesses before proposal deadlines.
+
+### Witness bandwidth calculation
+
+Suppose a block executes 2,000 transactions, touching 3 unique state keys each after deduplication. An average multiproof contribution of 180 bytes per unique key gives:
+
+```text
+2,000 × 3 × 180 B = 1.08 MB
+```
+
+If blocks arrive every 2 seconds, witness payload alone averages 540 kB/s before transaction data, signatures, networking overhead, and bursts. A hot workload may reduce unique keys and witness bytes while increasing execution contention; a random workload does the opposite.
+
+Do not assume witness size scales linearly from one transaction. Measure deduplication, path sharing, code proofs, and the current tree shape. Report compressed and uncompressed size plus verification CPU.
+
+### Witness generation pipeline
+
+A builder:
+
+1. selects ordered transactions;
+2. simulates or executes to discover actual accesses;
+3. fetches pre-state values and proof nodes;
+4. deduplicates keys and builds a canonical multiproof;
+5. re-executes against the witness as a validator would;
+6. checks the resulting root;
+7. publishes transactions and witness before the proposal deadline.
+
+Late access discovery can force another state query and delay the block. Builders can prefetch from access lists or recent traces, but they must validate fetched proofs against the current root.
+
+### Witness test matrix
+
+Test:
+
+- absent accounts versus zero-valued accounts;
+- repeated read and write of one key;
+- contract creation and deletion semantics;
+- dynamic code and storage access;
+- a read after an earlier in-block write;
+- duplicate, reordered, extra, and missing proof nodes;
+- maximum depth and largest code witness;
+- prior-root mismatch after a reorganization;
+- parallel execution followed by canonical root update;
+- builder restart after state selection but before publication.
+
+Differentially compare full-state execution with witness-only execution for generated blocks. Assert identical receipts, gas, logs, and post-state root. Then delete the full state from the validator environment and confirm that every required input is present in the published witness.
+
+Statelessness succeeds when ordinary validators can verify and synchronize cheaply while block building and state service remain competitive, observable, and recoverable.
+
 ## **Worked Resharding Trace: Moving a Hot Account Range**
 
 Static shards eventually become unbalanced. A popular application can saturate one shard while others remain idle. Dynamic resharding changes the partition map without losing, duplicating, or accepting transactions against two owners of the same state.
