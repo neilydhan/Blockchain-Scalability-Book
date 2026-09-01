@@ -16,7 +16,7 @@ Install mdBook using the official installation instructions linked from the proj
 ./scripts/build-book.sh
 ```
 
-The command removes the prior generated directory, builds every entry in `SUMMARY.md`, and writes `book/index.html` and `book/print.html`. The `book/` directory is generated and is not committed.
+The command first checks summary targets, local links, figure numbering, and footnote pairs. It then removes the prior generated directory, builds every entry in `SUMMARY.md`, and writes `book/index.html` and `book/print.html`. The `book/` directory is generated and is not committed.
 
 ## Build PDF
 

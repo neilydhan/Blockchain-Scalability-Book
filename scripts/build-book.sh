@@ -6,6 +6,8 @@ if ! command -v mdbook >/dev/null 2>&1; then
   exit 1
 fi
 
+python3 "$(dirname "$0")/check-book.py"
+
 rm -rf book
 mdbook build
 
