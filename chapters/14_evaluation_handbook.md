@@ -163,6 +163,53 @@ A professional evaluation report should publish:
 
 The conclusion should name the operating envelope: the workload and conditions under which the architecture meets its objective. It should also name the first bottleneck and the failure that creates the largest user burden.
 
+## **Worked Example: Evaluating a Rollup Exchange**
+
+Consider a hypothetical validity rollup running a central-limit-order-book exchange. The operator claims 20,000 transactions per second and one-second confirmation. The number alone is not decision-ready.
+
+### Workload
+
+Define four transaction classes: limit-order placement, cancellation, market execution, and collateral update. Use at least two account distributions: uniform accounts and a concentrated market where many traders touch the same order book and price levels. Include signature verification, failed orders, and state growth.
+
+Ramp offered load rather than selecting one favorable rate. At each step, run long enough for queues and compaction to stabilize. The sustainable point is the highest rate where input queue, proof queue, and DA publication backlog remain bounded and p99 latency stays within the objective.
+
+### Resource budget
+
+For rate `λ`, estimate:
+
+- execution demand: `λ × CPU time per transaction`;
+- data demand: `λ × compressed bytes per transaction`;
+- proving demand: `λ × proving seconds per transaction-equivalent`;
+- state growth: `λ × net new state bytes per transaction`;
+- settlement demand: `batches per second × verification gas per batch`.
+
+Do not add unlike units into one score. Compare each demand with the capacity of its resource and identify the first utilization ratio approaching one. Leave headroom for variance and recovery.
+
+Suppose the measured mix averages 45 compressed bytes and 0.8 milliseconds of execution per transaction. At 20,000 transactions per second, the rollup generates 900 kB/s of data and 16 CPU-seconds of serial execution each second. The execution target therefore needs at least 16 fully utilized cores before database, scheduling, and operating-system overhead. A production target at 60 percent utilization needs roughly 27 equivalent cores. This is a lower bound, not a hardware promise.
+
+### Finality timeline
+
+Label four milestones:
+
+1. the sequencer accepts and orders the transaction;
+2. transaction data is published and recoverable;
+3. the validity proof is accepted by settlement;
+4. the settlement block reaches the application's chosen finality rule.
+
+The advertised one second may describe only milestone 1. A wallet can display it as a provisional confirmation, but a high-value bridge should not represent it as settlement finality. Measure the distribution between every pair of milestones.
+
+### Failure tests
+
+Stop the sequencer and submit through forced inclusion. Stop the prover and observe whether unproven batches accumulate safely. Withhold one DA chunk and verify reconstruction or rejection. Reorganize an unfinalized settlement block. Corrupt an upgrade proposal and confirm the timelock and monitor alerts. Exhaust bridge and exit paths under base-layer congestion.
+
+For every test, record detection time, safety outcome, recovery time, operator action, and user action. A test that recovers only after an undocumented administrator intervention reveals an additional trust assumption.
+
+### Decision
+
+The evaluation should finish with an operating envelope, not a winner label. For example: the exchange sustains a stated transaction mix at a stated rate on disclosed hardware; provisional confirmation stays below a latency target; proof and publication queues remain bounded; withdrawals reach settlement finality within a measured distribution; and the tested failure paths preserve funds while degrading service for a bounded period.
+
+That conclusion is narrower than "20,000 TPS," but it is useful to an engineer, risk team, and user.
+
 ## **Evaluation Template**
 
 Use this short form before adopting or comparing a scaling system:
