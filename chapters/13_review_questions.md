@@ -108,3 +108,75 @@ Evaluate the capstone on five dimensions, each from 0 to 4:
 - **User recovery:** escape paths are available, affordable under congestion, observable, and exercised in tests.
 
 A score of 0 means the issue is absent. A score of 2 means it is described but not measured or tested. A score of 4 means another team could reproduce the evidence and challenge the assumptions.
+
+## **Instructor Notes and Solution Sketches**
+
+These sketches identify the reasoning a strong answer should contain. They are not unique solutions. Quantitative answers should retain units and state assumptions.
+
+### Chapters 1-2
+
+A credible throughput comparison fixes transaction semantics, state size, offered-load curve, duration, hardware, network topology, validator independence, completion boundary, and fault behavior. Throughput can rise while latency worsens when batching waits longer, queues grow near saturation, or finality requires more stages. Adding replicas to a fully replicated state machine adds fault tolerance and read capacity, but each replica still executes the same ordered writes.
+
+For the order-book benchmark, vary the number of markets, price-level concentration, cancellation ratio, market-order depth, account skew, and burst arrival. Hot price levels reveal serial state. A protocol improves the trilemma frontier when it lowers production or verification cost without changing the claim being measured; it only moves cost when it replaces broad verification with a committee, operator, expensive recovery path, or hidden subsidy.
+
+### Chapters 3-5
+
+An L1 transfer is complete under the L1's finality rule. A rollup transfer passes sequencer, publication, proof or challenge, and settlement milestones. A sidechain transfer follows its own consensus, and its bridge adds another finality rule.
+
+Cross-shard execution is asynchronous because independent committees cannot atomically lock all state without coordination that erodes parallelism. The destination authenticates the source receipt and stores a consumed nonce or message identifier. Smaller committees improve parallel capacity while increasing capture probability. In a state channel, signatures authenticate updates and a monotonic nonce selects the newest state. Payment routes need directional balance on every hop, not only graph connectivity.
+
+Operator failure has different effects: a channel counterparty can delay cooperative close but the adjudicator preserves funds; a sidechain bridge compromise may violate safety; a sequencer outage should affect liveness if forced inclusion and exit remain intact.
+
+### Chapters 6-8
+
+An optimistic rollup has fast soft confirmation but final state waits through publication, challenge, and settlement. A validity rollup replaces the challenge period with proof generation and verification, while settlement finality still comes later. A validity proof establishes a transition statement; unavailable inputs can still prevent users from reconstructing state or exiting.
+
+A minimum escape path authenticates forced transactions through L1, defines a bounded inclusion deadline, and permits state advancement or withdrawal without the sequencer. For an external DA design, the DA layer can prove that bytes were ordered and available under its rules; settlement verifies only the commitment or proof its contract understands.
+
+If each independent sample has probability `1/2` of missing a half-hidden block, 15 samples all miss with probability:
+
+```text
+(1/2)^15 = 1/32768 ≈ 0.00305%
+```
+
+The calculation assumes uniform unpredictable samples, independent observations, valid encoding, honest header authentication, and peers that cannot selectively identify and deceive the sampler.
+
+A wallet should distinguish waiting for sequencing, data publication, proof, settlement finality, and destination execution. "Pending" alone does not tell a user whether retrying is safe.
+
+### Chapters 9-10
+
+One conflict example is `T1: read A, write B`; `T2: read C, write D`; `T3: read B, write C`. `T1` and `T2` can speculate together from the same snapshot, while `T3` depends on both and must wait or retry. A parallel schedule must commit a state equivalent to canonical order; otherwise validators can calculate different roots from identical blocks.
+
+Reduce contention by partitioning per-player or per-market state, replacing one global counter with mergeable local counters, and avoiding synchronous writes to shared metadata. In a four-replica BFT system, two quorums of three intersect in two replicas; with at most one Byzantine, at least one overlap is honest. Pipelining overlaps different consensus stages across blocks, improving steady-state block rate without shortening one block's commit chain.
+
+HotStuff assumes eventual network bounds for liveness and tolerates fewer than one-third Byzantine replicas in the common model. A synchronous variant uses a known bound and derives different protocol guarantees from that stronger assumption. Benchmarks must include payload dissemination and leader failures because empty-block voting hides bandwidth and view-change cost.
+
+### Chapter 11
+
+A dependency graph should show user, solver, sequencer, execution rollup, DA network, prover, settlement chain, and destination bridge. Each edge needs authenticated data, finality, timeout, and recovery. Shared sequencing can concentrate order flow; proof markets can concentrate specialized hardware and witness access; solver markets can concentrate routing and censorship power.
+
+Chain abstraction is safe when the interface hides mechanics but still exposes assets, maximum spend, destination, finality status, fees, and recovery. A multi-rollup benchmark fixes workload and route, records every domain boundary, and ends at a named milestone such as settlement finality or destination execution rather than the first sequencer response.
+
+### Quantitative Laboratory
+
+With 2,000 transactions every 10 seconds, offered throughput is:
+
+```text
+2,000 / 10 s = 200 transactions/s
+```
+
+The mean compressed data rate is:
+
+```text
+120 kB / 10 s = 12 kB/s
+```
+
+One proof job consumes 24 prover-seconds and arrives every 10 seconds, so minimum steady capacity is `24/10 = 2.4` workers. Three workers give only 80 percent utilization under uniform jobs and no failures. Four workers give 60 percent and more useful headroom. A production answer should examine proof-time variance, aggregation, restart cost, and correlated hardware loss.
+
+The bridge should normally wait for proof acceptance plus the chosen settlement finality, not sequencer receipt. Forced inclusion needs the signed transaction, evidence or timing rule showing the sequencer deadline expired, and enough L1 capacity to submit it.
+
+If compression worsens by 40 percent, a batch uses `168 kB` and mean data rate becomes `16.8 kB/s`. With a fixed 12 kB/s limit, only about `12/16.8 = 71.4%` of the former transaction rate fits, or roughly 143 transactions/s under the same mix. The exact result depends on whether the stated limit was already saturated and whether batch overhead is fixed.
+
+### Capstone Review
+
+A complete capstone has two diagrams: the normal transaction/finality path and the degraded recovery path. It includes capacity arithmetic for execution, data, proving, consensus, and state; a role and key inventory; at least one safety and one liveness failure per external dependency; a measured mass-recovery test; and a clear statement of the accepted trade-off.
