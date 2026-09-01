@@ -5,6 +5,7 @@ Figures are part of the technical argument, not decoration. Captions identify th
 ## **Original Figures for This Book**
 
 - **Figure 1.4, Four functions behind blockchain scalability.** Original diagram created for this edition.
+- **Figure 2.1, Measurable trilemma trade-offs.** Original diagram created for this edition.
 - **Figure 3.1, Layer 1 and Layer 2 architecture.** Original diagram created for this edition.
 - **Figure 4.1, Cross-shard receipt lifecycle.** Original diagram created for this edition based on SC6019 Lecture 02.
 - **Figure 5.1, State-channel lifecycle and dispute path.** Original diagram created for this edition based on SC6019 Lecture 03.
@@ -14,10 +15,6 @@ Figures are part of the technical argument, not decoration. Captions identify th
 - **Figure 9.1, Parallel scheduling and deterministic commitment.** Original diagram created for this edition based on Block-STM and SC6019 Lecture 05.
 - **Figure 10.1, Leader-based BFT normal path.** Original diagram created for this edition based on the HotStuff protocol paper.
 
-## **Existing Repository Figure**
-
-- **Figure 2.1, Blockchain trilemma.** This image was present in the repository before this edition. Its editable source and third-party provenance were not available. Redraw it or complete a separate rights review before commercial publication.
-
 ## **Rights Checklist**
 
-Before a release, verify that every figure referenced by the manuscript exists, has an editable source when possible, matches its caption, and is covered by the book's license or explicit permission. A concept derived from a paper or lecture should cite that source even when the artwork is original. Generated build files and superseded source images should not ship as part of the rights inventory.
+Every figure in the manuscript now uses original artwork stored as editable SVG. Before a release, verify that each referenced figure exists, matches its caption, and remains covered by the book's license. A concept derived from a paper or lecture should cite that source even when the artwork is original. Generated build files and superseded source images should not ship as part of the rights inventory.
