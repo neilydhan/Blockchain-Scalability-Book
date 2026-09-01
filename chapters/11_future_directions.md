@@ -199,6 +199,56 @@ A future technology should move through increasingly strong evidence:
 
 Roadmap language often mixes these stages. Readers should distinguish a research proposal from deployed, permissionless, failure-tested infrastructure.
 
+## **Decentralized Prover Networks**
+
+A prover network accepts jobs containing a program version, public inputs, witness commitment, deadline, and reward. Provers may submit proofs directly or commit before revealing to prevent copying.
+
+The network must avoid several failure modes. One prover can underbid and fail near the deadline. A coordinator can censor jobs. Witness data can leak private application inputs. Different hardware may produce proofs at unequal cost, concentrating supply.
+
+Redundancy policies assign important jobs to several provers or maintain a fallback prover. Proof verification makes incorrect output harmless to safety, but repeated missed deadlines harm liveness. Reputation, bonds, and slashing can price that behavior if failure is objectively attributable.
+
+## **Preconfirmations**
+
+A preconfirmation is a signed promise by a proposer or sequencer about future inclusion or order. It can give users sub-block latency before consensus finality.
+
+A useful promise states transaction, target slot or height, maximum position or ordering relation, fee, expiry, and penalty. The signer needs collateral or future revenue at risk. Otherwise a conflicting promise is merely evidence of bad behavior without compensation.
+
+Preconfirmations create a market for near-term blockspace and can improve user experience. They can also favor sophisticated builders and private order flow. Protocols must define whether promises are transferable, how conflicts are resolved, and what happens during reorganization.
+
+## **Encrypted Mempools and Threshold Decryption**
+
+Encrypting transaction content until order is fixed can reduce front-running. Users encrypt under a committee key; consensus orders ciphertexts; a threshold of members releases decryption shares afterward.
+
+The committee can withhold shares and halt execution. If members decrypt early, they regain ordering advantage. Distributed key generation, verifiable shares, penalties, and fallback timeouts address these risks.
+
+Encryption hides content but not all metadata. Sender, ciphertext size, timing, and fee may still reveal strategy. It also complicates simulation and fee estimation because builders cannot inspect execution before ordering.
+
+## **Cross-Domain MEV**
+
+A transaction on one rollup can change an asset price used on another. Whoever observes or controls message timing may arbitrage the difference. Shared sequencing can coordinate order, but settlement delays and independent reorganization rules remain.
+
+Cross-domain MEV analysis follows information: when does each actor learn an order, price, proof, or bridge message? It also follows control: who can delay publication, proof, or relay? A modular stack may move MEV from one block producer to sequencers, solvers, relayers, or proof markets.
+
+## **Hardware Acceleration and Decentralization**
+
+GPUs, FPGAs, ASICs, fast networking, and high-bandwidth memory increase execution and proving. Specialized hardware can lower unit cost while raising the capital required to compete.
+
+Open hardware designs, commodity-compatible algorithms, proof markets, and cheap verification can preserve access. Measure market concentration and switching cost, not only benchmark speed. A protocol tied to one vendor's hardware inherits supply-chain and censorship risk.
+
+## **Post-Quantum Considerations**
+
+Large-scale quantum computers would threaten common signature and commitment schemes. Migration is difficult because old accounts and bridge keys may remain vulnerable even after the protocol supports new signatures.
+
+A roadmap needs quantum-resistant account authorization, validator signatures, proof commitments, and a process for inactive users to migrate. Post-quantum signatures are larger, affecting data availability and bandwidth. Hash-based proof systems have different assumptions but still use signatures and commitments elsewhere in the stack.
+
+This is long-term research, but scalability and cryptographic agility interact: larger keys and proofs consume the capacity future protocols are trying to create.
+
+## **What "Finished" Means for a Scaling System**
+
+A system is not finished when its fast path reaches mainnet. It approaches maturity when independent clients interoperate, users can force inclusion and exit, proof and DA systems survive operator failure, upgrades are delayed and visible, bridges have bounded risk, benchmarks are reproducible, and incident history demonstrates recovery.
+
+Roadmaps should track removal of trust assumptions alongside throughput. The final product is not maximum speed; it is sustained, verifiable service under realistic faults.
+
 ## **Conclusion**
 
 The future is likely to combine rollups, real-time proofs, sampled data, parallel VMs, shared sequencing, and abstracted cross-chain interfaces. This stack can support far more activity than a single replicated machine.
