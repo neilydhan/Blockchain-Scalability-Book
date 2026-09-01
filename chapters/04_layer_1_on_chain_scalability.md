@@ -265,6 +265,87 @@ Cross-shard calls consume source execution, consensus on the source receipt, net
 
 Developers then face locality economics. Contracts interacting frequently have an incentive to share a shard; popular clusters become hot. Dynamic placement may improve throughput but changes latency and fees. Tooling should profile cross-shard call graphs before deployment and show developers which state edges dominate cost.
 
+## **Worked Resharding Trace: Moving a Hot Account Range**
+
+Static shards eventually become unbalanced. A popular application can saturate one shard while others remain idle. Dynamic resharding changes the partition map without losing, duplicating, or accepting transactions against two owners of the same state.
+
+Assume shard `A` owns keys in range `[m, z]`. The protocol will move `[t, z]` to new shard `B` at epoch `E+1`. The transition needs an authenticated handoff point.
+
+### Prepare
+
+Before the boundary, consensus finalizes a resharding plan:
+
+```text
+ReshardPlan {
+  plan_id,
+  source_shard = A,
+  destination_shard = B,
+  key_range = [t, z],
+  freeze_height,
+  activation_epoch = E + 1,
+  source_state_root,
+  protocol_version
+}
+```
+
+The plan is part of canonical state. Nodes reject a local operator command that changes ownership without this decision. Clients learn the future map early enough to route transactions and update proofs.
+
+At `freeze_height`, shard `A` stops accepting new writes to the moving range under the old routing version. It finishes earlier transactions and outbound receipts, then commits a root for the frozen range. Reads may continue if the API labels the snapshot and prevents stale writes.
+
+### Transfer
+
+Shard `A` exports state leaves, contract code, storage, pending asynchronous messages, consumed-message nonces, and any rent or metadata required to interpret the range. A snapshot manifest binds chunks to the finalized range root:
+
+```text
+SnapshotManifest {
+  plan_id,
+  range_root,
+  chunk_commitments[],
+  pending_message_root,
+  consumed_nonce_root,
+  total_bytes
+}
+```
+
+Shard `B` retrieves chunks from several peers, verifies every commitment, reconstructs the range, and replays or imports pending message state under a deterministic rule. Importing account balances without replay-protection state would let an old cross-shard receipt execute again after migration.
+
+### Activate
+
+At epoch `E+1`, validators agree on a partition map assigning `[t,z]` to `B` and an activation commitment produced by the import. Transactions carry or derive the routing version. Shard `A` rejects new-version writes to the range; shard `B` rejects old-version writes except explicitly authenticated forwarding messages.
+
+There must be no interval where both shards can finalize ordinary writes to the same key. A forwarding period can improve availability, but forwarding is a message path, not dual ownership. It needs a nonce, expiry, destination binding, and idempotent handling.
+
+### Failure cases
+
+| Failure | Risk | Required behavior |
+|---|---|---|
+| Snapshot chunk missing | Activation with incomplete state | Delay activation or reconstruct from erasure/replica sources |
+| Source reorganizes before freeze finality | Exported root no longer canonical | Discard snapshot and rebuild from canonical freeze point |
+| Message arrives during freeze | Lost or double-applied callback | Include it before range root or queue under a bound handoff rule |
+| Destination imports wrong code version | Divergent execution after activation | Bind protocol/code hashes and verify import vectors |
+| Both shards accept a write | Conflicting ownership and asset creation | Routing-version and epoch checks reject one path |
+| Validator set changes simultaneously | Handoff certificate ambiguity | Authenticate both set transition and range activation in one canonical boundary |
+| Destination fails after source prunes | Unrecoverable state | Retain source snapshot until activation and recovery window finalizes |
+| Client uses stale partition map | Submission delay or wrong-shard replay | Return authenticated redirect; never accept under ambiguous ownership |
+
+### Capacity and state transfer
+
+If the moving range contains 400 GB and must be copied within a 45-minute maintenance window, the minimum payload rate is:
+
+```text
+400 GB / 2,700 s ≈ 148 MB/s
+```
+
+This excludes encoding expansion, proofs, retransmission, concurrent state changes outside the frozen range, and peer overhead. At a 60 percent planning utilization, provision roughly `148 / 0.6 ≈ 247 MB/s` of usable transfer capacity. If that requirement is unrealistic, reduce range size, lengthen the window, pre-copy immutable data, or use incremental snapshots before the final freeze.
+
+The freeze pauses writes, so migration planning must also bound user-visible downtime. A protocol can pre-copy most state while live, then transfer a final delta after freeze. The delta algorithm becomes safety-critical: it must prove that the base snapshot plus ordered delta equals the finalized handoff root.
+
+### Resharding assertions
+
+A test harness should generate transactions and cross-shard callbacks continuously while triggering the handoff. It should crash source and destination nodes at every manifest and activation boundary, delay random chunks, reorganize the pre-final freeze block, and restart with stale routing caches.
+
+Assert conservation of balances, one owner per key and epoch, exact message-once semantics, identical imported roots across clients, bounded redirect loops, and the ability to recover before the source prunes. Resharding is complete only when state, pending work, replay protection, validator authentication, routing, and operational recovery move together.
+
 ## **Conclusion**
 
 Layer 1 scaling is not simply making blocks larger. It redesigns execution, storage, networking, data availability, and consensus so the system can grow without excluding independent validators. Sharding provides horizontal capacity; client and protocol optimization push vertical limits.
