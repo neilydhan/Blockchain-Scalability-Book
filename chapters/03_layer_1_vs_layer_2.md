@@ -184,6 +184,98 @@ Without a verifiable state mapping, migration becomes administrator custody.
 
 Record workload, latency objective, assets at risk, composability needs, execution and DA requirements, sequencing, proof or challenge rules, normal and forced message paths, fee subsidies, upgrade authority, and shutdown plan. Revisit the record as demand changes.
 
+## **Worked Migration: L1 Application to Rollup**
+
+Moving an application from L1 to a rollup is a state transition across security domains, not a deployment script. Users need a verifiable mapping from old assets and state to new state, and a choice not to follow the migration.
+
+Consider a game with fungible balances, unique items, open marketplace orders, and pending withdrawals. The migration team selects an L1 block that is final under the published policy and records:
+
+```text
+MigrationManifest {
+  source_chain,
+  source_contracts[],
+  source_final_block,
+  source_state_root,
+  extraction_code_hash,
+  destination_rollup,
+  destination_contracts[],
+  destination_genesis_root,
+  mapping_version,
+  challenge_deadline
+}
+```
+
+### Inventory and freeze policy
+
+Inventory every source state category and decide whether it migrates, settles, cancels, or remains claimable on L1. An open order should not silently become executable in both places. A pending withdrawal should not disappear from one queue and reappear with a fresh nonce.
+
+A full freeze simplifies the snapshot but stops the application. A rolling migration can reduce downtime while creating dual-write and replay complexity. If both systems remain active, define which actions are canonical and how one-way messages prevent double spending.
+
+### Deterministic extraction
+
+The extraction program reads source state at the finalized block and emits canonical destination records. Publish the program, compiler/build information, input block, and output commitment. Independent parties should reproduce the same destination genesis root.
+
+The mapping handles:
+
+- address and signature-scheme differences;
+- token decimals, metadata, and native-versus-wrapped identity;
+- contract storage layout and default values;
+- ownership and approval state;
+- consumed nonces and pending messages;
+- rounding and dust;
+- paused, frozen, or blacklisted records if applicable.
+
+Do not discard zero balances or empty records unless the source semantics make them irrelevant. Presence itself can affect authorization or future storage behavior.
+
+### Claim versus push
+
+A **push migration** initializes every account on the destination. It offers a complete genesis but may be expensive. A **claim migration** commits to a Merkle root; each user later supplies a proof and initializes only needed state.
+
+Claim migration needs a permanent or sufficiently long proof-data service. Correctness can be trustless while availability is not. Several independent hosts should retain the leaf set and tree construction code. Claims need domain binding and a consumed key so the same source asset cannot initialize twice.
+
+### User choice and exit
+
+Publish destination contracts, sequencer and DA assumptions, bridge, upgrade keys, expected fees, and finality before the opt-in deadline. Users who decline need an L1 withdrawal, sale, redemption, or continued old-version path. A choice is not meaningful when the escape transaction costs more than the asset or the window closes during congestion.
+
+### Activation trace
+
+1. finalize the source snapshot or claim root;
+2. complete the challenge or reproduction period;
+3. deploy destination code with pinned versions;
+4. initialize the destination root or claim contract;
+5. test deposit, action, forced inclusion, and withdrawal on the final deployment;
+6. activate user routing and indexers;
+7. keep source recovery and proof data available through the promised window;
+8. reconcile total supply, ownership counts, pending messages, and claims.
+
+### Failure matrix
+
+| Failure | Required outcome |
+|---|---|
+| Source block reorganizes | snapshot is invalidated unless finality policy still holds |
+| Extraction code omits state | challenge or independent reproduction blocks activation |
+| Destination root differs | deployment does not activate |
+| User claims twice | consumed source identifier rejects the duplicate |
+| Marketplace order exists on both systems | canonical cancellation/migration rule permits only one execution |
+| Bridge or sequencer fails at launch | forced path and exit work on the deployed contracts |
+| Claim data host disappears | independent hosts and reproducible tree restore service |
+| Upgrade occurs during migration | manifest version remains fixed or migration restarts transparently |
+
+### Reconciliation
+
+For fungible assets, prove:
+
+```text
+source locked or burned
+= destination issued
++ source refunds
++ explicitly documented remainder
+```
+
+For unique items, compare the set of identifiers and owners. For messages, compare source pending, destination consumed, expired, and refunded sets. A total supply match alone misses ownership swaps or duplicate non-fungible identifiers.
+
+Run reconciliation before activation, after the first claims, at the migration deadline, and after source cleanup. Publish machine-readable results. Migration is complete when users can verify the mapping and recovery, not when the new front end points at the rollup.
+
 ## **Conclusion**
 
 Layer 1 scaling changes the shared protocol and its validator resource envelope. Layer 2 scaling reduces the base-layer work per user action while retaining a defined enforcement or settlement path. Sidechains add independent capacity rather than inheriting correctness merely because they have a bridge.
