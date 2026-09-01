@@ -236,6 +236,104 @@ A destination consuming a message before source finality risks accepting an even
 
 A bridge policy maps source evidence to destination acceptance. For probabilistic chains, it may require a confirmation depth. For BFT chains, it verifies a finality certificate. For rollups, it waits for challenge or validity-proof completion. This policy should be explicit and upgradeable only with a delay because changing it alters the security budget of every pending message.
 
+## **Light-Client Bridge Verification Trace**
+
+A light-client bridge verifies the source chain's consensus evidence on the destination chain instead of trusting a fixed signer set. This can reduce discretionary custody, but only if the destination verifier correctly follows source consensus, validator-set changes, and finality.
+
+Consider chain `A` sending a 10-token transfer to chain `B`. The bridge on `B` stores:
+
+```text
+ClientState {
+  source_chain_id,
+  latest_height,
+  latest_commitment_root,
+  current_validator_set,
+  trusting_period,
+  frozen_height,
+  verification_version
+}
+```
+
+The transfer message on `A` is committed under root `R_h` at height `h`:
+
+```text
+Packet {
+  source_port,
+  source_channel,
+  destination_port,
+  destination_channel,
+  sequence,
+  sender,
+  recipient,
+  asset_id,
+  amount,
+  timeout_height,
+  timeout_timestamp,
+  version
+}
+```
+
+### Normal verification path
+
+1. The sender escrows 10 tokens on `A`, and execution commits packet hash `P` under `R_h`.
+2. A relayer submits header `H_h`, its finality certificate, any validator-set transition proof, and a Merkle proof from `P` to `R_h` on `B`.
+3. The client contract checks chain ID, header linkage, validator signatures and weights, trusting period, monotonic height, and the consensus rule that makes `H_h` final.
+4. The packet verifier checks the commitment proof, destination, channel version, sequence, timeout, and denomination mapping.
+5. The bridge records the packet as consumed before minting or releasing 10 representation tokens.
+6. An acknowledgement can be proven back to `A`; timeout handling is mutually exclusive with successful receipt.
+
+Relayers provide data but no authority. If one relayer withholds a packet, another can submit the same evidence. If a relayer changes the recipient or amount, the commitment proof fails.
+
+### Validator-set update
+
+Source validators change from set `V_n` to `V_{n+1}`. The destination cannot simply accept a header signed by unknown `V_{n+1}`. It verifies the transition according to source consensus, commonly by checking that a trusted set finalized a commitment to the next set, then using that set for later headers.
+
+Skipping many heights may require adjacent transition proofs or a protocol-specific overlap rule. The implementation must bound proof length and signature work. An attacker should not be able to submit a million empty transitions to exhaust gas.
+
+### Trusting-period expiry
+
+Some clients are secure only if updated within a trusting period shorter than the source chain's unbonding or accountability window. After expiry, the old validator set may no longer be slashable and could sign a conflicting history.
+
+The safe response is to stop, not to accept a convenient new header. Recovery needs an explicitly governed checkpoint or a fresh trusted state. Operators should alert well before expiry and permit anyone to keep the client updated.
+
+### Conflicting finality evidence
+
+If two valid-looking finalized headers exist at the same height, the client freezes at that height and rejects new packets. Evidence may indicate source consensus failure, a verifier bug, or forged signatures. Continuing automatically can double mint assets on `B`.
+
+A frozen client needs a recovery policy: verify accountable misbehavior and a canonical checkpoint, upgrade the verifier if necessary, and reconcile packets whose status is uncertain. "Governance will decide" is not enough; specify who decides, the delay, loss limits, and how users exit.
+
+### Replay and channel confusion
+
+Packet sequence 42 on channel `x` must not authorize packet 42 on channel `y`, another deployment, or a fork with the same asset symbol. Commitments and consumed-packet keys need domain separation across chain IDs, ports, channels, versions, and packet identifiers.
+
+Mark consumption before the external token call, or use a reentrancy-safe checks-effects-interactions pattern. Test tokens that call back, return no value, charge a transfer fee, rebase, or pause.
+
+### Timeout race
+
+Suppose the packet expires at destination height 500. The sender tries to reclaim escrow on `A` while a relayer tries to prove receipt on `B`. A safe protocol defines exactly which chain's height or timestamp controls expiry and requires proof of non-receipt for refunds. Receipt and refund must not both succeed.
+
+Clock-based timeouts inherit assumptions about timestamp drift and light-client freshness. Height-based timeouts inherit assumptions about destination progress. Applications should add slack rather than treating nominal wall-clock equivalence as exact.
+
+### Security budget
+
+A light-client bridge is no safer than:
+
+- source consensus and its accountable stake;
+- the on-destination consensus-client implementation;
+- commitment-proof correctness;
+- upgrade and freeze governance;
+- destination chain safety;
+- wrapped-token and escrow contracts;
+- client-update availability before timeout or trusting-period expiry.
+
+Value at risk should be capped below the loss a plausible failure can create. Rate limits, delayed large withdrawals, per-asset caps, and circuit breakers reduce blast radius but do not repair invalid verification.
+
+### Production tests
+
+Run adversarial vectors for invalid signature weights, duplicate validators, malformed keys, skipped validator transitions, expired clients, conflicting headers, proof-depth limits, wrong chain IDs, replayed packets, timeout/receipt races, and reentrant tokens. Differentially test the on-chain verifier against the source chain's reference implementation.
+
+Finally, rehearse a relayer outage, near-expired trusting period, frozen client, emergency verifier upgrade, and orderly channel shutdown. A bridge is production-ready when operators can explain every accepted proof, bound the value exposed while evidence is ambiguous, and recover without silently choosing a chain history.
+
 ## **Operating a Modular Stack**
 
 Observability should correlate one transaction across every layer. Assign a stable journey identifier and record:
