@@ -11,9 +11,9 @@ It is not a theorem saying a blockchain can choose exactly two properties. Bette
 The three labels are shorthand for measurable system properties:
 
 <p align="center">
-  <img src="../assets/trilemma.png" width="500" alt="Blockchain Trilemma">
+  <img src="../assets/course/ch02_trilemma_tradeoffs.svg" width="500" alt="Scalability, independent participation, and adversarial security trade-offs">
   <br>
-  <em>Figure 2.1: The Blockchain Trilemma - Decentralization, Security, and Scalability Trade-offs</em>
+  <em>Figure 2.1: Scaling proposals should show which resource burden, participation cost, security assumption, or recovery cost changes. Original figure for this book.</em>
 </p>
 
 1. **Decentralization**: how widely verification, production, governance, and recovery power are distributed, including the cost of entering each role.
