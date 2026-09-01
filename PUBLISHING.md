@@ -41,7 +41,7 @@ Set `CHROME=/path/to/browser` when the browser binary is not on the normal path.
 5. Inspect the PDF cover, table of contents, first and last page, and every figure page at 100 percent zoom.
 6. Check headings for stranded lines and code blocks or tables for clipping.
 7. Search the PDF for replacement characters, missing glyphs, unresolved footnote markers, and raw HTML.
-8. Run a link checker over the HTML edition and manually verify security-critical references.
+8. Run `./scripts/check-links.sh`, investigate failures and redirects, and manually verify security-critical references. Some publisher sites return 403 to automated checks while remaining available in a browser.
 9. Confirm figure credits, licenses, and permissions. Redraw or remove any element whose commercial reuse is unclear.
 10. Treat protocol status, fee rules, deployment claims, and roadmaps as time-sensitive; verify them against primary sources at release time.
 11. Name the files with edition, version, date, and commit, then retain the build log alongside the artifacts.

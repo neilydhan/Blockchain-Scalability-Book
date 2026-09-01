@@ -157,8 +157,8 @@ A defensible comparison names workload, completion boundary, validator burden, d
 
 ## References
 
-[^1]: Buterin, Vitalik. "The Blockchain Trilemma." *Ethereum Blog* (2017). Available at: <https://vitalik.ca/general/2017/12/31/trilemma.html>.
+[^1]: Buterin, Vitalik. "The Blockchain Trilemma." *Ethereum Blog* (2017). Available at: <https://vitalik.eth.link/general/2017/12/31/sharding_faq.html>.
 [^2]: Hill, Mark D. "What is Scalability?" *ACM SIGARCH Computer Architecture News* (1990). Referenced in Chapter 1.
 [^3]: Wood, Gavin. "Ethereum: A Secure Decentralised Generalised Transaction Ledger." *Ethereum Yellow Paper* (2014). Available at: <https://ethereum.github.io/yellowpaper/paper.pdf>.
 [^4]: Nakamoto, Satoshi. "Bitcoin: A Peer-to-Peer Electronic Cash System" (2008). Available at: <https://bitcoin.org/bitcoin.pdf>.
-[^12]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). Available at: <https://www.cs.berkeley.edu/~brewer/papers/podc2000.pdf>.
+[^12]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). Available at: <https://people.eecs.berkeley.edu/~brewer/PODC2000.pdf>.
