@@ -246,6 +246,89 @@ Incident response should preserve signed messages and timing evidence. Restartin
 
 Capacity planning includes signature verification, block execution, data propagation, and state commitment. Increasing committee size without network and verification headroom can lower security in practice by causing honest validators to miss deadlines.
 
+## **Worked Protocol Trace: Four Replicas and One Fault**
+
+Consider four replicas `A`, `B`, `C`, and `D`, with at most one Byzantine fault. A quorum contains three votes. Any two quorums of three intersect in at least two replicas; because at most one is Byzantine, the intersection contains at least one honest replica. Locking rules use that honest overlap to prevent incompatible commits.
+
+### Normal path
+
+Assume `A` leads view 12 and proposes block `X` extending the highest known quorum certificate. Each replica checks the proposal's parent, view, payload, state-transition inputs, and signature domain before voting.
+
+```text
+view 12
+A -> {B,C,D}: PROPOSE(X, parent_qc)
+{A,B,C} -> A: VOTE(X, 12)
+A: aggregate three votes into QC(X, 12)
+```
+
+A quorum certificate proves that three replicas voted for `X`; it does not by itself mean a client should treat `X` as committed. In chained HotStuff, later certified descendants satisfy the protocol's commit rule. Pipelining allows a new proposal to carry `QC(X,12)` while votes for the next block are collected.
+
+Before replica `B` sends its vote, it persists the safety state required by the protocol. If it crashes after sending but before recording its lock, it might restart and vote for a conflicting branch. Write-ahead persistence therefore belongs on the safety path, not as optional operational logging.
+
+### Faulty leader and timeout
+
+Now assume `A` is faulty in view 13 and sends no valid proposal. Replicas' pacemakers expire. They sign timeout messages containing their highest known QC and send them to the next leader, `B`.
+
+```text
+view 13
+A: silent or invalid proposal
+{B,C,D}: TIMEOUT(13, highest_qc)
+B: form timeout certificate
+
+view 14
+B -> {A,C,D}: PROPOSE(Y, highest_safe_qc, timeout_certificate)
+{B,C,D} -> B: VOTE(Y, 14)
+B: form QC(Y, 14)
+```
+
+The timeout certificate proves enough replicas abandoned view 13. The highest-QC rule ensures the new leader extends a branch compatible with honest replicas' locks. A leader cannot choose an older convenient parent merely because it has three fresh participants.
+
+Timeout values affect liveness, not the underlying safety proof, provided replicas enforce voting and locking rules. Too short a timeout creates needless view changes under ordinary jitter. Too long a timeout makes every failed leader expensive. Implementations often increase timeout after repeated failures and reduce it after stable progress.
+
+### Equivocation
+
+Suppose a Byzantine leader sends `Y` to `B` and `Z` to `C` in the same view. The signed proposals are equivocation evidence. Honest replicas still apply their voting rules. With four replicas, the faulty leader cannot form quorums of three for both conflicting blocks unless at least one honest replica votes incompatibly.
+
+This is why a signature check alone is insufficient. The implementation must index votes by chain, epoch, view, message type, and block identity, reject a second prohibited vote, and preserve evidence. An aggregate signature should retain a signer bitmap or underlying votes needed for accountability.
+
+### Client finality
+
+A client observes at least three distinct notions:
+
+1. **proposal reception** - one leader advertised a block;
+2. **certification** - a quorum voted for it;
+3. **commit/finality** - the protocol's chained-certificate rule makes it irreversible within the fault model.
+
+An application must name which event it uses. Showing a proposal as a provisional status is reasonable. Releasing bridged assets against it is not. Even a committed block is conditional on validator-set authentication and the client's weak-subjectivity checkpoint when membership changes.
+
+### Trace assertions
+
+A deterministic test harness for this trace should assert:
+
+- no honest replica votes twice in one prohibited context;
+- every accepted QC contains the required distinct weight;
+- a new-view proposal extends the safe parent selected from timeout evidence;
+- persisted lock state survives a crash at every send boundary;
+- two honest replicas never commit conflicting blocks;
+- after the network stabilizes and an honest leader is selected, progress resumes;
+- metrics identify the timed-out view, missing leader, highest QC, and time to recovery.
+
+Run the same trace with duplicate, reordered, and delayed messages. Then vary the fault: an invalid payload, a malformed aggregate, conflicting epoch numbers, stale QCs, and a validator-weight change at the boundary. The state machine should reject each invalid transition for a specific reason without discarding evidence needed for diagnosis.
+
+## **Quorum Arithmetic With Weighted Validators**
+
+Replica counts are only a special case. If validators have weights summing to `W`, a certificate commonly requires weight greater than `2W/3`, under an assumption that Byzantine weight is less than `W/3`.
+
+Let two certificates each have weight greater than `2W/3`. Their intersection has weight greater than:
+
+```text
+2W/3 + 2W/3 - W = W/3
+```
+
+If Byzantine weight is less than `W/3`, the overlap includes honest weight. Boundary comparisons matter. An implementation using integer weights must define whether a threshold is `floor(2W/3)+1` or an equivalent exact rule. Rounding one path differently in vote collection and certificate verification can split clients at the quorum boundary.
+
+Weight changes should activate at an authenticated epoch boundary. Calculating one certificate against old weights and another against new weights can invalidate the intersection argument. Test totals not divisible by three, maximum integer weights, duplicate signers, zero-weight entries, and set transitions immediately before and after a timeout.
+
 ## **Conclusion**
 
 Consensus scaling is the engineering of messages, signatures, leaders, committees, and timing assumptions. HotStuff makes the normal path linear and pipeline-friendly. Sync HotStuff shows what becomes possible under synchrony. DAG-based systems separate data dissemination from ordering.
