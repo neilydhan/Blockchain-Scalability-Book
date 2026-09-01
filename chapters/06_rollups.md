@@ -309,6 +309,102 @@ Before an upgrade, operators should replay historical blocks against the new imp
 
 The upgrade announcement should publish code hashes, verifier addresses, activation time, audit results, and user exit deadline. Emergency changes need narrower scope and a postmortem. An escape hatch that an upgrade can silently disable is not independent protection.
 
+## **Proving Pipeline: From Execution Trace to L1 Verification**
+
+A validity rollup does not prove "the block" as an informal object. It proves that a precisely encoded program accepted private witness data and public inputs. The engineering pipeline must keep execution, trace generation, arithmetization, proof creation, and contract verification on the same version.
+
+### Statement and witness
+
+Public inputs commonly bind:
+
+```text
+rollup identity
+protocol and circuit version
+parent and post-state roots
+transaction-data commitment
+inbox and withdrawal roots
+batch number or range
+```
+
+The witness contains transaction fields, signatures or signature-verification auxiliaries, Merkle paths, pre-state values, execution intermediates, and any tables needed by the proof system. Data may be private to the proof while still needing separate publication for rollup availability.
+
+A proof that omits the rollup identity may replay across deployments. A proof that omits the data commitment can establish a state transition without tying it to the bytes users downloaded. A proof that omits the program version may verify under rules different from the batch's declared semantics.
+
+### Constraint generation
+
+An execution trace is converted into algebraic constraints. Each row or step encodes machine state, opcode semantics, memory, storage, gas, and transitions to the next step. Lookup arguments can prove that values belong to fixed tables such as byte ranges or opcode metadata without repeating every constraint.
+
+The prover must constrain failure paths as carefully as success. A signature failure, out-of-gas exception, revert, and invalid opcode each have deterministic effects on state and receipts. An unconstrained branch can let a prover choose a convenient result not produced by the VM.
+
+Circuit capacity is often measured in rows or constraints, not transactions. One cryptographic operation can consume more proving work than many transfers. A batcher therefore tracks execution gas, published bytes, and proving shape separately.
+
+### Witness generation and proving
+
+Witness generation re-executes or instruments the block to fill every constrained cell. It is frequently memory- and storage-intensive. Proof generation then commits to the trace, derives challenges, constructs polynomial or hash-based arguments, and emits a succinct proof.
+
+A production job record includes:
+
+```text
+ProofJob {
+  job_id,
+  batch_range,
+  program_hash,
+  public_input_hash,
+  witness_commitment,
+  priority,
+  deadline,
+  attempts,
+  prover_build,
+  result_proof_hash
+}
+```
+
+Jobs must be idempotent. A worker restart should either resume safely or reproduce the same public statement. Different valid proofs may have different bytes because of proof randomness, so compare their verified public inputs and result, not only proof hashes.
+
+### Recursion and aggregation
+
+When one batch exceeds circuit capacity, a rollup can prove segments, then recursively verify segment proofs inside an aggregation circuit. Aggregation amortizes L1 verification but introduces another program version and dependency graph.
+
+The aggregator must bind segment order, continuity of state roots, complete batch coverage, and absence of duplicate segments. If segment `i` ends at root `R`, segment `i+1` must begin at `R`. Sorting proofs by an untrusted job identifier without constraining root continuity can combine individually valid pieces into the wrong history.
+
+### On-chain verification
+
+The settlement contract reads the proof and public inputs, selects the correct verifier, checks that the parent root equals the last accepted root, and updates state only after successful verification. Verifier upgrades need a timelock and explicit circuit-version activation.
+
+Verification gas should be measured with worst-case public inputs and contract storage behavior. A cheap cryptographic verifier can still become expensive if it writes many roots, messages, or accounting records.
+
+### Prover failure and fallback
+
+Proof correctness protects safety; prover availability controls liveness. A queue can grow because of hardware loss, a pathological transaction, witness-service outage, circuit bug, or demand burst. Operators should expose oldest unproved batch, queue work in constraint-seconds, attempt count, GPU/CPU utilization, witness generation time, and estimated settlement delay.
+
+Redundant workers help only if they do not share one code build, cloud region, witness database, or coordinator. A fallback prover should be exercised before an incident. If the protocol permits an escape mode after prolonged proof failure, the activation condition and state reconstruction data must be public and testable.
+
+### Proving capacity calculation
+
+Suppose batches arrive every 12 seconds. Average proof time is 42 GPU-seconds, but p95 is 72 seconds. Mean offered proving load is:
+
+```text
+42 / 12 = 3.5 GPU equivalents
+```
+
+Four workers provide only 12.5 percent mean headroom and cannot absorb long p95 jobs or one-worker failure. At six workers, mean utilization is about 58 percent. If one worker fails, utilization becomes 70 percent. Queue simulation should use the measured proof-time distribution and correlated batches, not only the average.
+
+If recursion aggregates 32 batch proofs and takes an additional 180 GPU-seconds, its amortized load is:
+
+```text
+180 / (32 × 12) ≈ 0.47 GPU equivalents
+```
+
+That stage needs its own queue and redundancy. A stable leaf-proof queue can coexist with an unstable aggregation queue.
+
+### Differential and adversarial testing
+
+For each VM test vector, compare native execution, witness generation, proof verification, and a second independent implementation where available. Mutate every public input and confirm verification fails. Generate invalid traces for signature, nonce, balance, gas, memory, storage, logs, and withdrawal roots.
+
+Test circuit boundaries: zero transactions, maximum rows, one step over capacity, largest lookup table, deepest call stack, maximum public inputs, and version transition. Crash workers after witness generation, during proof creation, after upload, and before coordinator acknowledgement. The coordinator should avoid duplicate state acceptance while allowing redundant proof production.
+
+A proof system is production-ready when the statement is complete, execution and circuit semantics agree, every version is pinned, queues remain stable under realistic distributions, and independent parties can reproduce verification. Succinct proof size alone establishes none of those properties.
+
 ## **End-to-End Implementation Example: A Rollup Payment**
 
 Consider a minimal account-based rollup supporting deposits, transfers, and withdrawals. The example is intentionally small enough to audit, but its boundaries match production systems.
