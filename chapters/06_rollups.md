@@ -165,6 +165,92 @@ A sequencer outage should reduce convenience, not destroy ownership. Force inclu
 
 Upgrade control is part of the same threat model. If an administrator can replace the verifier immediately, the proof system cannot protect users from that administrator. Delayed upgrades and an exit window make the cryptographic guarantee operationally credible.
 
+## **Rollup State Commitments and Inboxes**
+
+A rollup contract usually maintains an ordered inbox and a sequence of accepted state commitments. The inbox binds the L2 to data posted on L1, including force-included transactions. A simplified commitment might be:
+
+```text
+BatchCommitment {
+    previous_state_root
+    new_state_root
+    inbox_start
+    inbox_end
+    transaction_data_hash
+    l2_block_range
+}
+```
+
+The transition rule states that executing inbox items and batch data from `previous_state_root` must produce `new_state_root`. An optimistic rollup lets a proposer assert this relation subject to challenge. A validity rollup requires a proof of it.
+
+This structure prevents a proposer from proving an arbitrary computation unrelated to user messages. It also lets bridge contracts authenticate an L2 withdrawal against an accepted root.
+
+## **Interactive Fault Proofs**
+
+Re-executing a large batch on Ethereum would remove the scaling benefit. An interactive game instead commits both parties to execution traces. If a trace contains `2^n` steps, repeated bisection isolates one disputed step in about `n` rounds.
+
+Suppose the proposer claims a final machine state and the challenger computes another. They compare a midpoint commitment. Whichever half disagrees becomes the next interval. Eventually the L1 contract executes one instruction against an agreed pre-state and decides which trace is correct.
+
+Implementation details matter:
+
+- the machine state must have a canonical hash;
+- instruction semantics on L1 must match L2 exactly;
+- deadlines prevent one party from stalling;
+- bonds cover verification cost and discourage spam;
+- the challenger needs all batch data;
+- the system needs at least one working path to submit the challenge.
+
+A permissionless game can still be practically centralized if proof software is difficult to run or the bond is prohibitively large.
+
+## **Validity-Proof Pipeline**
+
+A validity rollup converts execution into an arithmetic statement. The witness contains transaction data, signatures or signature-verification inputs, prior state paths, and intermediate values. The circuit or zkVM constrains each transition and exposes public inputs such as old root, new root, and batch commitment.
+
+A production pipeline includes:
+
+1. **trace generation**, turning VM execution into witness data;
+2. **witness generation**, filling circuit columns or zkVM memory;
+3. **proving**, committing to the trace and producing the argument;
+4. **aggregation**, recursively combining several proofs;
+5. **verification**, checking one compact proof on the settlement layer.
+
+The prover is an availability component even when it cannot violate safety. If only one prover implementation exists and it crashes on a valid block, finality stalls. Multiple provers, deterministic trace formats, and the ability to reproduce witnesses improve resilience.
+
+### **Circuit Correctness**
+
+Cryptographic soundness proves the encoded relation, not the intended protocol. If a circuit forgets to constrain a value, a proof can be valid for an invalid state transition. Teams use specification tests, differential execution against a reference VM, formal methods for critical gadgets, and independent audits.
+
+Upgrading a zkVM changes the relation being proven. Settlement contracts must bind a proof to a verifier and program version. Upgrade delays give users time to examine new rules and exit.
+
+## **Data Encoding and Fee Estimation**
+
+Batchers reduce bytes by omitting values that can be inferred from order or state, replacing addresses with indices, compressing signatures, and aggregating repeated fields. The decoder must be canonical; two decodings of the same bytes would threaten consensus.
+
+A rough rollup fee estimator is:
+
+```text
+user fee = L2 gas × L2 gas price
+         + user data bytes × expected blob byte price
+         + allocated proving and operation cost
+         + risk margin
+```
+
+Blob prices vary with demand, so batchers estimate future publication cost and may delay low-priority batches. Delay improves compression and cost per transaction but increases latency and the amount of unposted state at risk during a sequencer failure.
+
+## **Rollup Operations Checklist**
+
+A production rollup should document and monitor:
+
+- sequencer uptime, reorganization policy, and forced-inclusion delay;
+- batch submission lag and unposted transaction volume;
+- DA publication success and retrieval;
+- proof or challenge status for every commitment;
+- canonical bridge balances and pending withdrawals;
+- contract implementation, administrator, and upgrade delay;
+- prover diversity and backlog;
+- the tested cost and capacity of forced exits.
+
+A block explorer that shows only L2 blocks covers the first step of a longer settlement pipeline.
+
 ## **Conclusion**
 
 Rollups scale execution by batching work and turning Layer 1 into a verifier and data-publication layer. Optimistic rollups use disputes; validity rollups use cryptographic proofs. Their real security also depends on sequencers, bridges, data availability, upgrades, and exit mechanisms.

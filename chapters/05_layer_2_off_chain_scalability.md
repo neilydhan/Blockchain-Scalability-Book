@@ -135,6 +135,80 @@ A Lightning path can exist topologically and still fail economically. Every hop 
 
 This safety margin locks capital. Longer routes and a congested base layer require more conservative expiries. Channel scalability is therefore a graph-routing problem, a monitoring problem, and a capital-efficiency problem at the same time.
 
+## **Implementing a State Channel**
+
+A channel contract can be small, but its signed message format must be exact. One state object might contain:
+
+```text
+ChannelState {
+    chain_id
+    channel_contract
+    channel_id
+    participants[]
+    sequence
+    balances_or_application_state
+    final
+}
+```
+
+Every participant signs a domain-separated hash of this object. `chain_id` and `channel_contract` prevent a signature from being replayed on another chain or adjudicator. `channel_id` separates simultaneous channels among the same users. `sequence` gives states a total freshness order. The `final` flag permits cooperative closure without waiting through a dispute window.
+
+The adjudicator stores the highest sequence it has seen:
+
+```text
+challenge(state, signatures):
+    require all_required_signatures(state, signatures)
+    require state.channel_id == expected_channel
+    require state.sequence > best_sequence
+    best_state = state
+    best_sequence = state.sequence
+    deadline = now + challenge_period
+```
+
+After the deadline, settlement applies `best_state`. A generalized channel may instead execute an application-specific transition on-chain when participants disagree. That fallback must be deterministic and bounded, or an adversary can make disputes too expensive to resolve.
+
+### **Watchtowers and Delegated Monitoring**
+
+A watchtower does not need custody of funds. The user gives it encrypted or pre-authorized evidence sufficient to respond to a stale close. A good design limits the tower's power to presenting a newer state. It also defines incentives: how the tower is paid, how missed responses are detected, and whether several towers can monitor the same channel.
+
+Monitoring assumptions should be measured against base-layer conditions. A one-hour challenge window is weak if the L1 can remain congested for longer or if confirmation finality takes much of that hour.
+
+## **Implementing HTLC Routing**
+
+For a three-hop payment, the receiver chooses secret `r` and sends the payer `H(r)`. Each channel update creates a conditional payment:
+
+```text
+pay amount to next_hop if preimage(H) is revealed before timeout
+otherwise refund amount to current_hop after timeout
+```
+
+Timeouts decrease toward the receiver. If Carol's output expires at height 100, Bob's incoming output must expire later, perhaps at 110, so Bob has time to learn the preimage and claim on-chain. Each hop adds a safety delta, increasing the total collateral lock time.
+
+Atomic multipath payments split a large payment into smaller routes and reveal the claim condition only when all parts arrive. This improves routing around limited channels but creates coordination and probing concerns.
+
+## **Plasma Exit Games in More Detail**
+
+A Plasma operator publishes roots of child-chain blocks. To exit, a user presents a coin's position, latest transaction, and Merkle proof. Other users can challenge with evidence that the coin was spent later or that the exiting history is invalid.
+
+The parent contract cannot cheaply reconstruct the whole child chain. Safety depends on users retaining data and watching exits. If the operator withholds a block, many users may attempt to leave at once. The root chain then becomes the bottleneck precisely during failure. Exit priority, bonds, and challenge ordering must prevent the operator from stealing with an old history.
+
+Rollups change this by publishing enough batch data for any observer to reconstruct all balances. Users no longer need a private copy of every coin history, though they still rely on correct contracts and a functioning challenge or proof system.
+
+## **L2 Classification Checklist**
+
+Before calling a system Layer 2, identify:
+
+- the contract or rule that holds canonical assets;
+- the data each user must retain;
+- who can propose new state;
+- how invalid state is rejected;
+- how censorship is bypassed;
+- the longest period a user may safely remain offline;
+- the cost of a disputed or mass exit;
+- the keys that can replace these rules.
+
+These answers classify the system more accurately than branding.
+
 ## **Conclusion**
 
 Layer 2 systems scale by avoiding global replication of every interaction. Channels are efficient for stable participants, sidechains provide independent capacity, Plasma uses exit games, and rollups combine off-chain execution with verifiable state commitments and available data.
