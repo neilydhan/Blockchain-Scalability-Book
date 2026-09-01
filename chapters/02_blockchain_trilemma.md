@@ -148,6 +148,79 @@ The trilemma usually treats rules as fixed, but deployed systems change. Governa
 
 For every upgradeable system, evaluate current code and the process that can replace it. The latter is part of the security boundary from launch.
 
+## Worked Failure-Domain Audit
+
+Suppose a proof-of-stake network advertises 1,200 active validator keys. Key count alone does not reveal whether faults are independent. Collect control and infrastructure data:
+
+| Dimension | Largest observed concentration |
+|---|---:|
+| Beneficial owner or custodian | 31% of stake |
+| Validator client | 68% of stake |
+| Cloud provider | 46% of stake |
+| Geographic region | 39% of stake |
+| MEV relay or block-builder path | 72% of proposed blocks |
+| Governance delegation bloc | 37% of votes |
+
+These percentages cannot be added: one validator may belong to every category. Instead, construct correlation scenarios.
+
+### Scenario 1: client bug
+
+If one client controls 68 percent and a deterministic bug makes it accept an invalid transition, the effect depends on consensus rules and what minority clients do. Diversity counted by the number of available clients is irrelevant when deployment share remains concentrated.
+
+Test the actual failure: feed all clients the divergent block, observe voting and fork choice, and rehearse coordinated but non-simultaneous recovery. An emergency social response may preserve the intended history, but that is a recovery assumption outside ordinary consensus.
+
+### Scenario 2: cloud and region outage
+
+A cloud provider holds 46 percent of stake, with 30 percentage points in one region. A provider-wide outage may threaten liveness; a regional outage overlaps but is not independent. Model the union from validator-level data rather than summing 46 and 39.
+
+Operators should spread replicas only when the protocol permits redundant signing safely. Running two active signers for one key can create equivocation during a partition. High availability needs fencing or remote-signing controls that ensure only one valid signing state.
+
+### Scenario 3: custodian compromise
+
+A custodian controls 31 percent, below a one-third Byzantine boundary but close enough that additional correlated stake can cross it. Determine whether the custodian controls withdrawal keys, validator signers, governance votes, or only delegates stake. Each permission produces a different attack.
+
+Economic security is not simply 31 percent of market capitalization. Measure stake that can actually be slashed, time to exit, borrowability, derivative hedges, and whether governance can cancel penalties.
+
+### Scenario 4: block-building concentration
+
+A builder or relay path touching 72 percent of blocks may censor or reorder transactions without controlling consensus finality. Inclusion lists, alternate relays, local building, and forced paths address this role. Counting consensus validators does not measure ordering decentralization.
+
+### Independence scorecard
+
+For each role, record:
+
+```text
+entities and weights
+shared software and version
+hosting provider, region, and network
+signing and custody infrastructure
+governance and upgrade authority
+fallback path and tested recovery time
+```
+
+Then calculate the smallest plausible correlated set that can:
+
+- halt finality;
+- finalize conflicting state;
+- censor a transaction past its deadline;
+- withhold enough data to prevent recovery;
+- replace protocol or bridge code;
+- stop users from exiting.
+
+The answer can differ for every action. One coalition may halt consensus, another may censor ordering, and a single upgrade key may replace a verifier.
+
+### Home-validator budget
+
+Decentralization also depends on the lower end of participation. Publish bandwidth, CPU, memory, storage IOPS, state size, history growth, synchronization time, and operational attention for a validating node. Measure p95 requirements under load and recovery, not minimum idle specifications.
+
+If a capacity increase raises annual state by 2 TB and requires 50 Mbps sustained ingress, estimate how many current operators and regions can still participate. A proposal may improve throughput and keep the same consensus threshold while reducing the population able to verify independently.
+
+### Audit conclusion
+
+A defensible report should not say "1,200 validators means decentralized." It should say which roles were measured, the largest control and infrastructure concentrations, the smallest dangerous coalitions, the participation budget, and the observed recovery from correlated faults.
+
+This converts the decentralization axis from a brand judgment into a set of failure hypotheses that can be tested.
+
 ## Conclusion
 
 The trilemma is useful when it exposes where a scaling design spends resources and trust. It does not assign one score to a chain, prove that only two properties are possible, or make decentralization a validator count.
