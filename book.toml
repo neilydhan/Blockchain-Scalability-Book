@@ -6,6 +6,7 @@ src = "."
 title = "Blockchain Scalability Book"
 
 [output.html]
+additional-css = ["theme/print.css"]
 default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/neilydhan/Blockchain-Scalability-Book"

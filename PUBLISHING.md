@@ -50,7 +50,7 @@ Set `CHROME=/path/to/browser` when the browser binary is not on the normal path.
 
 A successful command does not prove that a PDF is publishable. Rendering can split captions from diagrams, clip wide tables, substitute fonts, or move a heading to the bottom of a page. Review the actual PDF pages after every layout-affecting change.
 
-The HTML edition remains the canonical source output. If a printer requires a different page size, adjust print CSS in a dedicated release branch and keep content changes separate from layout changes.
+The HTML edition remains the canonical source output. Print rules live in `theme/print.css`. They keep headings, figures, code blocks, and tables from splitting when possible. If a printer requires a different trim size, adjust that file in a dedicated release branch and keep content changes separate from layout changes.
 
 ## Versioning
 
