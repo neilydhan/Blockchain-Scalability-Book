@@ -1,15 +1,32 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
 
-# Temporarily enable PDF configuration
-sed -i.bak 's/# \[output\.pdf\]/[output.pdf]/' book.toml
-sed -i.bak 's/# enable/enable/' book.toml
-sed -i.bak 's/# renderer/renderer/' book.toml
-sed -i.bak 's/# command/command/' book.toml
+"$(dirname "$0")/build-book.sh"
 
-# Build PDF
-mdbook build
+browser="${CHROME:-}"
+if [[ -z "$browser" ]]; then
+  for candidate in google-chrome chromium chromium-browser; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      browser="$(command -v "$candidate")"
+      break
+    fi
+  done
+fi
+if [[ -z "$browser" ]]; then
+  echo "error: Chrome or Chromium is required to produce the PDF" >&2
+  exit 1
+fi
 
-# Restore original configuration
-mv book.toml.bak book.toml
+root="$(cd "$(dirname "$0")/.." && pwd)"
+output="$root/book/blockchain-scalability-book.pdf"
+"$browser" \
+  --headless \
+  --no-sandbox \
+  --disable-gpu \
+  --allow-file-access-from-files \
+  --print-to-pdf="$output" \
+  --no-pdf-header-footer \
+  "file://$root/book/print.html"
 
-echo "PDF has been generated at book/pdf/output.pdf"
+test -s "$output"
+echo "PDF book: $output"
