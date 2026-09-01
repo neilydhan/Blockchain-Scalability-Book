@@ -209,6 +209,50 @@ Before calling a system Layer 2, identify:
 
 These answers classify the system more accurately than branding.
 
+## **Channel Factories and Virtual Channels**
+
+Opening one channel per user pair consumes L1 transactions. A channel factory lets several users lock funds in one contract and create many internal channels off-chain. The factory's participants sign updates allocating its total collateral among subchannels.
+
+A virtual channel connects two users through intermediaries without opening a new on-chain channel. Intermediaries lock collateral in underlying channels and agree to enforce the virtual relationship. This saves setup cost but adds participants whose liquidity and availability matter.
+
+Factories increase capital reuse while enlarging the failure group. A dispute may involve the factory state, subchannel state, and application state. Sequence numbers and challenge rules at each level must compose without allowing an old factory allocation to invalidate a newer subchannel.
+
+## **Channel Privacy and Metadata**
+
+Off-chain updates avoid public execution, but channel openings, capacities, routes, timing, and closures can reveal relationships. Routed-payment nodes observe neighboring hops and amounts. Probing can infer liquidity by testing which payments fail.
+
+Privacy techniques include onion routing, route blinding, rendezvous routing, multipath splitting, and private channels. They reduce visibility but do not erase timing and liquidity signals. Watchtowers also need enough encrypted information to recognize a punishable close without learning every application update.
+
+A privacy claim should state the observer: a routing intermediary, blockchain analyst, watchtower, counterparty, or global network adversary sees different metadata.
+
+## **Sidechain Bridge Verification Models**
+
+A sidechain bridge can verify messages in several ways.
+
+**Multisignature or committee.** A threshold signs withdrawals. This is simple and cheap but makes the signer set a custody boundary.
+
+**Light client.** The destination verifies source consensus headers and inclusion proofs. Security follows the source consensus more closely, but on-chain verification may be expensive and validator-set changes must be tracked.
+
+**Optimistic bridge.** Relayers assert messages and watchers can challenge invalid assertions during a delay. This reduces routine verification cost but needs available source data and one honest challenger.
+
+**Validity-proof bridge.** A proof attests to source consensus or state transition. Verification is compact, while proving the source protocol and keeping circuits current is complex.
+
+Bridge labels such as "trustless" hide these mechanisms. The verification rule, upgrade authority, finality delay, and recovery behavior are the meaningful facts.
+
+## **Mass-Exit Capacity**
+
+Exit designs often prove one user can recover. The stronger question is whether many users can recover simultaneously.
+
+If an L2 holds one million accounts and the parent chain can process only thousands of exit transactions per day, an emergency window can close before everyone exits. Aggregated exits, claim trees, priority queues, and validity proofs improve capacity. Rate limits can bound theft but delay honest withdrawals.
+
+A mass-exit test should publish parent-chain gas per exit, maximum exits per block, challenge load, data required by each user, and the outcome when the operator withholds the final state. Safety for the fastest users is not system-wide safety.
+
+## **Payment-Channel Rebalancing**
+
+Successful payments move liquidity in one direction. A channel can remain fully funded yet unable to send further along the depleted side. Rebalancing sends a circular payment that returns funds to the same owner through other channels, or performs an on-chain splice that changes channel capacity without a full close.
+
+Rebalancing costs routing fees and may fail because the required cycle lacks liquidity. Automated policies choose target balances and fee limits. They can leak demand information or compete with user payments. Network throughput therefore depends on liquidity distribution and rebalancing efficiency, not only total locked value.
+
 ## **Conclusion**
 
 Layer 2 systems scale by avoiding global replication of every interaction. Channels are efficient for stable participants, sidechains provide independent capacity, Plasma uses exit games, and rollups combine off-chain execution with verifiable state commitments and available data.
