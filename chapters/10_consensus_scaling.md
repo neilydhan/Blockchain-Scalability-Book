@@ -168,6 +168,59 @@ The layers still interact. Consensus cannot finalize unavailable data safely, an
 
 ---
 
+## **Named Case Studies: How Consensus Families Reached Production**
+
+A protocol family is not a straight genealogy in which one paper becomes one product unchanged. Production systems borrow a safety rule, split one subsystem into two, replace the broadcast layer, or redesign the commit path. The three traces below separate what carried over from an earlier design from what did not.
+
+### **From HotStuff to DiemBFT and AptosBFT**
+
+**Deployment labels: Diem was a production-oriented implementation that did not become a public production network; AptosBFT is production.** HotStuff supplies a chained Byzantine fault-tolerant core: rotating leaders propose blocks, weighted quorum certificates summarize votes, and a pacemaker moves replicas between views. DiemBFT turned that paper structure into an implementation with transaction execution, persistent safety state, epoch changes, networking, and operational recovery. AptosBFT descends from that code and design line but runs in a live network with a distinct data-dissemination path.[^4][^5]
+
+Trace an Aptos transfer from Alice to Bob. Alice submits a signed transaction to a fullnode, which forwards it toward validators. Validators validate and disseminate the transaction. Aptos documentation separates mempool, **Quorum Store**, consensus, execution, and storage. Quorum Store packages transaction batches and makes their availability independently certifiable. The round leader can propose references to available batches rather than bearing the full cost of first distributing every transaction inside the consensus proposal. Validators order the proposal through AptosBFT, execute the ordered transactions, vote, and commit after the required certificate path. Storage persists the committed result and the client can observe the transaction as committed.[^4]
+
+The HotStuff inheritance is visible in rounds, leaders, quorum certificates, chained certified blocks, and timeout-driven progress. The important production idea is still that an honest validator does not vote in a way that violates its locked or preferred branch rule, and a new leader carries sufficient certificate evidence to propose safely. What did **not** carry over unchanged is a simple mental model in which the leader broadcasts one complete block and consensus alone handles all payload movement. Quorum Store separates payload availability from ordering. Aptos also couples the protocol to weighted stake, epochs, state synchronization, execution, and a real transaction pipeline. Calling all of that "HotStuff" conceals the components that dominate throughput and recovery.
+
+Suppose the round leader fails. Validators time out, exchange timeout information, advance the round, and a later leader proposes from safe certificate state. That is the pacemaker liveness path. Suppose Quorum Store cannot form availability proofs for new batches. Consensus may still exchange empty or previously available proposals, but application throughput falls because ordering cannot safely refer to unavailable payloads. Suppose a validator loses its persisted safety state and signs conflicting rounds after restart. The mathematical quorum intersection argument cannot save a node that violates its own voting rule; slashing evidence and key safety become part of the production protocol.
+
+For the user, the observable boundaries are submission to a fullnode, admission, batch availability, proposal, certification, execution, and commit. An RPC response that merely accepts Alice's transaction is not consensus finality. A useful incident report says whether the bottleneck was transaction dissemination, Quorum Store availability, leader progress, execution, state synchronization, or storage commit.
+
+### **From Narwhal and Bullshark to Sui Mysticeti**
+
+**Deployment labels: Narwhal and Bullshark are implemented research systems and prior production components; Mysticeti is Sui's production consensus.** Narwhal separates reliable transaction dissemination from consensus ordering by building a directed acyclic graph (DAG) of certified batches. Bullshark orders that DAG. The conceptual gain is that validators continuously disseminate data instead of waiting for one leader to carry a large block to everyone.[^3]
+
+Sui's current consensus documentation names **Mysticeti** as its consensus protocol. Validators create signed blocks that reference earlier blocks, forming a DAG. A block can carry transaction information and votes implicit in those references. The protocol applies a decision rule to DAG structure and stake to commit leaders and derive one order. Sui also distinguishes consensus transactions from transactions that can use its object-centric fast path; not every operation needs identical consensus work.[^6]
+
+Trace a Sui transaction that touches a shared object and therefore needs consensus. The client obtains the required signatures and sends the transaction to validators. Validators validate it and include it in DAG blocks. Other validators receive those blocks and reference them in later blocks, providing evidence of dissemination and support. Mysticeti's rule identifies commit decisions from this DAG and yields a deterministic transaction order. Validators execute against Sui's object model and the client observes effects and finality under the network's rules.
+
+What carried over from Narwhal/Bullshark is the DAG-first intuition: dissemination and causal references continue across rounds, payload availability is not reduced to one leader's broadcast, and ordering can use accumulated DAG evidence. What did **not** carry over unchanged is the two-box textbook picture "Narwhal mempool plus Bullshark consensus." Mysticeti changes the DAG and commit protocol to reduce latency and integrates with Sui's transaction model. A reader should not assume that every Narwhal certificate type, Bullshark wave, or earlier round structure remains a live Mysticeti mechanism merely because the systems share authors and lineage.
+
+Now let the designated leader's block arrive late. In a linear leader-broadcast design, replicas may wait and then start a view change. In a DAG design, validators can continue producing and referencing other blocks, while the decision rule handles a missing or unsupported leader. Throughput and liveness still depend on enough weighted validators exchanging DAG blocks. A partition that prevents quorum-weight communication stops finality. Equivocating validator blocks must be detected and treated under the protocol's rules. If data named by a DAG block is unavailable, a reference is not a substitute for the payload needed to validate and execute transactions.
+
+The visible evidence is therefore richer than "block height." Operators inspect DAG round or slot progress, blocks received by stake weight, leader decisions, missing ancestors, transaction certification, execution effects, and epoch state. The production question is whether the exact Mysticeti decision and persistence rules are safe through equivocation, restart, epoch transition, and asymmetric delay, not whether the earlier Narwhal paper was sound.
+
+### **From the PBFT family to Tendermint and CometBFT**
+
+**Deployment label: CometBFT is production infrastructure used by application-specific chains.** Practical Byzantine Fault Tolerance (PBFT) established the familiar setting of a fixed validator group, fewer than one-third Byzantine faults, authenticated messages, and quorum intersection. Tendermint adapted the family for blockchains with repeated heights, stake-weighted validators, rotating proposers, locking, and two named voting steps. CometBFT is the maintained state-machine replication engine in that lineage and exposes the application through the Application Blockchain Interface.[^7][^8]
+
+Trace one height. A proposer chooses a block for height `h` and round `r`. Validators receive and validate the proposal against consensus and application rules. They broadcast **prevotes** for the proposal or nil. If a validator observes more than two-thirds of voting power prevote a block, it can lock according to the protocol rule and broadcast a **precommit** for that block. More than two-thirds precommits for the same block at the height form the commit evidence; the engine advances to the next height and the application commits the resulting state. If no proposal or quorum arrives before a timeout, validators move to a higher round with a new proposer.[^7]
+
+The PBFT inheritance is quorum intersection, Byzantine authentication, a proposer-led normal path, and safety from vote restrictions. What changed is as important. CometBFT does not use PBFT's client-request, pre-prepare, prepare, commit vocabulary as a drop-in transcript. It repeats propose-prevote-precommit rounds at each blockchain height, uses locks to preserve safety across rounds, weights votes by validator power, changes validator sets at defined boundaries, gossips blocks and votes over a peer network, and calls an external deterministic application through ABCI. It also commits a block before moving to the next height rather than using HotStuff's pipelined chain of several certified descendants.
+
+Suppose the proposer is offline. Validators time out, prevote nil when required, fail to form a block commit in that round, and proceed to the next proposer. Suppose a validator saw a quorum prevote and locked block A, then receives block B in a later round. It may not simply follow the newest proposal; the lock and proof-of-lock rules govern when it can vote differently. This is the safety bridge across rounds. A validator that precommits conflicting blocks for the same height and round creates evidence of equivocation. A network partition with neither side holding more than two-thirds voting power preserves safety but halts commits.
+
+Application behavior is part of the trace. CometBFT orders and replicates calls, but the ABCI application must be deterministic. If two correct validators return different results for the same ordered block because of local time, floating-point behavior, or an external API, consensus cannot turn those divergent applications into one state. Likewise, a valid consensus commit says that the validator quorum agreed to the block; it does not prove a bridge oracle, governance decision, or application price feed was economically correct.
+
+### **Lineage comparison**
+
+| Earlier family | Production descendant | Ideas that carried over | Ideas that changed or did not carry over |
+|---|---|---|---|
+| HotStuff | DiemBFT, then AptosBFT | Rotating leaders, chained quorum certificates, safe voting state, pacemaker/view change | Payload dissemination is split through Quorum Store; stake epochs, execution, state sync, and operations are part of the real system |
+| Narwhal/Bullshark | Sui Mysticeti | DAG dissemination, causal references, continued data flow despite an imperfect leader | Mysticeti uses a different low-latency DAG decision protocol and Sui integration; do not project every Bullshark wave or Narwhal certificate onto it |
+| PBFT family/Tendermint | CometBFT | Authenticated Byzantine quorum, proposer, quorum intersection, lock-like safety across retries | Propose-prevote-precommit rounds, weighted validators, repeated blockchain heights, gossip, ABCI, and non-pipelined commit distinguish the production engine |
+
+These are not three brand names for one algorithm. AptosBFT emphasizes a chained-certificate core with separate payload availability. Mysticeti lets the DAG carry both dissemination and ordering evidence. CometBFT uses explicit prevote and precommit rounds with locking at each height. All still need quorum reachability, persisted signing safety, authenticated validator sets, deterministic execution, and tested recovery when timing assumptions fail.
+
+
 ## **Comparison**
 
 | Family | Finality | Typical Fault Bound | Communication Idea | Main Trade-Off |
@@ -573,3 +626,9 @@ No protocol is unconditionally "faster consensus." Each result depends on its ne
 [^1]: Yin, Maofan, et al. "HotStuff: BFT Consensus in the Lens of Blockchain." <https://arxiv.org/abs/1803.05069>.
 [^2]: Abraham, Ittai, et al. "Sync HotStuff: Simple and Practical Synchronous State Machine Replication." <https://arxiv.org/abs/2005.13432>.
 [^3]: Danezis, George, Lefteris Kokoris-Kogias, Alberto Sonnino, and Alexander Spiegelman. "Narwhal and Tusk." <https://arxiv.org/abs/2105.11827>.
+
+[^4]: Aptos Documentation. "Life of a Transaction." <https://aptos.dev/network/blockchain/blockchain-deep-dive>.
+[^5]: Diem Documentation. "Consensus crate." <https://diem.github.io/diem/consensus/index.html>.
+[^6]: Sui Documentation. "Consensus." <https://docs.sui.io/develop/sui-architecture/consensus>.
+[^7]: CometBFT Documentation. "Byzantine Consensus Algorithm." <https://docs.cometbft.com/v0.37/spec/consensus/consensus>.
+[^8]: CometBFT Documentation. "ABCI 2.0." <https://docs.cometbft.com/main/spec/abci/>.
