@@ -2,6 +2,42 @@
 
 These questions are designed to test reasoning, not recall. A strong answer states its assumptions and distinguishes normal operation from failure recovery.
 
+## **Basic-Knowledge Warm-Up**
+
+Use these questions before the chapter exercises. A reader should be able to answer them in plain language; formulas and protocol names are optional.
+
+1. What is the difference between blockchain history and current state?
+2. Why do many nodes repeat transaction checks instead of trusting one database?
+3. What is the difference between a block being included and a transaction being final?
+4. What evidence does a digital signature provide, and what does it not prove about a transaction's validity?
+5. Why can raising transactions per second make latency or decentralization worse?
+6. Explain safety and liveness using a system that must choose between halting and accepting conflicting payments.
+7. Why is a sidechain bridge a separate security boundary?
+8. In a payment channel, why must each participant keep the newest signed state?
+9. What does a rollup post to its settlement or DA layers, and why is a state root alone insufficient for recovery?
+10. Explain the difference between an optimistic fault proof and a validity proof.
+11. Why can a validity proof establish correctness without establishing data availability?
+12. Give an example of two transactions that can execute in parallel and two that conflict.
+13. Why do two BFT quorums need to overlap in an honest participant?
+14. For any future scaling claim, name one assumption and one failure state a wallet should expose.
+
+### Warm-up answer guide
+
+1. History is the ordered record of past blocks and transactions; state is the latest live balances, ownership, and contract data.
+2. Replication lets independent parties detect an invalid update or dishonest operator, at the cost of repeated work.
+3. Inclusion places a transaction in a current canonical candidate; finality adds evidence or depth that makes reversal forbidden or sufficiently unlikely under a stated model.
+4. A signature proves authorization by the corresponding key for the signed bytes. It does not prove sufficient balance, correct contract execution, inclusion, or finality.
+5. Larger or faster blocks can take longer to propagate and demand stronger hardware; batching can increase throughput while individual users wait longer.
+6. Safety prevents two conflicting payments from both becoming accepted. Liveness ensures valid payments eventually progress. A partition may force a protocol to halt to preserve safety.
+7. The bridge decides which sidechain evidence releases assets elsewhere. The base chain does not automatically verify every sidechain transition.
+8. An old state may assign balances differently. The newest signature, revocation rule, or monotonic sequence is evidence against stale settlement.
+9. A rollup posts ordered data or its commitment, state claims, and proof/dispute evidence according to its design. A root binds values but does not reveal them.
+10. An optimistic system accepts after a challenge window unless a challenger proves a fault. A validity system requires a compact proof of correct execution before acceptance.
+11. A verifier can check a proof over hidden or missing inputs without those inputs being available for users to reconstruct future state.
+12. Transfers over disjoint accounts can run together; two transactions writing one balance or reading a value another writes conflict.
+13. Overlap plus honest voting rules prevents certificates for incompatible commits under the fault bound.
+14. Acceptable answers include a sequencer outage and "forced-inclusion pending," prover delay and "unproven," or bridge finality delay and "not withdrawable."
+
 ## **Chapters 1-2: Measuring Scalability and the Trilemma**
 
 1. A chain reports 50,000 TPS. What information is needed before comparing it with Ethereum or a rollup?
