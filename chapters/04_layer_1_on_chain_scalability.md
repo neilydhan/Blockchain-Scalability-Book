@@ -492,6 +492,95 @@ Before enabling expiry:
 
 State expiry is operationally credible only when a user can return after the horizon, obtain the right data from more than one source, verify it against consensus commitments, and safely resume activity.
 
+## **Mempool Admission and Denial-of-Service Control**
+
+Before a transaction reaches a block, nodes receive, validate, store, and relay it in a **mempool**. Mempool capacity is not consensus capacity: attackers can consume CPU, memory, bandwidth, and database lookups with transactions that never become valid blocks.
+
+### Admission pipeline
+
+Apply checks from cheapest to most expensive:
+
+1. bound message length and decode canonical fields;
+2. check chain ID, version, and basic structure;
+3. reject known duplicates and expired transactions;
+4. verify fee floor and intrinsic resource bounds;
+5. verify signature or authorization;
+6. check nonce and obvious balance conditions against current state;
+7. run bounded simulation when policy requires it;
+8. store and relay under local limits.
+
+Consensus validation still rechecks the transaction in a block. Mempool admission is local resource policy and must not become an undocumented consensus rule that prevents valid forced inclusion.
+
+### Cheap-to-send, expensive-to-check
+
+An attacker seeks **asymmetry**: a small request causing large work. Examples include malformed encodings that parse deeply, signatures using expensive paths, contract-account validation, state reads over cold keys, and simulations that allocate memory before reverting.
+
+Cap nesting, lengths, decompression, signatures per envelope, validation gas, state accesses, and concurrent simulations. Cache valid and invalid results only with state/version keys that prevent stale decisions.
+
+### Nonces and replacement
+
+Account nonces normally impose order. If nonce 10 is missing, nonces 11-100 may wait. Attackers can create long gaps or repeatedly replace one transaction.
+
+Limit queued future nonces per account and globally. A replacement must increase the relevant fee by a clear rule and preserve nonce and sender. Rate-limit replacement churn so tiny fee increments cannot force peers to repeatedly validate and gossip.
+
+Structured nonce lanes need per-lane caps. Thousands of lanes can bypass a per-account sequential limit unless the account has an aggregate budget.
+
+### Fee floors
+
+A local fee floor filters transactions unlikely to pay for scarce resources. It should reflect encoded bytes, execution, state access, and validation cost. One gas scalar may underprice large signatures or complex account validation.
+
+Dynamic floors respond to congestion, but peers can have different policies. Wallets need rejection reasons and current minimums. A low-fee valid transaction may remain eligible for direct block inclusion even if many mempools drop it.
+
+### Eviction
+
+When full, evict by an auditable policy using fee value, age, dependencies, and resource shape. Avoid one global fee-per-byte score that lets compute-heavy transactions crowd out bandwidth-efficient work or vice versa.
+
+Evict dependent future-nonce transactions when their required predecessor disappears, or mark them parked with bounded storage. Do not gossip repeated evictions endlessly between peers with incompatible policy.
+
+### Per-sender and per-peer limits
+
+One sender can generate many keys, so identity-based limits alone do not stop Sybils. Combine sender, peer, IP/network, resource, and global limits cautiously. Network limits should not permanently exclude shared gateways or privacy networks.
+
+Peers earn relay capacity through useful behavior, but reputation must decay and resist poisoning. A malicious peer should not cause an honest transaction to be globally blacklisted merely by sending it first.
+
+### Gossip amplification
+
+In a network of `N` nodes with average fanout `d`, naive forwarding can create many duplicate deliveries. Nodes advertise transaction hashes, request unknown bodies, deduplicate, and batch announcements.
+
+Suppose 10,000 nodes each receive 2,000 new transactions per second and an average encoded transaction is 300 bytes. One full copy per node is already:
+
+```text
+10,000 × 2,000 × 300 B = 6 GB/s ecosystem ingress
+```
+
+Duplicates, inventory messages, and signatures add overhead. Measure per-node bandwidth and duplicate ratio under burst, not only average transaction rate.
+
+### Reorganizations
+
+Transactions from reverted blocks may return to the mempool if still valid. Recheck nonce, balance, fee, expiry, and conflicts against the new canonical state. Do not blindly restore a prior mempool snapshot.
+
+Large reorganizations can cause a reinsertion storm while nodes also execute the new branch. Prioritize consensus catch-up and bound revalidation work.
+
+### Privacy
+
+Public mempools reveal sender, calls, amounts, and fee willingness before inclusion. Private endpoints reduce broadcast but give operators information and censorship power. Encrypted mempools change payload visibility while retaining size, timing, and ingress metadata.
+
+Document retention and sharing. Mempool logs can contain sensitive pending actions that never appear on-chain.
+
+### Observability
+
+Track admitted, rejected, parked, replaced, evicted, expired, and included transactions by reason; validation CPU; state-read latency; memory/bytes; sender and peer concentration; duplicate gossip; oldest eligible age; and inclusion outcomes.
+
+A growing mempool can mean demand exceeds capacity, a producer censors, fees are mispriced, or nonce dependencies are missing. Metrics need these dimensions.
+
+### Adversarial tests
+
+Flood malformed maximum-size envelopes, invalid signatures, cold-state checks, nonce gaps, replacement churn, many account-abstraction lanes, low-fee Sybils, conflicting transactions, peer reconnect loops, and reorganization reinsertion.
+
+Assert bounded memory and validation work, continued admission for honest target traffic, no crash or unbounded queue, specific rejection reasons, and consensus catch-up priority.
+
+The mempool is an untrusted network-facing scheduler. Scaling blocks without scaling and defending admission merely moves failure to the system's front door.
+
 ## **Node Synchronization and Snapshot Recovery**
 
 A chain has not scaled sustainably if existing validators keep up but a replacement node cannot join, recover, or audit state within an acceptable window. Synchronization is part of the protocol's availability and decentralization budget.
