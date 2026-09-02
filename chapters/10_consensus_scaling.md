@@ -8,6 +8,64 @@ Consensus scaling therefore seeks lower communication cost and faster finality w
 
 ---
 
+## **Consensus From First Principles**
+
+Nodes receive messages at different times. Two valid transactions may compete for the same funds, and two producers may propose different next blocks. **Consensus** is the protocol that lets independent nodes converge on one ordered history despite delay and faulty participants.
+
+Consensus does not decide whether a contract rule is wise. It decides which valid proposal becomes canonical under agreed rules.
+
+### **Fault models**
+
+A **crash fault** stops or restarts. A **Byzantine fault** can lie, sign conflicting messages, or coordinate with others. Blockchain consensus also needs **Sybil resistance**, a rule that prevents one attacker from creating unlimited voting identities. Proof of work weights computational work; proof of stake weights bonded stake; permissioned BFT systems use an admitted validator set.
+
+The fault threshold is part of the claim. "Tolerates one-third Byzantine weight" means safety or liveness is proven only while adversarial voting weight stays below a specified boundary and the network model holds.
+
+### **Network models**
+
+- **Synchronous:** messages arrive within a known maximum delay.
+- **Partially synchronous:** such a bound eventually holds, but nodes may not know when stable conditions begin.
+- **Asynchronous:** no fixed delivery bound is assumed.
+
+A timeout cannot prove that a leader is malicious; the leader or network may be slow. Timeouts are tools for progress under a model, not evidence of intent.
+
+### **Nakamoto-style consensus**
+
+Bitcoin-like consensus allows producers to extend a chain of valid blocks. Nodes follow the valid chain with the most accumulated work or protocol-defined weight. Temporary forks resolve as one branch becomes heavier.
+
+Finality is **probabilistic**: deeper blocks become increasingly costly or unlikely to replace, but no single vote makes them mathematically irreversible. Applications choose a confirmation depth based on value and risk.
+
+### **BFT-style consensus**
+
+A Byzantine fault tolerant (BFT) protocol uses explicit proposals and votes among a known validator set. With four equal replicas and at most one Byzantine, a quorum of three is common. Any two groups of three overlap in at least two replicas; because only one can be Byzantine, the overlap includes an honest replica.
+
+Honest replicas follow locking or voting rules that prevent them from supporting incompatible commits. The overlap carries safety from one quorum certificate to another.
+
+A **quorum certificate (QC)** is compact evidence that enough distinct validator weight voted for a proposal. It may contain individual signatures or one aggregated signature plus a signer bitmap. The verifier must still check membership and weight.
+
+### **Views, leaders, and pacemakers**
+
+A **view** is one numbered leader attempt. The leader proposes a block; replicas validate and vote. If progress stalls, a **pacemaker** uses timeouts and signed messages to move replicas to a higher view.
+
+The new leader must carry forward the highest safe certificate or locked block. Replacing a stalled leader without this evidence could let different groups commit conflicting branches.
+
+### **Safety versus liveness**
+
+**Safety** asks whether two honest nodes can commit conflicting histories. **Liveness** asks whether valid work eventually commits. During a severe partition, a protocol may halt to preserve safety. Once communication assumptions recover, view changes should restore liveness.
+
+Think of safety as "do not approve two incompatible ledgers" and liveness as "do not remain stuck forever." A fast protocol that sometimes approves both is unsafe; a perfectly consistent protocol that never produces another block is not live.
+
+### **Finality and fork choice**
+
+A **fork-choice rule** selects the branch nodes should build on now. A **finality rule** identifies a prefix that should not revert under the fault assumptions. Some protocols combine them; others use a longest-chain head plus a voting-based finality gadget.
+
+A transaction can therefore be included at the head but not finalized. Bridges and high-value applications often wait for the stronger boundary.
+
+### **Why consensus throughput is not execution throughput**
+
+Voting on a block hash can be fast while distributing and executing the block body is slow. Empty-block benchmarks measure agreement on almost no application work. Complete tests include payload propagation, signature verification, execution, state commitment, leader failure, and catch-up.
+
+Later sections introduce HotStuff, threshold signatures, DAG mempools, weighted quorums, and protocol traces. Each builds on the same questions: what evidence is signed, which quorums overlap, what state survives a crash, and how progress resumes after delay.
+
 ## **Safety, Liveness, and Finality**
 
 A consensus protocol must separate three properties:
