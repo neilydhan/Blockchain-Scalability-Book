@@ -276,6 +276,112 @@ Reconstruction consumes CPU and bandwidth. An adversary may repeatedly provide j
 
 For long retention, storage networks can pin complete blobs after the consensus availability window. Their correctness is checked against old commitments, but their economic model determines whether data remains retrievable years later.
 
+## **Sampling Networks, Peer Diversity, and Adversarial Serving**
+
+Data availability sampling assumes more than correct mathematics. Clients must obtain unpredictable samples through a network that prevents a producer from showing favorable pieces to each client while withholding enough globally to block reconstruction.
+
+### Sampling request
+
+```text
+SampleRequest {
+  chain_id,
+  block_height,
+  data_commitment,
+  row_or_column,
+  share_index,
+  request_nonce,
+  client_version
+}
+```
+
+A response includes the share bytes and an inclusion proof. The client checks the requested position, commitment, encoding domain, and proof before counting success.
+
+Do not let the server choose sample positions. Derive them from client randomness committed after the producer fixes the data commitment, or from a protocol randomness source whose timing prevents grinding.
+
+### Selective serving
+
+A malicious producer can serve shares to well-known monitors while withholding from ordinary nodes. Random clients should exchange observations and shares through diverse peers. A success result from one gateway says only that gateway answered one request.
+
+Privacy matters because a server that links all requests from one client learns its complete sample set and can answer exactly those positions. Clients can distribute requests among peers or use privacy-preserving transports, but correlated infrastructure may still join them.
+
+### Peer diversity
+
+Count independent autonomous systems, regions, operators, and implementations, not IP addresses. One provider can expose thousands of endpoints.
+
+Discovery uses several sources: bootstrap peers, peer exchange, DNS records, on-chain identities, and cached known-good peers. No source should control every initial connection. Rate-limit new peers and retain diversity during churn.
+
+A client selects peers across failure domains and caps the fraction of samples answered by one domain. If diversity falls below policy, it reports reduced confidence rather than silently treating repeated answers as independent.
+
+### Eclipse and partition attacks
+
+An eclipse attacker surrounds a client and controls every response. It can serve an old chain, delay samples, or reveal only pieces matching its attack.
+
+Cross-check finalized headers over a separate transport, maintain long-lived authenticated peers, limit address-table poisoning, and compare network observations. A light client should distinguish "share missing" from "all current peers are one untrusted domain."
+
+During a network partition, two groups may each obtain different subsets. Reconstruction and consensus rules define whether the block progresses. Sampling confidence cannot choose between conflicting commitments; consensus finality is still required.
+
+### Grinding sample positions
+
+If sample positions are predictable before block construction, a producer may search over block encodings or commitments to make monitored samples land on available shares. This is **grinding**.
+
+Bind positions to randomness unavailable when the producer commits, and include block/commitment domain separation. Analyze how many alternative encodings, nonces, or block proposals a producer can try. One bit of producer freedom doubles its search space.
+
+### Correlated samples
+
+The formula `(1-h)^s` assumes independent samples, where `h` is hidden fraction and `s` is sample count. Repeating the same share does not improve confidence. Sampling without replacement changes exact probability but usually helps slightly.
+
+If 100 clients each take 20 samples but all use the same deterministic seed, the network has only 20 distinct positions, not 2,000. Mix client-specific or unpredictable randomness while preserving auditability.
+
+### Serving load
+
+Sampling creates many small random requests, which can stress disk I/O and connection overhead more than bulk block download. Cache recent shares, batch proofs, use range requests carefully, and cap unauthenticated work.
+
+Suppose 50,000 light clients take 20 samples from each 12-second block:
+
+```text
+50,000 × 20 / 12 ≈ 83,333 sample responses/second
+```
+
+At 2 kB per response including proof, egress is roughly:
+
+```text
+83,333 × 2 kB ≈ 167 MB/s
+```
+
+This is ecosystem demand, not one node's obligation. Distribute it across serving nodes and measure p99 latency under churn and repair traffic.
+
+### Negative caching
+
+A missing response may mean withholding, slow peer, wrong request, or local outage. Negative caching prevents repeated expensive requests but can prolong a transient failure.
+
+Record reason and expiry. Retry through another domain before classifying a share missing. Do not let one unauthenticated "not found" response poison the global cache.
+
+### Share exchange and reconstruction
+
+Sampled shares can be gossiped so honest clients collectively approach reconstruction. Verify before forwarding. Deduplicate by commitment and position, and bound storage by finalized height and retention policy.
+
+When enough shares exist, reconstruct and verify the original commitment. A successful decode with a mismatched commitment is invalid, not "mostly available." Store evidence of inconsistent encoding for fraud or operator diagnosis.
+
+### Confidence reporting
+
+Expose:
+
+- distinct valid positions sampled;
+- number requested and failed by reason;
+- peer and failure-domain diversity;
+- header finality status;
+- coding and commitment version;
+- confidence under the stated hidden-fraction model;
+- whether full reconstruction was attempted or achieved.
+
+Avoid a single green badge when independence or network diversity is unknown.
+
+### Adversarial tests
+
+Test predictable seeds, repeated positions, one gateway answering all requests, sybil peer churn, selective serving to monitors, slow final shares, malformed proofs, inconsistent rows, provider-region outage, network partition, and load spikes.
+
+A sampling network supports scalable verification only when sample choice is unpredictable, responses are authenticated, observations span independent paths, and serving capacity remains available during the same attacks that make availability important.
+
 ## **DA Capacity Planning**
 
 Let each block contain `B` original bytes, expand by coding factor `r`, and arrive every `t` seconds. The network disperses approximately `rB/t` bytes per second before protocol overhead. Each node's custody and sampling share may be smaller, but reconstruction nodes and producers handle more.
