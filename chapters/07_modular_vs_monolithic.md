@@ -273,6 +273,103 @@ A destination consuming a message before source finality risks accepting an even
 
 A bridge policy maps source evidence to destination acceptance. For probabilistic chains, it may require a confirmation depth. For BFT chains, it verifies a finality certificate. For rollups, it waits for challenge or validity-proof completion. This policy should be explicit and upgradeable only with a delay because changing it alters the security budget of every pending message.
 
+## **Light-Client Bootstrap and Checkpoint Trust**
+
+A light client can verify new headers cheaply once it has a trusted starting point. The first accepted header, validator set, or commitment is therefore part of the security boundary. "Verify, do not trust" begins after bootstrap; it does not explain bootstrap itself.
+
+### Bootstrap package
+
+A client installation should identify:
+
+```text
+Bootstrap {
+  chain_id,
+  genesis_hash,
+  checkpoint_height,
+  checkpoint_hash,
+  validator_or_committee_root,
+  consensus_version,
+  checkpoint_expiry,
+  distribution_signatures[],
+  software_build_hash
+}
+```
+
+The package binds the intended network and verification rules. Chain names and token symbols are insufficient because testnets, forks, and malicious deployments can reuse them.
+
+### Sources of initial trust
+
+A client may begin from:
+
+- genesis plus verification of every transition;
+- a checkpoint embedded in reviewed software;
+- a recent checkpoint authenticated by a social or governance process;
+- a proof verified by another already trusted chain;
+- several independent checkpoint providers under a stated threshold.
+
+Each route has a different cost and assumption. Genesis verification can be impractical for a mobile wallet and may still require weak-subjectivity information in proof-of-stake systems. Multiple providers are useful only when their identities, operations, and failure domains are independent.
+
+### Weak subjectivity
+
+In some proof-of-stake protocols, validators can withdraw and later sign an alternative history without risking current stake. A client offline for too long may see two internally valid histories and lack enough current accountability evidence to choose.
+
+A **weak-subjectivity checkpoint** is a sufficiently recent trusted state from which ordinary consensus verification resumes. The client must know the maximum safe checkpoint age under protocol assumptions. "Latest" from one RPC endpoint is not authentication.
+
+If the checkpoint expires, fail closed and ask for a fresh authenticated package. Silently extending its life turns a bounded trust assumption into permanent trust.
+
+### Checkpoint distribution
+
+Distribute checkpoints through several authenticated channels: signed release metadata, official domains, package repositories, hardware-wallet updates, or another chain. The channels should publish the exact hash and height, not a link that redirects to mutable content.
+
+Threshold signatures can reduce dependence on one publisher, but signer independence and key recovery matter. A threshold controlled by one build administrator is one trust domain.
+
+Clients should show the checkpoint age and source class in diagnostics. Bridge operators need alerts before any source client approaches expiry.
+
+### Eclipse resistance
+
+An **eclipse attack** surrounds a client with attacker-controlled peers and hides honest network data. Even a correct consensus verifier can follow stale history or fail to learn a newer finalized header when all inputs come from the attacker.
+
+Use peers from diverse networks and discovery paths, pin known-good bootnodes without relying only on them, compare headers through independent transports, and rate-limit peer churn. A wallet using one hosted RPC is not operating a peer-diverse light client.
+
+Conflicting valid evidence should freeze progress and preserve both branches for investigation. Conflicting unauthenticated RPC responses are a provider problem, not proof of consensus failure; diagnostics should distinguish them.
+
+### Validator-set and committee sync
+
+A BFT light client must verify how the trusted set authorizes the next set. A sync-committee client must verify committee periods and participation thresholds. Skipping periods may require a proof chain or protocol-specific update that remains within a trust window.
+
+Bound update size and verification work. An attacker should not be able to force the client to process years of useless transitions before rejecting a bad final header.
+
+### Clock and freshness assumptions
+
+Some light-client rules compare header timestamps, trusting periods, and local time. A badly wrong device clock can accept stale information or reject valid updates. State the allowed clock drift and obtain time from more than the untrusted peer being checked.
+
+Freshness is application-specific. A read-only balance display can tolerate more delay than a bridge releasing assets. Bind bridge acceptance to an explicit maximum client age and finality policy.
+
+### Software and parameter upgrades
+
+A consensus upgrade may change header fields, signature schemes, validator transitions, or domain separation. The light client must select verification rules by authenticated height or version, not by whatever decoder accepts the bytes.
+
+Ship test vectors across the transition. If old software can no longer verify new headers, it should stop with an actionable version error rather than treating the chain as permanently halted or accepting a compatibility shortcut.
+
+### Worked offline-return trace
+
+A wallet last synchronized at height 1,000 with a 14-day trust period and returns after 30 days:
+
+1. it recognizes that its checkpoint is expired;
+2. it refuses to accept a new head solely from its normal RPC;
+3. it downloads a newly signed checkpoint package through two independent channels;
+4. it verifies chain ID, height, hash, signer threshold, software compatibility, and package freshness;
+5. it resumes header verification from the new checkpoint;
+6. it cross-checks the resulting finalized head across diverse peers.
+
+If the channels disagree, the wallet remains read-only and reports the conflict. User convenience cannot resolve which chain controls real assets.
+
+### Production tests
+
+Test first install, offline return just before and after expiry, wrong chain ID, stale but correctly signed checkpoint, compromised minority signer, threshold loss, bad local clock, eclipse by all initial peers, validator-set transition, consensus upgrade, and conflicting checkpoint channels.
+
+A light client is independently useful when it makes bootstrap trust explicit, bounds it in time, verifies every later transition, obtains data through diverse paths, and stops safely when its trusted basis expires or conflicts.
+
 ## **Light-Client Bridge Verification Trace**
 
 A light-client bridge verifies the source chain's consensus evidence on the destination chain instead of trusting a fixed signer set. This can reduce discretionary custody, but only if the destination verifier correctly follows source consensus, validator-set changes, and finality.
