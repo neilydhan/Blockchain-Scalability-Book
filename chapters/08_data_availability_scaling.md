@@ -164,6 +164,68 @@ EigenDA and similar systems use restaked or dedicated operators to disperse enco
 
 ---
 
+## **Named Case Study: One Rollup Batch on Celestia, EigenDA, and Avail**
+
+**Deployment labels: Celestia, EigenDA, and Avail DA are production networks.** They can all carry data for a rollup, but they do not give the settlement contract identical evidence or rely on the same validator set. The comparison below fixes one input: a 600 kB compressed rollup batch containing ordered transactions and a header that binds the rollup identifier, batch number, parent state root, encoding version, and byte length.
+
+The rollup first serializes the batch deterministically. This is the common boundary. If different publishers can encode the same transactions into different bytes, no DA system can repair the ambiguity. Let `B` be the exact 600 kB byte string and `H(B)` its application commitment. The rollup stores `H(B)` alongside whichever network-specific receipt or inclusion proof it uses. A verifier accepts the resulting state only if it can bind the DA evidence back to `B`, the batch header, the correct DA network, and a sufficiently final DA block.
+
+### **Celestia path: namespaced shares and sampling**
+
+A publisher submits `B` as one or more Celestia blobs under a namespace allocated to the rollup. Celestia's block data is split into shares, arranged and erasure-coded into an extended data square, and committed through namespaced Merkle structures. The namespace lets a rollup retrieve and prove its own shares without treating every other application's bytes as its payload. Celestia consensus orders the transaction and commits the data root; light nodes sample shares to gain probabilistic confidence that the extended block data is available.[^2][^5]
+
+Trace the batch. The publisher broadcasts a blob transaction. After Celestia includes it, the rollup records the Celestia height, namespace, commitment, share range, and transaction or blob identifier. A verifier retrieves the namespaced shares from independent nodes, checks inclusion against the data commitment, reconstructs `B`, checks length and `H(B)`, decodes transactions under the bound version, and re-executes the rollup. A settlement integration such as Blobstream can convey Celestia data-root commitments to another chain, but the application still needs a rule connecting the particular namespace shares and finality level to its accepted rollup batch.[^6]
+
+The availability assumption is tied to Celestia's consensus and data-availability sampling design. A light client does not prove that a permanent archive will serve `B` months later. Celestia documentation distinguishes availability around block production from later retrievability and pruning.[^7] The rollup therefore runs or contracts archival retrieval if its fraud-proof or recovery window exceeds ordinary node retention.
+
+Failure path: the publisher receives an RPC acknowledgement but the blob never reaches a final Celestia block. No settlement state should advance. If the block is final but the rollup's retrieval peers are eclipsed, those clients may report failure while the wider network still has the shares; peer diversity and independent sampling matter. If enough data is genuinely withheld for reconstruction, sampling should make acceptance unlikely under the stated model, but a verifier must fail closed rather than substitute the publisher's local copy. If the namespace or share range is wrong, a valid proof for someone else's bytes must not satisfy this batch.
+
+### **EigenDA path: dispersal to operator quorums**
+
+EigenDA uses a different shape. A disperser accepts `B`, erasure-codes it into chunks, distributes assigned chunks to EigenDA operators, and collects authenticated acknowledgements from the configured quorum or quorums. The client polls the blob status and receives a certificate or confirmation data that downstream components can verify under the integration's rules. EigenDA's official V2 guide makes the API boundary visible: prepare bytes, send data, receive a blob key, and check status.[^8]
+
+Trace the same batch. The rollup submits `B` with payment and dispersal parameters. The disperser returns an identifier before availability is necessarily certified, so the rollup marks the batch **dispersing**, not available. Operators validate and store their assigned chunks and sign acknowledgements. Once the threshold for every required quorum is met, the batch becomes confirmed. A verifier or retriever uses the blob key and certificate data to request chunks, reconstructs `B`, verifies its commitment and encoding, and re-executes the rollup transition.
+
+The trust boundary is not Celestia consensus. EigenDA's security model depends on its operator quorums, chunk assignment, encoding rate, threshold configuration, cryptographic commitments, and the economic or fork-based consequences defined for operator misbehavior.[^9] A rollup can configure quorum participation, but adding quorums changes cost and failure correlation rather than turning the certificate into Ethereum blob inclusion. The settlement contract must know exactly which EigenDA certificate format, quorum set, threshold, reference block, and commitment it accepts.
+
+Failure path: the disperser crashes after accepting `B` but before enough operators acknowledge it. The blob remains unconfirmed and the rollup must retry through a healthy path without changing `B` or creating an ambiguous second batch. If a threshold certificate exists but retrievers cannot reconstruct, the incident targets operator storage, assignment, or serving assumptions and may trigger the protocol's accountability path. If the rollup configures one highly correlated operator set, nominal operator count can overstate resilience. If a settlement contract accepts an outdated quorum configuration or fails to bind the certificate to `H(B)`, a formally valid certificate can authorize the wrong bytes.
+
+### **Avail path: application identifiers and validity-backed sampling**
+
+Avail DA orders data submissions in its own proof-of-stake chain. A publisher submits `B` in an extrinsic associated with an **application identifier**. Avail extends block data with erasure coding and commits to it with polynomial commitments; light clients sample cells and verify proofs against the block commitment. The application identifier gives the rollup a selective data stream, while the block commitment binds all included data.[^10][^11]
+
+Trace the batch. The rollup signs and submits the data extrinsic under its application identifier. It records the Avail block, extrinsic position, application identifier, commitment, and finality evidence. A verifier checks finality, filters or proves the rollup's data, obtains enough shares or the complete application payload, reconstructs `B`, checks `H(B)`, and executes it. As with Celestia, a bridge or proof system that transports Avail commitments to another settlement chain is an additional component. DA-chain finality does not automatically update an Ethereum rollup contract.
+
+The trust assumption centers on Avail's validator consensus, erasure-coding and commitment implementation, light-client sampling, and any bridge used by the settlement layer. Sampling says the committed block data was likely available under the model. It does not promise indefinite retention. The rollup still needs archival policy, correct application-ID filtering, and a recovery route when its preferred RPC or light-client network is unavailable.
+
+Failure path: a publisher labels `B` with the wrong application identifier. Avail may correctly include and make the bytes available, while the rollup's normal selective retriever never sees them. That is an integration failure, not DA-chain withholding. A client that trusts one full-node RPC without checking commitments has reduced the system to provider trust. A settlement bridge that lags leaves the batch available on Avail but not yet usable by the rollup's settlement contract. A deep reorganization or validator-set safety failure on the DA chain requires the rollup to roll back or halt according to its explicit finality policy.
+
+### **Same batch, different evidence**
+
+| Question for batch `B` | Celestia | EigenDA | Avail DA |
+|---|---|---|---|
+| Publication unit | Blob transaction split into namespaced shares | Blob dispersed as coded chunks to operator quorums | Data extrinsic associated with an application identifier |
+| Primary availability evidence | DA-chain block commitment, namespaced inclusion, and sampling/retrieval evidence | Threshold operator acknowledgements and the accepted EigenDA certificate/configuration | DA-chain finality, block polynomial commitment, inclusion/filtering, and sampling/retrieval evidence |
+| Selective retrieval key | Namespace, height, share range or blob commitment | Blob key/certificate plus retriever interfaces | Application identifier, block and extrinsic/data position |
+| Who orders publication | Celestia validator consensus | Dispersal/certificate flow; the rollup separately orders its own batches | Avail validator consensus |
+| Settlement integration | Verify or relay Celestia commitments, often through a bridge such as Blobstream | Verify the configured EigenDA certificate and reference state | Verify or relay Avail commitments through the chosen bridge/proof path |
+| Main correlation risk | DA validators, sampling peers, and archival providers may share infrastructure | Many operators may share cloud, code, stake dependencies, or one disperser path | Validators, sampling peers, bridge and archive services may share infrastructure |
+| Retention statement | Availability at publication is separate from later retrievability | Certificate/storage duration must match the rollup's challenge and recovery needs | Sampling availability is separate from application archival retention |
+
+For all three, the safe acceptance rule has the same outer form:
+
+```text
+accept rollup state only if
+  network_id is expected
+  and batch header binds H(B), length, namespace/app/quorum context, and encoding version
+  and network-specific availability evidence satisfies current policy
+  and settlement has authenticated that evidence
+  and an independent verifier can reconstruct and decode B
+```
+
+The systems differ inside `network-specific availability evidence`. Hiding that field behind a generic boolean such as `data_available = true` removes the information an auditor needs. A production dashboard should expose the source network, finality height or reference state, certificate or commitment, retrieval success from independent paths, retention deadline, settlement-bridge status, and the exact batch commitment that execution consumed.
+
+
 ## **Availability, Retrievability, and Permanence**
 
 These terms should not be confused:
@@ -502,3 +564,11 @@ This technology connects Layer 1 sharding and rollup-centric scaling. Execution 
 [^2]: Celestia Docs. "Data Availability." <https://docs.celestia.org/learn/celestia-101/data-availability/>.
 [^3]: Buterin, Vitalik, et al. "EIP-4844: Shard Blob Transactions." <https://eips.ethereum.org/EIPS/eip-4844>.
 [^4]: Feist, Dankrad, et al. "EIP-7594: PeerDAS." <https://eips.ethereum.org/EIPS/eip-7594>.
+
+[^5]: Celestia Documentation. "The lifecycle of a celestia-app transaction." <https://docs.celestia.org/learn/celestia-101/transaction-lifecycle/>.
+[^6]: Celestia Documentation. "Blobstream." <https://docs.celestia.org/learn/blobstream/>.
+[^7]: Celestia Documentation. "Data retrievability and pruning." <https://docs.celestia.org/learn/celestia-101/retrievability/>.
+[^8]: EigenDA Documentation. "EigenDA Payment and Data Dispersal Guide." <https://docs.eigencloud.xyz/eigenda/integrations-guides/quick-start/v2/>.
+[^9]: EigenDA Documentation. "Security Model." <https://docs.eigencloud.xyz/eigenda/core-concepts/security/security-model>.
+[^10]: Avail. "Avail's Core Features Explained: DA Sampling & Validity Proofs." <https://blog.availproject.org/avails-core-features-explained/>.
+[^11]: Avail. "Getting Started: App-Specific Data with Avail Light Client." <https://blog.availproject.org/getting-started-app-specific-data-management-using-avail-light-client/>.
