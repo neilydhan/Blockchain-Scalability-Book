@@ -122,7 +122,7 @@ Connect every external claim to evidence:
 | Data is available | shut publisher and selected peers | independent reconstruction from authenticated commitment |
 | Messages execute once | duplicate and reorder valid proofs | one state transition and stable consumed identifier |
 | Validator-set transition is safe | overlap epoch change with timeout/restart | no conflicting commit; light client authenticates new set |
-| Proving keeps up | replay measured job distribution with worker loss | bounded queue and recovery within SLO |
+| Proving keeps up | replay measured job distribution with worker loss | bounded queue and recovery within service-level objective (SLO) |
 | Users can mass exit | invoke recovery at modeled scale under congestion | required population exits within window and budget |
 
 If a test demonstrates only the normal path, narrow the claim. A successful proof verification does not demonstrate prover availability. A successful upload does not demonstrate data reconstruction. One user's exit does not demonstrate mass-exit capacity.
