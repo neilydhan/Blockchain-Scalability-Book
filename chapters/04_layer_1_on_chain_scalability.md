@@ -10,6 +10,50 @@ The course frames the problem around replicated computation, replicated storage,
 
 ---
 
+## **A Map of Layer 1 Work**
+
+A base-layer transaction passes through several resources. Separating them makes the later techniques easier to understand.
+
+1. **Propagation:** transaction and block bytes travel between nodes.
+2. **Execution:** each validator applies program instructions to current state.
+3. **State access:** the client reads and writes its database.
+4. **Consensus:** validators decide which proposed block is canonical.
+5. **Storage and synchronization:** nodes retain enough data and help new or recovering nodes catch up.
+
+Raising a limit in one stage can move the bottleneck to another. A faster virtual machine does not help if blocks cannot reach validators before the next round. More bandwidth does not help if every transaction contends for one state entry.
+
+A useful analogy is a warehouse. Trucks deliver orders, workers pick items, a ledger records inventory, supervisors approve each batch, and archives let a replacement warehouse reconstruct the ledger. Buying faster forklifts improves only the picking stage. Layer 1 scaling measures the entire path.
+
+### **Blocks and propagation**
+
+A **block interval** is the target time between blocks. A **block payload** is the transactions and other data inside a block. Increasing payload or reducing interval sends useful work more often, but gives nodes less time to download and verify it.
+
+Nodes usually use a **gossip network**: each node forwards new data to several peers, which forward it again. Gossip avoids one central broadcaster and survives peer failure, but repeats network traffic. A late block can cause honest producers to build on different tips temporarily, increasing stale work or reorganization risk.
+
+### **World state and state roots**
+
+The **world state** is the current mapping from accounts or object identifiers to values. A full node stores that mapping in a database. The block header includes a compact state root, so another node can verify that execution produced exactly the committed result.
+
+A **state witness** contains values and authentication paths needed for particular reads and writes. It is like giving a checker the few relevant pages of a huge ledger plus seals that connect them to the ledger's signed cover. Stateless validation reduces what the checker stores locally, but a builder or provider must still hold or reconstruct the pages.
+
+### **Shards and cross-shard messages**
+
+A **shard** processes one partition of work. If accounts A and B belong to different shards, their transfer cannot be one ordinary local database update. The source shard records a debit and emits an authenticated message; the destination verifies it before crediting.
+
+This resembles transferring between two banks' ledgers. The receiving bank needs proof that the sending bank finalized the debit, a unique transfer identifier, and a rule preventing the same receipt from being deposited twice. The message is therefore asynchronous: finality and delivery take time.
+
+### **Committees**
+
+A sharded system may assign a subset of validators, called a **committee**, to each shard. Smaller committees process in parallel but give each transaction fewer independent checkers. Random assignment and periodic reshuffling make it harder for an attacker to concentrate validators in one shard.
+
+Committee safety is probabilistic when members are sampled. Later calculations estimate the chance that an attacker controlling a fraction of the total population receives enough seats to control one committee. The formula is less important than the intuition: larger committees cost more communication but make extreme bad samples rarer.
+
+### **How to read the formulas**
+
+This chapter uses letters as labels for quantities. For example, `k` shards means the system has `k` parallel partitions; it does not mean exactly `k` times useful throughput. Cross-shard traffic, uneven demand, and committee communication reduce the ideal gain.
+
+Units travel through every calculation. `MB/s` is data divided by time; gas per second is metered computation divided by time. If unlike units are added or a result drops its unit, the calculation is incomplete.
+
 ## **The Four Jobs of a Base Layer**
 
 A general-purpose blockchain performs four related jobs:
