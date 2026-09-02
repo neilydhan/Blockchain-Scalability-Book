@@ -69,4 +69,4 @@ For a syllabus review, correction, or course-adoption discussion, open a GitHub 
 
 ## Recommended Citation
 
-> Han, Neil. *Mastering Blockchain Scalability*. Version 1.1.1, 2026. GitHub. https://github.com/neilydhan/Blockchain-Scalability-Book/releases/tag/v1.1.1
+> Han, Neil. *Mastering Blockchain Scalability*. Version 1.1.2, 2026. https://doi.org/10.5281/zenodo.22257267

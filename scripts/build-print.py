@@ -176,7 +176,7 @@ def build():
   <p>Independently published. Print ISBN: to be assigned through Amazon KDP.</p>
   <p>10 9 8 7 6 5 4 3 2 1</p>
   <p>This book is educational material, not financial, legal, or investment advice. Protocol details change; every time-sensitive claim carries a source and a date, and readers should verify the current specification.</p>
-  <p>Cite this edition: Han, Neil. <i>Mastering Blockchain Scalability</i>. Version 1.1.1, 2026.</p>
+  <p>Cite this edition: Han, Neil. <i>Mastering Blockchain Scalability</i>. Version 1.1.2, 2026. https://doi.org/10.5281/zenodo.22257267</p>
 </div>""", "html.parser"))
 
     # TOC

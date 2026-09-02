@@ -58,7 +58,7 @@ The additional material includes a glossary, review questions with solution sket
 
 Until a DOI is assigned, cite the versioned GitHub release:
 
-> Han, Neil. *Mastering Blockchain Scalability*. Version 1.1.1, 2026. GitHub. https://github.com/neilydhan/Blockchain-Scalability-Book/releases/tag/v1.1.1
+> Han, Neil. *Mastering Blockchain Scalability*. Version 1.1.2, 2026. https://doi.org/10.5281/zenodo.22257267
 
 Machine-readable citation metadata is in [`CITATION.cff`](CITATION.cff). Cite a version-specific release when exact page numbers or claims matter.
 
