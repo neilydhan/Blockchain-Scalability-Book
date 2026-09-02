@@ -330,7 +330,7 @@ Differential testing should run the same generated block with one worker, severa
 
 Retries consume real CPU, memory bandwidth, and cache capacity without increasing committed throughput. An attacker can construct transactions that appear independent early, then converge on one key late in execution. Even reverted attempts may exhaust the executor.
 
-A production scheduler needs limits and pricing for speculative work. Options include capping attempts per transaction, charging for repeated execution under protocol rules, routing known-hot contracts to a serial lane, and using recent access history to avoid obviously conflicting speculation. Any heuristic may affect performance but must not affect the canonical outcome.
+A production scheduler needs limits and pricing for speculative work. Options include capping attempts per transaction, charging for repeated execution under protocol rules, routing known-hot contracts to a serial lane, and using recent access history to avoid speculation likely to conflict. Any heuristic may affect performance but must not affect the canonical outcome.
 
 Suppose 1,000 transactions each take 1 millisecond on the first attempt. With 16 workers and no conflicts, ideal execution time is about 62.5 milliseconds before serial overhead. If 40 percent abort once after completing their work, the executor performs 1,400 transaction-attempts, increasing ideal worker time to 87.5 milliseconds. If retries serialize on one hot key, the critical path can approach 400 milliseconds plus parallel work. Reporting only successful transactions hides this amplification.
 

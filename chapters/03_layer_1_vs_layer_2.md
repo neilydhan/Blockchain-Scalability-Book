@@ -231,7 +231,7 @@ Do not discard zero balances or empty records unless the source semantics make t
 
 A **push migration** initializes every account on the destination. It offers a complete genesis but may be expensive. A **claim migration** commits to a Merkle root; each user later supplies a proof and initializes only needed state.
 
-Claim migration needs a permanent or sufficiently long proof-data service. Correctness can be trustless while availability is not. Several independent hosts should retain the leaf set and tree construction code. Claims need domain binding and a consumed key so the same source asset cannot initialize twice.
+Claim migration needs a permanent or sufficiently long proof-data service. Correctness can be cryptographically verified while availability still depends on service providers. Several independent hosts should retain the leaf set and tree construction code. Claims need domain binding and a consumed key so the same source asset cannot initialize twice.
 
 ### User choice and exit
 
