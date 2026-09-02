@@ -120,7 +120,7 @@ Failure path: the user saw no completion and resent without understanding nonce 
 
 ### **Arbitrum One: the same demand enters a layered pipeline**
 
-Now place an NFT marketplace workload on Arbitrum One. Users submit transfers, listings and contract calls to the Arbitrum sequencer. Nitro executes EVM-compatible transactions and the sequencer feed gives applications fast soft confirmations. A batch poster compresses ordered transactions and publishes them to Ethereum through blobs or calldata. Validators reproduce execution, state assertions are governed by the BoLD dispute protocol, and canonical withdrawals wait for the accepted state path described in Chapter 6.[^7][^8]
+Now place an NFT marketplace workload on Arbitrum One. Users submit transfers, listings and contract calls to the Arbitrum sequencer. Nitro executes EVM-compatible transactions and the sequencer feed gives applications fast soft confirmations. A batch poster compresses ordered transactions and publishes them to Ethereum through blobs or calldata. Validators reproduce execution, state assertions are governed by the BoLD dispute protocol, and canonical withdrawals wait for the accepted state path described in Chapter 6.[^7] [^8]
 
 At the user interface, this feels faster because the application need not wait for every individual call to win space in an Ethereum L1 block. Many L2 transactions share one compressed data-publication cost. But the production workload now consumes a resource vector:
 

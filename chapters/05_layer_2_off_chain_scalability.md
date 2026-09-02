@@ -119,7 +119,7 @@ These categories describe architecture, not a marketing label. A system should b
 
 ## **Named Case Study: Polygon PoS Is a Sidechain, Not a Rollup**
 
-**Deployment label: production.** Polygon PoS provides EVM-compatible execution through its own validator and block-production system, connected to Ethereum by bridge and checkpoint contracts. Its documentation describes three layers: staking contracts on Ethereum, Heimdall-v2 as the validation layer, and Bor as the block-production layer.[^4][^5] This makes it a useful contrast with the rollups in Chapter 6.
+**Deployment label: production.** Polygon PoS provides EVM-compatible execution through its own validator and block-production system, connected to Ethereum by bridge and checkpoint contracts. Its documentation describes three layers: staking contracts on Ethereum, Heimdall-v2 as the validation layer, and Bor as the block-production layer.[^4] [^5] This makes it a useful contrast with the rollups in Chapter 6.
 
 Trace Maya depositing ETH, making a Polygon payment, and withdrawing. On Ethereum, Maya calls the PoS bridge and locks the asset. The bridge event is observed and processed through Polygon's state-sync path, which delivers a corresponding message to Polygon PoS. After that message executes, Maya receives the mapped representation on Polygon. This first leg already crosses two security domains: Ethereum finalized the escrow event, while Polygon validators and bridge logic must recognize and apply it exactly once.[^6]
 

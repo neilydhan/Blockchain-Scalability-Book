@@ -366,7 +366,7 @@ The mechanisms above are easier to judge when attached to a named system. The la
 
 ### **ERC-4337: account abstraction through an alternate mempool**
 
-**Maturity label: production standard and production deployments.** ERC-4337 implements account abstraction without changing Ethereum's consensus transaction format. Its official documentation defines a `UserOperation`, an alternate mempool, bundlers, the singleton-style `EntryPoint` contract, smart accounts, and optional paymasters.[^3][^4] This is a named instance of the account, bundler, and sponsor mechanics developed earlier in the chapter.
+**Maturity label: production standard and production deployments.** ERC-4337 implements account abstraction without changing Ethereum's consensus transaction format. Its official documentation defines a `UserOperation`, an alternate mempool, bundlers, the singleton-style `EntryPoint` contract, smart accounts, and optional paymasters.[^3] [^4] This is a named instance of the account, bundler, and sponsor mechanics developed earlier in the chapter.
 
 Trace one sponsored operation. Maya's smart account signs a `UserOperation` that calls a game contract. The object binds the account address, nonce, call data, gas limits, fee caps, paymaster data, and signature. She sends it to a bundler rather than directly to Ethereum's native transaction mempool. The bundler simulates validation against the specified `EntryPoint`. The entry point calls the account's `validateUserOp`; when sponsorship is requested it also calls the paymaster's validation logic. The bundler groups Maya's operation with others and sends one native transaction invoking `handleOps`. The entry point validates each operation, executes its call, accounts for gas, and pays the bundler's beneficiary from an account or paymaster deposit.
 
@@ -406,7 +406,7 @@ CoW Protocol gives a complementary, same-chain example. Users sign trade intents
 
 ### **Succinct Prover Network: a market for SP1 proofs**
 
-**Maturity label: production prover service moving through a protocolized mainnet market.** Succinct documents a prover network and migration path for SP1 applications, as well as a protocol architecture that connects proof requesters and provers through auctions and Ethereum settlement.[^12][^13] The distinction matters: a hosted proving service can be production-ready before every auction, staking, and decentralized settlement component reaches its intended end state.
+**Maturity label: production prover service moving through a protocolized mainnet market.** Succinct documents a prover network and migration path for SP1 applications, as well as a protocol architecture that connects proof requesters and provers through auctions and Ethereum settlement.[^12] [^13] The distinction matters: a hosted proving service can be production-ready before every auction, staking, and decentralized settlement component reaches its intended end state.
 
 Trace one proof request. A rollup or application submits the program, inputs or input commitments, a maximum prover-gas bound, maximum fee, minimum prover stake, deadline, and verification key. Eligible provers bid in a proof contest. The assignment service chooses a bid under the market rule. The winning prover runs SP1, returns a proof before the deadline, and receives payment when fulfillment is accepted. The requester verifies the proof against the expected program and public inputs before using it to advance an application state.
 

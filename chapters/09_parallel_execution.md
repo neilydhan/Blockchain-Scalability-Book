@@ -165,7 +165,7 @@ The techniques complement each other. Each shard can execute transactions in par
 
 ### **Solana: declared accounts become runtime locks**
 
-Trace two users buying different items from one marketplace program. Each Solana transaction contains signatures, a message, recent blockhash or durable-nonce context, instructions, and an account-key list. Each instruction identifies the program and the accounts it will read or write. The message marks accounts as writable or read-only. This declaration is part of the signed transaction, not a scheduler guess.[^1][^4]
+Trace two users buying different items from one marketplace program. Each Solana transaction contains signatures, a message, recent blockhash or durable-nonce context, instructions, and an account-key list. Each instruction identifies the program and the accounts it will read or write. The message marks accounts as writable or read-only. This declaration is part of the signed transaction, not a scheduler guess.[^1] [^4]
 
 The processing pipeline receives and deserializes the transaction, verifies signatures, sanitizes structure, checks compute budget and age, validates nonce and fee payer, loads accounts, executes instructions, then commits or rolls back.[^4] Before execution, the runtime can see that transaction A writes inventory account `item_A` while transaction B writes `item_B`. If their other writable sets do not overlap, workers can execute them in parallel even though both call the same marketplace program. Program identity alone does not force serialization; writable state overlap does.
 
@@ -175,7 +175,7 @@ Observable evidence includes the signed account list, writable flags, instructio
 
 ### **Sui: owned and shared objects choose different paths**
 
-Sui represents state as objects with identifiers, versions, ownership, and digests. A transaction names the objects it consumes or mutates. This makes dependencies explicit at an application level: two transfers over unrelated owned objects are independent, while two calls mutating one shared object contend on that object's order.[^5][^6]
+Sui represents state as objects with identifiers, versions, ownership, and digests. A transaction names the objects it consumes or mutates. This makes dependencies explicit at an application level: two transfers over unrelated owned objects are independent, while two calls mutating one shared object contend on that object's order.[^5] [^6]
 
 Trace a coffee-shop payment using address-owned coin objects. The wallet constructs a transaction naming the gas object, payment coin, recipient, commands, and current object versions. The user signs it and submits it. Validators verify authorization and object references, sequence the transaction under the applicable Sui path, execute Move commands, and produce signed transaction effects naming created, mutated, wrapped, or deleted objects. The effects become final under Sui's transaction rules and are later included in a checkpoint.[^5]
 
@@ -187,7 +187,7 @@ Observable evidence includes transaction digest, input object IDs and versions, 
 
 ### **Aptos: Block-STM discovers conflicts speculatively**
 
-Aptos transactions do not need to declare a complete read/write set in advance. Consensus establishes a block order. The execution engine then applies Block-STM, a software transactional memory design that speculates on multiple ordered transactions, records versioned reads and writes, validates those reads, and re-executes work whose assumptions were invalidated by an earlier transaction.[^7][^8]
+Aptos transactions do not need to declare a complete read/write set in advance. Consensus establishes a block order. The execution engine then applies Block-STM, a software transactional memory design that speculates on multiple ordered transactions, records versioned reads and writes, validates those reads, and re-executes work whose assumptions were invalidated by an earlier transaction.[^7] [^8]
 
 Trace an ordered block containing `T0`, `T1`, and `T2`. `T0` updates Alice's balance. `T1` touches an unrelated resource. `T2` reads Alice's balance and sends funds. Workers may start all three. `T1` can finish independently. `T2` may first read an older multi-version value while `T0` is still running. Validation later sees that canonical earlier transaction `T0` changed the resource. Block-STM aborts and re-executes `T2` against the right version. The final state must match sequential execution in consensus order even though the work overlapped.
 

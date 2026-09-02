@@ -112,7 +112,7 @@ The CAP theorem and blockchain trilemma are not interchangeable. CAP concerns co
 
 ### **Bitcoin: UTXOs, mempool policy, and probabilistic confirmation**
 
-Each payer constructs a transaction consuming one or more unspent transaction outputs (UTXOs), creates a recipient output and usually a change output, and signs the relevant spending conditions. A node checks syntax, scripts, input availability and local relay policy before admitting it to its mempool. Mempool acceptance is not consensus: another node can apply different policy, and miners choose transactions under fee and block constraints.[^4][^5]
+Each payer constructs a transaction consuming one or more unspent transaction outputs (UTXOs), creates a recipient output and usually a change output, and signs the relevant spending conditions. A node checks syntax, scripts, input availability and local relay policy before admitting it to its mempool. Mempool acceptance is not consensus: another node can apply different policy, and miners choose transactions under fee and block constraints.[^4] [^5]
 
 A miner includes a subset in a proof-of-work block. Nodes validate the block and update the UTXO set. A payment has one confirmation when its block is accepted on the node's best-work chain; each later block increases the work that would need to be replaced by a competing history. There is no Byzantine-finality certificate after a fixed number of rounds. An application chooses a confirmation policy based on value and reorganization risk.
 
@@ -122,7 +122,7 @@ Failure path: two payments spend the same UTXO. Nodes may relay one under policy
 
 ### **Ethereum: account nonces, gas, execution, and proof-of-stake finality**
 
-Each payer signs a typed Ethereum transaction naming chain, nonce, recipient, value, gas limit, fee caps and signature. Nodes check format, signature, account nonce, balance and fee conditions for admission. A block builder orders eligible transactions. The Ethereum Virtual Machine applies them against account state, charging gas even though a plain native transfer uses little execution compared with a contract call.[^6][^7]
+Each payer signs a typed Ethereum transaction naming chain, nonce, recipient, value, gas limit, fee caps and signature. Nodes check format, signature, account nonce, balance and fee conditions for admission. A block builder orders eligible transactions. The Ethereum Virtual Machine applies them against account state, charging gas even though a plain native transfer uses little execution compared with a contract call.[^6] [^7]
 
 The 10,000 users have distinct sender accounts, so they do not contend on one nonce. They still share block gas, builder ordering, state access, propagation and consensus. Inclusion changes balances and increments each sender nonce. Proof-of-stake validators attest to blocks; Ethereum's consensus exposes justified and finalized checkpoints under its Gasper design rather than asking applications to count proof-of-work confirmations indefinitely.[^8]
 
@@ -132,7 +132,7 @@ Failure path: the user submits nonce 8 before nonce 7 is available. The later tr
 
 ### **Solana: declared accounts, compute budget, and slot commitment**
 
-Each payer signs a Solana transaction whose message includes a recent blockhash, instructions, and every account the runtime needs. Writable and read-only flags expose dependencies before execution. The pipeline receives and deserializes the transaction, verifies signatures, sanitizes it, checks compute budget and age, validates nonce and fee payer, loads accounts, executes instructions, and commits or rolls back.[^9][^10]
+Each payer signs a Solana transaction whose message includes a recent blockhash, instructions, and every account the runtime needs. Writable and read-only flags expose dependencies before execution. The pipeline receives and deserializes the transaction, verifies signatures, sanitizes it, checks compute budget and age, validates nonce and fee payer, loads accounts, executes instructions, and commits or rolls back.[^9] [^10]
 
 For 10,000 transfers over distinct sender and recipient accounts, the writable sets are mostly disjoint. Solana's runtime can schedule independent transactions across cores. If all payments also update one writable global counter, that account lock serializes the workload. The declared-access model converts application state layout directly into available parallelism.
 

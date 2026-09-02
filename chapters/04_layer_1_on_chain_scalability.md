@@ -150,7 +150,7 @@ NEAR divides state and execution across shards while blocks contain shard chunks
 
 Trace Alice calling a contract on a different shard. Alice signs a transaction with her account, public-key context, nonce, receiver, actions, recent block hash, and fee-related fields. The transaction reaches the shard responsible for Alice. That shard validates authorization and nonce, charges the attached resources under the protocol rules, and converts the cross-shard action into an outgoing receipt addressed to the receiver. The source chunk commits to the outgoing work. The destination shard later receives the receipt through NEAR's routed receipt mechanism and executes the contract call against destination state.
 
-The destination call may produce another receipt. For example, a marketplace contract on shard B can call a token contract on shard C and then receive a callback. Gas or deposit refunds are also receipts. The user's one transaction hash can therefore lead to a tree or chain of outcomes. NEAR documentation warns that transaction finality and receipt completion are not the same event: a transaction can be final while its generated receipts are still being processed.[^5][^6]
+The destination call may produce another receipt. For example, a marketplace contract on shard B can call a token contract on shard C and then receive a callback. Gas or deposit refunds are also receipts. The user's one transaction hash can therefore lead to a tree or chain of outcomes. NEAR documentation warns that transaction finality and receipt completion are not the same event: a transaction can be final while its generated receipts are still being processed.[^5] [^6]
 
 Observable evidence should include the transaction outcome, receipt IDs, predecessor and receiver accounts, block/chunk locations, execution status for each receipt, logs, generated child receipts, and final refund. A wallet that shows only Alice's top-level transaction as successful can hide a failed remote function call. The safe status model is **transaction accepted**, **source execution complete**, **cross-shard receipt routed**, **destination execution complete**, **callbacks complete**, and **refund complete**.
 
@@ -160,7 +160,7 @@ The trust assumptions are those of one NEAR protocol: validator consensus, corre
 
 ### **IBC: send, relay, receive, acknowledge, or time out**
 
-IBC connects chains through on-chain light clients, connections, channels, packet commitments, and permissionless relayers. The packet lifecycle documentation names four application-visible stages: send on the source, receive on the destination, acknowledgement on the source, and timeout on the source.[^7][^8]
+IBC connects chains through on-chain light clients, connections, channels, packet commitments, and permissionless relayers. The packet lifecycle documentation names four application-visible stages: send on the source, receive on the destination, acknowledgement on the source, and timeout on the source.[^7] [^8]
 
 Trace a fungible-token transfer from Chain A to Chain B. The application on A escrows or burns the source representation under the token-transfer rules and calls the IBC channel to send a packet. The packet binds source and destination ports and channels, a sequence, payload, and a timeout height or timestamp. Chain A stores a commitment to the packet. This commitment is the fact a relayer later proves; no trusted courier signature is required.
 
