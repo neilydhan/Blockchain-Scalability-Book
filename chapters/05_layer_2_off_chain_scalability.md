@@ -362,6 +362,105 @@ A useful payment trace records:
 
 Network TPS is not the useful metric. Capacity depends on directional liquidity, route length, fee policy, failure rate, lock duration, rebalancing, and base-layer dispute capacity.
 
+## **Channel Backup, Restore, and Disaster Recovery**
+
+A channel wallet cannot recover from a seed phrase alone if current channel state, revocation data, or counterparty commitments are missing. Ordinary on-chain wallets reconstruct funds by scanning history; channels may require private, frequently changing state.
+
+### Recovery data
+
+Back up:
+
+```text
+ChannelBackup {
+  chain_id,
+  channel_id,
+  funding_outpoint,
+  counterparty,
+  latest_commitment_number,
+  encrypted_static_recovery_data,
+  watchtower_appointment_receipts,
+  close_and_sweep_descriptors,
+  wallet_and_protocol_version
+}
+```
+
+A **static channel backup** may contain enough information to find the counterparty and request a safe close, but not enough to continue operating the channel or unilaterally reconstruct every latest balance. State what the backup guarantees.
+
+Never copy live database files without a consistent snapshot rule. A backup captured between related writes can restore a commitment number without corresponding secrets or signatures.
+
+### Revocation safety
+
+In penalty-based channels, broadcasting an old commitment can let the counterparty claim a penalty. Restoring stale local state is therefore dangerous even when the file is authentic.
+
+On startup after restore, mark channels recovery-only, contact counterparties and watchtowers, compare commitment points through the protocol, and avoid signing or broadcasting until synchronization proves the safe state. A user should not guess which backup is newest from filenames.
+
+### Data-loss protection
+
+Peers can exchange bounded recovery information that helps detect stale state without giving one peer power to fabricate balances. The protocol must resist a malicious counterparty falsely claiming that the user is behind and forcing an unfavorable close.
+
+Authenticated monotonic commitment numbers identify ordering but do not by themselves reveal missing signed transactions. Define the safe response for each mismatch: continue, cooperative close, force close, or manual recovery.
+
+### Watchtower receipts
+
+A client needs durable evidence that a tower accepted the appointment covering its newest revocable state. Store tower identity, channel hint, covered commitment range, receipt signature, expiry, and fee policy.
+
+A backup containing appointments that were queued but never acknowledged creates false confidence. Verify receipts after restore and reappoint when tower retention or chain horizon may have expired.
+
+### Seed and channel database separation
+
+The seed derives keys but not necessarily counterparty signatures, revocation history, pending HTLCs, or watchtower acknowledgements. Document distinct backup materials and their confidentiality.
+
+Channel backups may reveal counterparties, funding transactions, balances, or routing activity. Encrypt with authenticated encryption, version the format, test wrong-password behavior, and avoid cloud filenames that leak identifiers.
+
+### Pending HTLCs
+
+Recovery during pending routed payments is time-sensitive. The node may need preimages, onion-routing secrets, incoming/outgoing HTLC mappings, and deadlines to claim or refund safely.
+
+Prioritize channels by earliest on-chain expiry. A general restore process that takes hours can lose funds when one HTLC has minutes of safety margin. Persist critical forwarding state before acknowledging the upstream message.
+
+### Worked recovery point
+
+Suppose backups upload every 10 minutes, but channel updates occur once per second. Up to 600 updates can occur between backups:
+
+```text
+10 minutes × 60 updates/minute = 600 updates
+```
+
+A 10-minute recovery point objective is meaningless for continuing a penalty channel safely. Use synchronous or near-synchronous durable state, protocol data-loss protection, and watchtowers; periodic bulk backup is supplemental.
+
+### Force-close recovery
+
+A disaster runbook identifies funding outputs, latest safe commitments, closing transaction, sweep paths, CSV or absolute timelocks, fee reserves, and monitoring duration. **CheckSequenceVerify (CSV)**-style relative delays commonly require waiting a number of blocks after confirmation before a sweep path becomes valid.
+
+Fee spikes can make pre-signed or fixed-fee transactions unusable. Test fee bumping or child-pays-for-parent paths under the exact channel format.
+
+A force close can create several outputs with different delays and conditions. "Close confirmed" does not mean every balance is spendable. Wallet status should show each output and earliest action.
+
+### Multi-device hazards
+
+Two active devices controlling one channel can create divergent commitments. Cloud sync is not distributed consensus. Use one active writer, cryptographic fencing, or a protocol designed for replicated signing.
+
+A device believed lost may later reconnect with stale state. Rotate credentials and prevent it from signing before restore is considered complete.
+
+### Recovery drill
+
+1. destroy the primary node and local channel database;
+2. restore seed and documented backup artifacts on a new host;
+3. identify all channels and funding outputs;
+4. handle one stale backup, one unavailable counterparty, and one pending HTLC;
+5. verify watchtower coverage;
+6. recover through cooperative or force close;
+7. sweep every delayed output under a fee spike and chain reorganization;
+8. reconcile recovered balances and fees.
+
+Measure time to detect, first protective transaction, final spendability, user loss, and manual decisions. Repeat without the original cloud account or hardware.
+
+### Production assertions
+
+A channel system should state what seed-only, static-backup, full-database, peer-assisted, and watchtower recovery each guarantee. Test every format version and migration.
+
+Off-chain scalability is credible when reducing on-chain writes does not make private state an untested single point of fund loss.
+
 ## **Watchtower Data and Privacy**
 
 A watchtower needs enough information to recognize a revoked commitment and publish the appropriate remedy, but users should not disclose their entire channel history. Designs can send encrypted penalty material indexed by a transaction-derived hint. The tower learns little until a matching breach appears on-chain.
