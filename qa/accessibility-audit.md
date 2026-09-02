@@ -35,3 +35,9 @@ High-frequency technical abbreviations are expanded or defined before deep use: 
 ## Remaining Reader Supports
 
 The glossary remains a reference, not a prerequisite. Review questions test mechanisms and assumptions rather than acronym recall. Deep implementation sections intentionally retain precise structures, threat models, and calculations after their introductory ramps.
+
+## Closure
+
+The audit is closed after adding reader pathways, core foundations, chapter-level intuition ramps, acronym expansion, notation/unit guidance, warm-up answers, glossary entries, and an evaluation scorecard. Every numbered technical chapter now has a plain-language entry point before its deepest mechanism or an earlier chapter foundation it explicitly builds upon.
+
+Release validation must still confirm that the added prose did not create print clipping, blank pages, broken links, or missing glyphs. Accessibility here means conceptual entry for a basic blockchain reader; independent review for visual, cognitive, screen-reader, and language accessibility remains worthwhile.

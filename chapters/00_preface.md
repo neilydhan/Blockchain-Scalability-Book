@@ -69,6 +69,41 @@ Code blocks such as `Packet { ... }` are often pseudocode. They expose fields th
 
 When a section becomes difficult, return to five questions: who acts, what data they use, what evidence the next party checks, when the result becomes final, and how failure is recovered.
 
+## Reader Pathways
+
+The book supports three routes.
+
+### Basic blockchain background
+
+Read the Preface, then Chapters 1-3 in order. Chapter 1 supplies the mental model and Chapter 2 teaches how to reason about trade-offs. In later chapters, read the opening intuition section before the detailed protocol traces. Use the core glossary and basic-knowledge warm-up whenever a term is unfamiliar.
+
+A first reading can skip implementation data structures and return to them after answering:
+
+- What problem does the mechanism solve?
+- Who performs the work?
+- What evidence does another party check?
+- When is the result final?
+- What happens when the normal service fails?
+
+### Builder or operator
+
+Read Chapters 1 and 3, then follow the mechanism you operate: Chapter 4 for L1/state, Chapters 5-6 for L2, Chapters 7-8 for modular/DA, Chapters 9-10 for execution/consensus, and Chapter 11 for emerging designs. Use the evaluation handbook, threat-model worksheets, and benchmark template alongside the chapter.
+
+### Course or research study
+
+Read Chapters 1-11 in sequence, complete the warm-up and chapter questions, then run the quantitative and fault-injection laboratories. Treat references as starting points for source verification, not substitutes for reproducing an argument.
+
+### Signals in the text
+
+- **Intuition sections** explain the mental model and vocabulary.
+- **Worked examples** calculate a bounded scenario and state assumptions.
+- **Protocol traces** show message and state order.
+- **Failure matrices** separate safe behavior from recovery.
+- **Production assertions** turn explanations into tests.
+- **References** identify primary specifications and papers.
+
+No route removes the need to state assumptions. The book becomes more formal gradually, but each deep section should remain connected to an actor, message, evidence check, deadline, and recovery path.
+
 ## How to Use This Book
 
 Chapters 1-3 establish the measurement model and architecture vocabulary. Chapters 4-10 examine the main mechanisms. Chapter 11 looks at developing directions without treating research proposals as deployed facts.
