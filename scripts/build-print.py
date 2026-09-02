@@ -14,7 +14,7 @@ BOOK = ROOT / "book"
 OUTDIR = ROOT / "print"
 OUT = OUTDIR / "blockchain-scalability-book-interior-7x10.pdf"
 CSS = ROOT / "theme" / "print-7x10.css"
-SITE = "https://neilydhan.github.io/Blockchain-Scalability-Book/"
+SITE = "https://neilydhan.github.io/Mastering-Blockchain-Scalability/"
 
 # (slug, built HTML path relative to book/, part)
 SECTIONS = [

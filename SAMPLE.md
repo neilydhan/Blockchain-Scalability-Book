@@ -13,4 +13,4 @@ Then choose the next chapter by your goal:
 - Consensus throughput and finality: [Chapter 10](chapters/10_consensus_scaling.md)
 - Comparing a real system: [Practitioner Evaluation Handbook](chapters/14_evaluation_handbook.md)
 
-[Read the web edition](https://neilydhan.github.io/Blockchain-Scalability-Book/) · [Download the current release](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest)
+[Read the web edition](https://neilydhan.github.io/Mastering-Blockchain-Scalability/) · [Download the current release](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest)

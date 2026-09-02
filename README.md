@@ -4,7 +4,7 @@
 
 Blockchain scalability is a resource and systems problem, not a contest for the largest transactions-per-second number. This book follows transactions and failures end to end across Layer 1, Layer 2, rollups, modular data availability, parallel execution, and consensus. It gives master's students and practitioners worked calculations, explicit security assumptions, threat-model worksheets, benchmark methods, graduate-level exercises, and solution sketches.
 
-[**Read online**](https://neilydhan.github.io/Blockchain-Scalability-Book/) · [**Download PDF**](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest) · [**Cite**](CITATION.cff) · [**Teach this book**](ACADEMIC.md) · [**Contribute**](CONTRIBUTING.md)
+[**Read online**](https://neilydhan.github.io/Mastering-Blockchain-Scalability/) · [**Download PDF**](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest) · [**Cite**](CITATION.cff) · [**Teach this book**](ACADEMIC.md) · [**Contribute**](CONTRIBUTING.md)
 
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22257267.svg)](https://doi.org/10.5281/zenodo.22257267)
 
