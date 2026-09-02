@@ -500,6 +500,129 @@ Test circuit boundaries: zero transactions, maximum rows, one step over capacity
 
 A proof system is production-ready when the statement is complete, execution and circuit semantics agree, every version is pinned, queues remain stable under realistic distributions, and independent parties can reproduce verification. Succinct proof size alone establishes none of those properties.
 
+## **Rollup Fee Market and Batch-Packing Trace**
+
+A rollup fee pays for more than execution. The operator must recover local execution and storage cost, the cost of publishing compressed data, settlement transactions, proof or dispute infrastructure, and a risk margin for volatile base-layer prices.
+
+A useful fee decomposition is:
+
+```text
+user fee = L2 execution fee
+         + allocated DA fee
+         + proof or dispute fee
+         + settlement overhead
+         + operator margin
+         - explicit subsidy
+```
+
+Each component should be observable or governed by a documented estimator. A single opaque gas price hides which resource is scarce.
+
+### Two-dimensional demand
+
+A transaction may be cheap to execute but expensive to publish, or expensive to execute with little data. Model at least:
+
+- L2 execution gas or compute units;
+- compressed bytes added to the batch;
+- state writes or persistent storage burden;
+- proof cost, when transaction shape changes proving work.
+
+One scalar fee can still be presented to users, but its calculation should price each constrained resource and avoid cross-subsidies that attackers can exploit.
+
+### Worked fee estimate
+
+Suppose a transaction uses 90,000 L2 gas at 0.02 gwei per gas:
+
+```text
+90,000 × 0.02 gwei = 1,800 gwei
+```
+
+Its batch contribution is estimated at 140 compressed bytes. If L1 or DA publication costs 18 gwei per byte after the protocol's conversion and safety margin:
+
+```text
+140 × 18 gwei = 2,520 gwei
+```
+
+Allocate another 300 gwei for proof and settlement overhead:
+
+```text
+estimated fee = 1,800 + 2,520 + 300 = 4,620 gwei
+              = 0.00000462 ETH
+```
+
+This is an illustrative estimator, not a live network quote. The wallet should show the fee asset, maximum charged amount, refund rule, and which base-layer price observation the estimate used.
+
+### Compression is contextual
+
+The marginal compressed size of a transaction depends on its neighbors. Repeated addresses and zero bytes may compress well; random signatures and high-entropy calldata may not. Measuring one transaction alone can overstate or understate its batch contribution.
+
+A deterministic protocol may calculate charges from uncompressed bytes or a stable proxy while the operator bears compression variance. If fees use actual compressed output, transaction ordering could alter what each user pays. Define attribution so a builder cannot move compression benefits to favored transactions.
+
+### Batch-packing policy
+
+A batcher chooses transactions subject to several limits:
+
+```text
+execution_gas <= G_max
+compressed_bytes <= B_max
+proof_complexity <= P_max
+state_writes <= S_max
+```
+
+A transaction fits only if it leaves all limits valid. Greedy sorting by fee per gas can fill execution capacity while wasting scarce DA bytes. Sorting only by fee per byte can starve compute-heavy, data-light work.
+
+One approach calculates expected revenue against the transaction's vector of resource use, then packs while maintaining reserves for system messages, forced transactions, and proof constraints. The exact optimization may be heuristic, but consensus must define the resulting batch validity independently of the heuristic.
+
+### Forced-inclusion reserve
+
+If users can place transactions in an L1 inbox, ordinary batches need capacity to consume them before the force deadline. Reserving zero capacity until the deadline lets a sequencer fill every batch with profitable private traffic and then face an impossible backlog.
+
+Let maximum forced-inbox growth be 200 kB per L1 interval and safe rollup consumption be 250 kB. Only 50 kB of recovery margin remains. A short DA-price spike or missed batch can make the queue grow. Monitor arrival and service rates, oldest-message age, and the number of batches needed to clear the queue.
+
+A force path should specify whether inbox work has prepaid L1 cost, pays L2 execution later, or can fail for insufficient funds. Invalid forced messages must not block later messages forever; define skippable failure semantics while preserving order commitments.
+
+### Price volatility
+
+The sequencer estimates a future publication cost but may post the batch after the base-layer fee changes. Use a bounded moving estimate, explicit safety margin, and a reconciliation rule. Overcharging without refunds can become a hidden margin; undercharging can make the operator delay publication and weaken user guarantees.
+
+Separate a user's fee cap from the operator's publication decision. A transaction accepted under one quote should have a deadline or cancellation policy if base-layer prices make timely publication uneconomic.
+
+If the system smooths prices across batches, maintain a reserve and publish its accounting. A reserve can absorb short spikes but should not silently socialize persistent losses or let governance redirect user prepayments.
+
+### Fee tokens and conversion risk
+
+Charging in a token other than the settlement asset introduces an exchange rate. State the oracle, update frequency, stale-price rule, spread, and who bears conversion risk. During a rapid token decline, an old conversion rate can make fees too low and expose liveness to spam.
+
+Fallback should be deterministic: reject new transactions, require the settlement asset, or apply a bounded conservative rate. An emergency operator quote with no on-chain rule adds discretionary access control.
+
+### Congestion and priority
+
+A fee market needs a clear inclusion objective. First-price priority is easy to explain but exposes users to estimation error. Posted prices smooth user experience but need an adjustment rule. Auctions or MEV-aware ordering add complexity and information leakage.
+
+Whatever the policy, system deposits, withdrawals, forced messages, proof updates, and escape transactions may require protected capacity. Document these lanes and prevent operators from labeling arbitrary private traffic as system-critical.
+
+### Refunds and failed execution
+
+A reverted transaction still consumes execution and publication resources. Charge measured work up to the failure boundary, but refund unused fee cap under a canonical rule. Ensure the sequencer cannot manufacture a different refund by changing a non-consensus execution limit.
+
+Deposits that fail on L2 need a recoverable credit or retry path. Users should not lose funds merely because the destination call ran out of gas. Separate asset custody from destination-call success.
+
+### Fee-market tests
+
+Replay realistic mixed workloads while varying L1/DA price, compressibility, proof complexity, forced-inbox arrivals, and fee-token exchange rate. Inject missed publications and sequencer restarts. For each transaction, reconcile:
+
+```text
+maximum authorized
+- actual charged
+- canonical refund
+= zero unexplained remainder
+```
+
+Assert that resource limits never overflow, forced work meets its deadline under the stated arrival envelope, failed transactions cannot block the queue, and restarting does not forget prepaid fees or issue duplicate refunds.
+
+Publish estimator error distributions, not only averages: quoted versus charged fee at p50, p95, and p99; operator surplus or deficit; batch utilization by each resource; forced-queue age; and time from sequencer acceptance to DA publication.
+
+A rollup fee market is credible when it prices the resources users consume, preserves mandatory safety traffic under congestion, reconciles every payment, and does not turn base-layer volatility into an undisclosed right for the operator to delay finality.
+
 ## **End-to-End Implementation Example: A Rollup Payment**
 
 Consider a minimal account-based rollup supporting deposits, transfers, and withdrawals. The example is intentionally small enough to audit, but its boundaries match production systems.
