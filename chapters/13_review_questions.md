@@ -51,14 +51,14 @@ Use these questions before the chapter exercises. A reader should be able to ans
 
 1. Follow one token transfer through an L1, a rollup, and a sidechain. At which point is each transfer final?
 2. Why is a cross-shard transfer naturally asynchronous? What prevents its receipt from being replayed?
-3. How does committee size affect both throughput and capture probability?
+3. A protocol samples 100 validators without replacement from 1,000, of whom 250 are adversarial. Safety fails at 34 adversarial committee members. Write the exact capture probability and calculate it. How does reducing committee size affect parallelism and tail risk?
 4. A channel counterparty publishes an old signed state. What evidence lets the contract choose the newer state?
 5. Why can a payment route have sufficient graph connectivity but insufficient liquidity?
 6. Compare the failure of a channel operator, a sidechain bridge, and a rollup sequencer. Which failures threaten safety and which threaten liveness?
 
 ## **Chapters 6-8: Rollups, Modularity, and Data Availability**
 
-1. Separate sequencer confirmation, proof finality, and L1 finality for an optimistic and validity rollup.
+1. Separate sequencer confirmation, proof or challenge acceptance, and L1 finality for an optimistic and validity rollup.
 2. Why does a validity proof not prove that users can reconstruct the state?
 3. Describe the minimum escape hatch needed when a sequencer censors a withdrawal.
 4. A modular rollup uses Celestia for data and Ethereum for settlement. What can each layer prove, and what can it not prove?
@@ -75,6 +75,8 @@ Use these questions before the chapter exercises. A reader should be able to ans
 5. How does pipelining improve throughput without reducing a transaction's finality latency?
 6. Compare the network assumptions and fault thresholds of HotStuff and Sync HotStuff.
 7. Why should consensus benchmarks include block payload and leader failures?
+8. Why does one HotStuff quorum certificate not by itself prove that the certified block is committed?
+9. Compare a Sui address-owned fast-path transaction with a shared-object transaction. Which evidence is common, and which ordering requirement differs?
 
 ## **Chapter 11: Future Architecture**
 
@@ -83,6 +85,7 @@ Use these questions before the chapter exercises. A reader should be able to ans
 3. What new concentration risks can shared sequencing or proof markets create?
 4. How can chain abstraction hide complexity without hiding security assumptions?
 5. Propose a reproducible benchmark for a multi-rollup system. Which finality boundary ends the timer?
+6. An MEV-Boost relay withholds the payload after a proposer signs the blinded header. Why can the proposer not safely publish a locally built payload for the same slot, and when must fallback be chosen?
 
 ## **Capstone Design Exercise**
 
@@ -159,7 +162,16 @@ For the order-book benchmark, vary the number of markets, price-level concentrat
 
 An L1 transfer is complete under the L1's finality rule. A rollup transfer passes sequencer, publication, proof or challenge, and settlement milestones. A sidechain transfer follows its own consensus, and its bridge adds another finality rule.
 
-Cross-shard execution is asynchronous because independent committees cannot atomically lock all state without coordination that erodes parallelism. The destination authenticates the source receipt and stores a consumed nonce or message identifier. Smaller committees improve parallel capacity while increasing capture probability. In a state channel, signatures authenticate updates and a monotonic nonce selects the newest state. Payment routes need directional balance on every hop, not only graph connectivity.
+Cross-shard execution is asynchronous because independent committees cannot atomically lock all state without coordination that erodes parallelism. The destination authenticates the source receipt and stores a consumed nonce or message identifier. For the stated committee, if `X` is the adversarial count:
+
+```text
+P[X >= 34]
+= sum from x=34 to 100 of
+  C(250, x) C(750, 100-x) / C(1000, 100)
+approx 0.02144, or 2.14%
+```
+
+The calculation assumes uniform sampling without replacement and counts validator identities rather than correlated control or stake weight. Smaller committees can increase parallel capacity while increasing capture tail risk. In a state channel, signatures authenticate updates and a monotonic nonce selects the newest state. Payment routes need directional balance on every hop, not only graph connectivity.
 
 Operator failure has different effects: a channel counterparty can delay cooperative close but the adjudicator preserves funds; a sidechain bridge compromise may violate safety; a sequencer outage should affect liveness if forced inclusion and exit remain intact.
 
@@ -187,11 +199,15 @@ Reduce contention by partitioning per-player or per-market state, replacing one 
 
 HotStuff assumes eventual network bounds for liveness and tolerates fewer than one-third Byzantine replicas in the common model. A synchronous variant uses a known bound and derives different protocol guarantees from that stronger assumption. Benchmarks must include payload dissemination and leader failures because empty-block voting hides bandwidth and view-change cost.
 
+A single HotStuff QC proves a quorum vote in one phase. Commitment depends on the protocol-specific certified chain and locking rule, so an explorer must not relabel every certified proposal as final. In Sui, both fast-path and consensus traffic use signed Mysticeti DAG blocks and Byzantine-quorum evidence. Address-owned fast-path transactions can certify and finalize without waiting for total-order consensus, while shared and party object transactions require consensus to assign an order and versions.
+
 ### Chapter 11
 
 A dependency graph should show user, solver, sequencer, execution rollup, DA network, prover, settlement chain, and destination bridge. Each edge needs authenticated data, finality, timeout, and recovery. Shared sequencing can concentrate order flow; proof markets can concentrate specialized hardware and witness access; solver markets can concentrate routing and censorship power.
 
 Chain abstraction is safe when the interface hides mechanics but still exposes assets, maximum spend, destination, finality status, fees, and recovery. A multi-rollup benchmark fixes workload and route, records every domain boundary, and ends at a named milestone such as settlement finality or destination execution rather than the first sequencer response.
+
+After a proposer signs a blinded payload header, publishing a different local payload for the same slot can create conflicting signed proposals and a slashable equivocation. Relay deadlines, local construction, and circuit-breaker fallback must select the local path before signing the blinded header. Withholding after the signature therefore causes a missed slot rather than a safe late substitution.
 
 ### Quantitative Laboratory
 

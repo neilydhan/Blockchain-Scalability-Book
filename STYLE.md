@@ -13,7 +13,7 @@ Use present tense for protocol mechanics. Date claims about deployments, roadmap
 - **Layer 1 (L1)** and **Layer 2 (L2):** spell out at first use in a chapter, then use the abbreviation. Use a hyphen only as an adjective, as in "Layer-2 protocol".
 - **rollup:** one word. Use **optimistic rollup** and **validity rollup** for the security mechanism. Use **ZK rollup** only when discussing the established product category; zero knowledge is not required for every validity proof.
 - **data availability (DA):** the ability to obtain block data needed to verify or reconstruct state. Do not use it to mean permanent archival storage.
-- **finality:** qualify it as probabilistic, economic, BFT, settlement, or application finality. A sequencer confirmation is not settlement finality.
+- **finality:** qualify it as probabilistic, economic, BFT, settlement, or application finality. A sequencer confirmation, proposal, or quorum certificate is not settlement or BFT finality unless the protocol's commit rule explicitly makes it so.
 - **state root:** a commitment to state. Do not call it the state itself.
 - **light client:** software that verifies a reduced proof of consensus or state without executing and storing everything. A trusted API consumer is not automatically a light client.
 - **bridge:** name the verification model: multisignature, optimistic, light-client, validity-proof, or canonical rollup bridge. Avoid "trustless."
@@ -40,7 +40,7 @@ A mitigation is not a proof. Rate limits and pause keys bound loss but add gover
 
 Pseudocode should expose types, ordering, domain separation, bounds, and error behavior when those details affect safety. Use fenced `text` blocks for data structures that are illustrative rather than executable.
 
-Every figure needs a numbered caption, meaningful alternative text, and an editable source. Every table needs headers that make sense without relying on the surrounding paragraph.
+Every figure needs a numbered caption, meaningful alternative text, and an editable source. Standalone SVG files also need internal `title` and `desc` elements so the source remains understandable outside the rendered book. Every table needs headers that make sense without relying on the surrounding paragraph.
 
 ## Citations
 

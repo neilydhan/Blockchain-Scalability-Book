@@ -95,7 +95,7 @@ Some systems ask transactions to declare the accounts or objects they will acces
 
 Solana transactions specify accounts and whether they are read-only or writable. The Sealevel runtime can execute transactions that do not contend for writable accounts in parallel.[^1]
 
-Sui uses an object-centric model. Transactions involving owned objects can often follow a fast path because their dependencies are explicit, while shared-object transactions require consensus ordering.[^2]
+Sui uses an object-centric model with two ordering paths. Address-owned mutable objects can use the Mysticeti fast path, while shared and party objects require consensus sequencing.[^6] The current implementation integrates fast-path votes and certificates into Mysticeti directed acyclic graph (DAG) blocks, so the fast path reuses the consensus communication structure without waiting for a total-order consensus commit.[^9] Explicit object inputs also expose conflicts, allowing transactions over disjoint objects to execute in parallel.
 
 The benefit is predictable scheduling. The cost is a programming model that exposes concurrency to developers and users. Popular shared contracts can still become hot spots.
 
@@ -173,17 +173,19 @@ Now add one global writable counter recording all sales. Both transactions name 
 
 Observable evidence includes the signed account list, writable flags, instruction list, compute-unit use, execution logs, status, and commit slot. A benchmark should report writable-account overlap and account-lock failures. Ten programs touching one hot token or market account may serialize more than ten calls to one program over disjoint accounts.
 
-### **Sui: owned and shared objects choose different paths**
+### **Sui: Mysticeti integrates fast path and consensus**
 
-Sui represents state as objects with identifiers, versions, ownership, and digests. A transaction names the objects it consumes or mutates. This makes dependencies explicit at an application level: two transfers over unrelated owned objects are independent, while two calls mutating one shared object contend on that object's order.[^5] [^6]
+Sui represents state as objects with identifiers, versions, ownership, and digests. A transaction names the objects it consumes or mutates. This makes dependencies explicit at an application level: two transfers over unrelated address-owned objects can follow independent fast-path certification and execution, while two calls mutating one shared or party object require consensus-assigned versions and contend on that object's state.[^6] [^9]
 
-Trace a coffee-shop payment using address-owned coin objects. The wallet constructs a transaction naming the gas object, payment coin, recipient, commands, and current object versions. The user signs it and submits it. Validators verify authorization and object references, sequence the transaction under the applicable Sui path, execute Move commands, and produce signed transaction effects naming created, mutated, wrapped, or deleted objects. The effects become final under Sui's transaction rules and are later included in a checkpoint.[^5]
+Trace a coffee-shop payment using address-owned coin objects. The wallet constructs a transaction naming the gas object, payment coin, recipient, commands, and current object versions. The user signs it and submits it through a full node to a validator. The validator checks authorization and the object references and includes the transaction in its signed Mysticeti block. Peer blocks carry accept votes. Once the transaction has votes from `2f + 1` distinct validators it is certified; Mysticeti-FPC finalizes it either when `2f + 1` validators support that certificate or when a Mysticeti-C commit contains the certificate in its causal history.[^9] Validators can then execute the Move commands and produce effects naming created, mutated, wrapped, or deleted objects.
 
-For an owned-object transaction, ownership gives a direct authorization and dependency structure. Separate customers spending separate coin objects do not contend on one account balance row. A shared-object transaction, such as updating one public auction, needs consensus ordering because independent users may race to mutate the same object. Sui's consensus documentation and transaction lifecycle connect this path to Mysticeti and checkpointing. The object model narrows conflict domains; it does not remove the need to order genuinely shared state.
+This is a fast path in the ordering sense: the payment need not wait for total-order consensus over unrelated transactions. It is not a single-validator trust path. Its certificate still requires Byzantine-quorum evidence, and its votes are embedded in the same DAG communication used by Mysticeti consensus. The current general lifecycle page describes a consensus-commit path, effects acknowledgements, and a certified-checkpoint fallback; implementations and clients must state which path and certificate they observed rather than flattening both into one RPC status.[^5]
 
-Failure follows object versions. If two signed transactions try to consume the same owned coin version, both cannot succeed. Once one effect is final, replay or the conflicting spend is rejected by the version and ownership rules. If a wallet builds against a stale shared-object or owned-object reference, it must refresh and reconstruct rather than retry opaque bytes indefinitely. A globally shared object can become the same hot-state bottleneck seen in other systems, even when unrelated objects execute in parallel.
+Owned-object authorization still matters. Separate customers spending separate coin objects do not contend on one account balance row. Two transactions consuming the same owned-object version cannot both succeed. A shared object such as one public auction can become hot because independent users race to mutate the same object. Shared and party inputs carry consensus-managed versioning, so a client does not guess their latest access version. The object model therefore chooses both a versioning path and an execution conflict domain.
 
-Observable evidence includes transaction digest, input object IDs and versions, signatures, effects certificate or final effects, and checkpoint inclusion. "Final effects" and "included in checkpoint" answer different operational questions. Indexers and bridges may wait for checkpoint evidence even when a user interface already shows transaction finality.
+Failure follows object versions. If two signed transactions try to consume the same address-owned coin version, both cannot succeed. Once one effect is final, replay or the conflicting spend is rejected by the version and ownership rules. A wallet built against a stale fast-path object reference must refresh and reconstruct rather than retry opaque bytes indefinitely. For a shared or party object, consensus determines the access version; the transaction identifies the object under the protocol's consensus-object rules rather than guessing its latest mutable version. A globally shared object can become the same hot-state bottleneck seen in other systems, even when unrelated objects execute in parallel.
+
+Observable evidence includes transaction digest, ownership type, input object IDs and versions, user signature, fast-path certificate or consensus evidence, certified effects, and checkpoint inclusion. Certified effects and checkpoint inclusion can both prove finality through documented paths, but the checkpoint is also the durable stream consumed by state sync and indexers. An application should name which evidence it verified instead of treating an RPC acknowledgement as equivalent to either.
 
 ### **Aptos: Block-STM discovers conflicts speculatively**
 
@@ -199,10 +201,10 @@ Aptos's end-to-end transaction path is broader than Block-STM. A client submits 
 
 | Workload | Solana | Sui | Aptos |
 |---|---|---|---|
-| Two payments over disjoint state | Parallel when declared writable account sets do not conflict | Independent owned objects expose separate dependencies | Block-STM speculates in parallel and validates successfully |
-| Two updates to one hot market | Shared writable account creates lock contention | Shared object requires one consensus order and remains hot | Speculation conflicts; later ordered transaction may re-execute |
+| Two payments over disjoint state | Parallel when declared writable account sets do not conflict | Address-owned objects can certify on independent Mysticeti fast paths and execute in parallel | Block-STM speculates in parallel and validates successfully |
+| Two updates to one hot market | Shared writable account creates lock contention | Consensus sequences the shared or party object; mutable access remains an execution conflict | Speculation conflicts; later ordered transaction may re-execute |
 | Dependency information | Signed account list and writable flags before execution | Object IDs, versions, ownership and shared-object status | Read/write dependencies discovered during speculative execution |
-| Safe collision behavior | Conflicting locks prevent unsafe concurrent writes | Object version/order prevents two incompatible effects | Validation aborts stale speculation and retries in canonical order |
+| Safe collision behavior | Conflicting locks prevent unsafe concurrent writes | Fast-path certificates or consensus ordering plus object-version rules prevent incompatible effects | Validation aborts stale speculation and retries in canonical order |
 | Performance trap | Overbroad writable lists and global accounts | One popular shared object | Late conflicts and repeated speculative work |
 | Audit evidence | Accounts, instructions, logs, compute, slot/status | Inputs and versions, effects, checkpoint | Ordered block index, attempts/conflicts, receipt, committed state |
 
@@ -526,7 +528,6 @@ The limit is contention. A parallel VM is most effective when its application mo
 ## **References**
 
 [^1]: Solana. "Transactions and Instructions." <https://solana.com/docs/core/transactions>.
-[^2]: Sui. "The Sui Smart Contracts Platform." <https://docs.sui.io/paper/sui.pdf>.
 [^3]: Gelashvili, Rati, et al. "Block-STM: Scaling Blockchain Execution by Turning Ordering Curse to a Performance Blessing." <https://arxiv.org/abs/2203.06871>.
 
 [^4]: Solana Documentation. "Transaction processing pipeline." <https://solana.com/docs/core/transactions/transaction-pipeline>.
@@ -534,3 +535,4 @@ The limit is contention. A parallel VM is most effective when its application mo
 [^6]: Sui Documentation. "Types of Object Ownership." <https://docs.sui.io/develop/objects/object-ownership/>.
 [^7]: Aptos Documentation. "Execution." <https://aptos.dev/network/blockchain/execution>.
 [^8]: Aptos Documentation. "Life of a Transaction." <https://aptos.dev/network/blockchain/blockchain-deep-dive>.
+[^9]: Danezis, George, et al. "Mysticeti: Reaching the Latency Limits with Uncertified DAGs." <https://docs.sui.io/paper/mysticeti.pdf>.

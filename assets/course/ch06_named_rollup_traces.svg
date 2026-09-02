@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="title desc"><title>Named optimistic and validity rollup traces</title><desc>Parallel traces compare Arbitrum Nitro and ZKsync Era from sequencing and data publication through fault-proof or validity-proof settlement.</desc>
 <title id="title">Arbitrum Nitro and ZKsync Era transaction traces</title>
 <desc id="desc">Two parallel original flow diagrams compare optimistic dispute resolution with validity proof verification.</desc>
 <rect width="1200" height="650" fill="#f8fafc"/>

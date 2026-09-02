@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720"><title>Parallel scheduling with deterministic commitment</title><desc>Independent transactions run on separate workers while conflicts trigger ordering or retry before one canonical state is committed.</desc>
 <rect width="1200" height="720" fill="white"/><defs><marker id="a" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#2563eb"/></marker></defs><style>.h{font:bold 34px Arial;fill:#172554}.t{font:bold 22px Arial;fill:#172554}.s{font:19px Arial;fill:#334155}.w{font:bold 20px Arial;fill:white}.a{stroke:#2563eb;stroke-width:5;marker-end:url(#a)}.d{stroke:#dc2626;stroke-width:4;stroke-dasharray:10 8}</style>
 <text x="600" y="52" text-anchor="middle" class="h">Parallel execution preserves one canonical result</text>
 <rect x="55" y="135" width="230" height="390" rx="22" fill="#dbeafe" stroke="#2563eb" stroke-width="4"/><text x="170" y="180" text-anchor="middle" class="t">Ordered block</text>

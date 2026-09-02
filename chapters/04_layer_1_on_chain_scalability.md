@@ -170,7 +170,7 @@ A relayer then submits the acknowledgement and proof back to Chain A. A verifies
 
 If no valid receive occurs before the packet's timeout, a relayer or user submits a timeout proof to Chain A. The proof establishes that the destination passed the timeout condition without receiving the packet, under the channel rules. The source application runs its timeout callback and can unescrow or restore the user's asset. Receive and timeout race across two chains, so the proof rules and packet-receipt state ensure only one terminal outcome succeeds.
 
-Observable evidence includes the source transaction, packet sequence and commitment, client heights, relayer transactions, destination receipt, acknowledgement bytes, source acknowledgement callback, and any timeout proof. "Relayed" is ambiguous: it must say whether a receive proof was submitted, verified, executed, acknowledged, and processed back at the source. Ordered and unordered channels also differ. An ordered channel enforces sequence and can close or block on timeout under its protocol rules; an unordered channel permits independent packet delivery while still preventing replay.
+Observable evidence includes the source transaction, packet sequence and commitment, client heights, relayer transactions, destination receipt, acknowledgement bytes, source acknowledgement callback, and any timeout proof. "Relayed" is ambiguous: it must say whether a receive proof was submitted, verified, executed, acknowledged, and processed back at the source. The current channel specification defines three order modes. A strictly ordered channel requires delivery in sequence and closes after a packet times out. An `ordered_allow_timeout` channel requires each packet to be received or timed out before the next packet advances, but keeps the channel open. An unordered channel permits independent delivery while still preventing replay.[^8]
 
 Failure path: every relayer goes offline. Funds are not automatically stolen, but progress stops until someone relays receive or timeout evidence. If Chain B halts before the timeout, Chain A may need a proof tied to a usable client state; client expiry or a frozen client can complicate recovery. If the destination application returns an error acknowledgement, the source callback must refund or unwind according to application rules rather than calling the packet a success. If a chain's consensus safety fails, its light-client security assumption fails too. IBC authenticates the state of the connected chains; it does not make a compromised source or destination chain honest.
 
@@ -193,9 +193,9 @@ The shared programming rule is to record intent before sending asynchronous work
 
 Early Ethereum roadmaps emphasized execution shards. The rollup-centric roadmap shifted priority toward data capacity. Rollups execute outside Ethereum but publish data needed for reconstruction and verification. Increasing cheap data capacity can scale many rollups at once.
 
-EIP-4844 introduced blob-carrying transactions, or proto-danksharding. Blob data is committed to by consensus but unavailable to EVM execution and retained only for a defined period. It provides a separate data market for rollups and groundwork for sampling.[^3]
+EIP-4844 introduced blob-carrying transactions, or proto-danksharding. Blob data is committed to by consensus but unavailable to EVM execution and retained only for a defined period. It provides a separate data market for rollups.[^3]
 
-Full danksharding aims to expand blob capacity while allowing nodes to verify availability without downloading every blob.[^4] This is Layer 1 scaling designed primarily to support Layer 2 execution.
+Ethereum activated PeerDAS in the Fusaka upgrade on December 3, 2025. Under EIP-7594, blob data is erasure-extended into cells and columns, nodes custody a deterministic subset, and nodes sample columns from peers rather than every node downloading every blob. A node can reconstruct the data matrix from at least half of the columns under the specified coding scheme.[^4] [^9] Full danksharding remains a roadmap direction for expanding data capacity further.[^10] This is Layer 1 scaling designed primarily to support Layer 2 execution.
 
 ---
 
@@ -215,15 +215,24 @@ A production protocol must handle committee corruption, data withholding, partit
 
 Consider Alice on shard A paying Bob on shard B. Shard B must not credit Bob unless shard A has irrevocably debited Alice. A practical design uses an authenticated receipt. Shard A verifies Alice's signature and balance, debits ten tokens, and places a receipt in an outgoing queue. The receipt names the destination, Bob's account, the amount, a nonce, and proof that shard A finalized the debit. Shard B later verifies the proof and consumes the receipt exactly once. The nonce prevents replay.
 
-The transfer is economically atomic but not simultaneous. Between debit and credit, the payment is in flight. Applications must expose that intermediate state. Congestion on shard B can delay delivery, and a contract on shard A cannot assume an immediate callback from shard B. Cross-shard calls therefore look more like reliable message passing than like calls inside one EVM transaction.
+The transfer is not atomic in the database sense. Between debit and credit, the payment is in flight. Economic conservation requires a protocol-defined terminal outcome such as exactly-once credit or an authenticated cancellation and refund. If the destination can reject a receipt, the design must say which evidence authorizes the refund and why a late receipt cannot also credit Bob. Applications must expose the intermediate state. Congestion on shard B can delay delivery, and a contract on shard A cannot assume an immediate callback from shard B. Cross-shard calls therefore look more like authenticated message passing than like calls inside one EVM transaction.
 
 The protocol must price receipt queues, bound their growth, handle reorganizations, and define what happens when a destination rejects a message. Aggregate shard throughput alone hides these costs.
 
 ## **Committee Security by Calculation**
 
-Suppose 1,000 validators include 250 controlled by an adversary. The protocol forms committees of 100 and fails if more than one-third of any committee is Byzantine. The expected adversarial count is 25, but an attack needs at least 34. Security depends on the tail probability of drawing that many attackers, not on the average.
+Suppose 1,000 validators include 250 controlled by an adversary. The protocol samples a committee of 100 uniformly without replacement and loses the relevant BFT safety condition if at least 34 committee members are Byzantine. If `X` is the number of adversarial members, then `X` is hypergeometric:
 
-Smaller committees create more parallel shards but widen this tail risk. Rotation limits persistent targeting, yet it costs bandwidth because validators need new shard state. Committee size, reshuffle frequency, validator stake distribution, and the fault threshold must be evaluated together.
+```text
+P[X >= 34]
+= sum from x=34 to 100 of
+  C(250, x) C(750, 100-x) / C(1000, 100)
+approx 0.02144, or 2.14%
+```
+
+The expected adversarial count is only 25, so an average alone conceals a roughly one-in-47 committee-capture probability under these assumptions. The calculation does not cover stake-weighted sampling, several committees per epoch, repeated epochs, adaptive corruption, or correlated control. For `m` independent committees with per-committee capture probability `p`, the probability of at least one capture is `1 - (1-p)^m`; real assignments can be dependent, so the protocol must derive the joint probability from its actual sampler.
+
+Smaller committees create more parallel shards but widen this tail risk. Rotation limits persistent targeting only under an explicit corruption-delay model, and it costs bandwidth because validators need new shard state. Committee size, reshuffle frequency, validator or stake distribution, correlation, and the exact safety or liveness threshold must be evaluated together.
 
 ## **Implementing a Sharded State Machine**
 
@@ -918,16 +927,18 @@ Assert conservation of balances, one owner per key and epoch, exact message-once
 
 Layer 1 scaling does not mean only making blocks larger. It redesigns execution, storage, networking, data availability, and consensus so the system can grow without excluding independent validators. Sharding provides horizontal capacity; client and protocol optimization push vertical limits.
 
-The emerging architecture is layered: the base layer supplies secure settlement and verifiable data while execution is parallelized across shards, rollups, and application-specific chains. The next chapter examines moving repeated interaction off the base chain.
+The emerging architecture is layered: the base layer supplies settlement and verifiable data under its consensus and availability assumptions while execution is parallelized across shards, rollups, and application-specific chains. The next chapter examines moving repeated interaction off the base chain.
 
 ## **References**
 
 [^1]: Skidanov, Alex, Illia Polosukhin, and Bowen Wang. "Nightshade: NEAR Protocol Sharding Design." <https://near.org/papers/nightshade>.
 [^2]: Cosmos. "IBC Protocol Overview." <https://docs.cosmos.network/ibc/latest/intro>.
 [^3]: Buterin, Vitalik, et al. "EIP-4844: Shard Blob Transactions." <https://eips.ethereum.org/EIPS/eip-4844>.
-[^4]: Ethereum.org. "Danksharding." <https://ethereum.org/roadmap/danksharding/>.
+[^4]: Ethereum Improvement Proposals. "EIP-7594: PeerDAS, Peer Data Availability Sampling." <https://eips.ethereum.org/EIPS/eip-7594>.
 
 [^5]: NEAR Documentation. "Lifecycle of a Transaction." <https://docs.near.org/protocol/transactions/transaction-execution>.
 [^6]: NEAR Documentation. "Token transfer flow." <https://docs.near.org/protocol/data-flow/token-transfer-flow>.
 [^7]: Cosmos IBC Documentation. "IBC Lifecycle." <https://docs.cosmos.network/ibc/next/learn/ibc-lifecycle>.
 [^8]: Cosmos IBC Specification. "Channel & Packet Semantics." <https://docs.cosmos.network/ibc/latest/spec/core/ics-004-channel-and-packet-semantics/README>.
+[^9]: Ethereum Foundation. "Fusaka Mainnet Announcement" (November 6, 2025). <https://blog.ethereum.org/2025/11/06/fusaka-mainnet-announcement>.
+[^10]: Ethereum.org. "Danksharding." <https://ethereum.org/roadmap/danksharding/>.

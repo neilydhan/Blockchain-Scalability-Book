@@ -1,7 +1,6 @@
 [book]
 authors = ["Neil Han"]
 language = "en"
-multilingual = false
 src = "."
 title = "Blockchain Scalability Book"
 
@@ -9,8 +8,8 @@ title = "Blockchain Scalability Book"
 additional-css = ["theme/print.css"]
 default-theme = "light"
 preferred-dark-theme = "navy"
-git-repository-url = "https://github.com/neilydhan/Blockchain-Scalability-Book"
-edit-url-template = "https://github.com/neilydhan/Blockchain-Scalability-Book/edit/main/{path}"
+git-repository-url = "https://github.com/neilstripe/Blockchain-Scalability-Book"
+edit-url-template = "https://github.com/neilstripe/Blockchain-Scalability-Book/edit/main/{path}"
 print = { enable = true }
 
 [build]

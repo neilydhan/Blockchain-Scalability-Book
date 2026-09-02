@@ -44,7 +44,7 @@ Rollups commonly publish compressed transaction data to L1 or a specified DA lay
 
 A deposit locks an L1 asset in the bridge and creates a message the rollup must process. A withdrawal begins on L2, becomes part of an accepted state root, and then proves to the L1 bridge that the message is valid and unused.
 
-Optimistic withdrawals wait through the challenge period because releasing an asset too early could honor an invalid state claim. Validity withdrawals can proceed after proof acceptance and required L1 finality. Both still need replay protection: each withdrawal identifier can be consumed only once.
+Optimistic withdrawals wait through the challenge period because releasing an asset too early could honor an invalid state claim. Validity withdrawals do not need that optimistic challenge window, but they still wait for proof generation and acceptance, the deployment's settlement-contract stages and security delays, and the required L1 finality. Both designs need replay protection: each withdrawal identifier can be consumed only once.
 
 ### **Forced inclusion and escape**
 
@@ -65,6 +65,28 @@ A wallet can truthfully show several stages:
 7. withdrawal executed.
 
 Later sections use "unsafe," "safe," "accepted," and "final" for these boundaries. The exact labels vary by implementation; the evidence behind the label is what matters.
+
+## **The Rollup Lifecycle**
+
+<p align="center">
+  <img src="../assets/course/ch06_rollup_lifecycle.svg" width="760" alt="Rollup transaction lifecycle and completion boundaries">
+  <br>
+  <em>Figure 6.1: A rollup transaction moves through sequencing, data publication, proof, and settlement. Applications should name which boundary they treat as complete. Original figure for this book.</em>
+</p>
+
+A typical transaction follows this path:
+
+1. a user signs and submits a transaction to a sequencer;
+2. the sequencer orders transactions and produces an L2 block;
+3. an executor computes the new rollup state;
+4. batch data or a data commitment is posted;
+5. a state root is submitted to the settlement contract;
+6. a validity proof is accepted, or an optimistic assertion survives the challenge process under its honest-challenger and data assumptions;
+7. the settlement transaction reaches the required L1 finality.
+
+The sequencer provides fast inclusion and a useful user experience, but its acknowledgement is normally **soft confirmation**. Settlement finality comes later. A centralized sequencer can censor or reorder transactions even when it cannot steal funds. Force-inclusion mechanisms and sequencer decentralization address this liveness risk.
+
+---
 
 ## **Named Case Study: Arbitrum Nitro and BoLD**
 
@@ -167,29 +189,6 @@ The table fixes the workload: deposit ETH from Ethereum, make one L2 payment, pu
 
 The table should not be used to rank systems by one label. It is a checklist of where to look. For example, two validity rollups may use different virtual machines, proof aggregation, data encodings, upgrade authorities, and withdrawal delays. Two OP Stack chains may share software while exposing different operational and governance risk. The useful comparison holds the user action constant and follows the evidence all the way from a signature to asset release.
 
-
-## **The Rollup Lifecycle**
-
-<p align="center">
-  <img src="../assets/course/ch06_rollup_lifecycle.svg" width="760" alt="Rollup transaction lifecycle and completion boundaries">
-  <br>
-  <em>Figure 6.1: A rollup transaction moves through sequencing, data publication, proof, and settlement. Applications should name which boundary they treat as complete. Original figure for this book.</em>
-</p>
-
-
-A typical transaction follows this path:
-
-1. a user signs and submits a transaction to a sequencer;
-2. the sequencer orders transactions and produces an L2 block;
-3. an executor computes the new rollup state;
-4. batch data or a data commitment is posted;
-5. a state root is submitted to the settlement contract;
-6. correctness is established by a fraud proof or validity proof;
-7. the state becomes final under the rollup's rules.
-
-The sequencer provides fast inclusion and a useful user experience, but its acknowledgement is normally **soft confirmation**. Settlement finality comes later. A centralized sequencer can censor or reorder transactions even when it cannot steal funds. Force-inclusion mechanisms and sequencer decentralization address this liveness risk.
-
----
 
 ## **Optimistic Rollups**
 
@@ -317,7 +316,7 @@ A verifier re-executes the data. If its root differs, it opens a dispute. A bise
 
 A canonical withdrawal proves that finalized L2 state contains the withdrawal message. A liquidity bridge can pay earlier, but that is a separate service accepting delay and reorganization risk for a fee.
 
-In a validity rollup, a prover generates a proof and the contract verifies it before accepting the root. The user avoids a fraud-proof window but may still wait for proving, batch publication, Ethereum inclusion, and L1 finality. "Instant finality" must be separated into sequencer confirmation, proof finality, and settlement finality.
+In a validity rollup, a prover generates a proof and the contract verifies it before accepting the root. The user avoids a fault-proof challenge window but may still wait for proving, batch publication, Ethereum inclusion, deployment-specific contract stages or delays, and L1 finality. "Instant finality" must be separated into sequencer confirmation, proof acceptance, and settlement finality.
 
 ## **Sequencer Failure and the Escape Hatch**
 

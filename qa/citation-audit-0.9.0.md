@@ -18,23 +18,25 @@ A successful HTTP status proves reachability, not that a source supports every n
 
 ## Result
 
-The link checker tested 30 distinct external destinations. Twenty-eight returned HTTP 200. The NUS-hosted BLOCKBENCH paper returned HTTP 403 to the automated request but remains a known publisher/university destination that requires browser review under the repository policy.
+The final link checker tested 95 distinct external destinations. Eighty-nine returned HTTP 200. Six returned HTTP 403 and were accepted by the checker because the destinations use publisher or bot-protection controls:
 
-The original Berkeley URL for Eric Brewer's PODC 2000 keynote timed out repeatedly. This pass replaced it with the canonical ACM DOI landing page:
+1. the ACM DOI for Eric Brewer's PODC 2000 keynote;
+2. the NUS-hosted BLOCKBENCH paper;
+3. two official EigenDA documentation pages;
+4. the official CryptoKitties incident post on Medium;
+5. the official MetaMask incident post on Medium.
 
-<https://doi.org/10.1145/343477.343502>
-
-The DOI identifies "Towards robust distributed systems (abstract)," Eric A. Brewer, PODC 2000, and provides durable bibliographic metadata even if access or hosting changes.
+No destination returned a failing status under the repository policy. The six HTTP 403 destinations still require browser review before a release because an HTTP status alone cannot establish that the content remains readable or still supports the cited claim.
 
 ## Chapter Reference Review
 
 - Chapters 1-2 anchor scalability and distributed-systems framing in the original scalability paper, BLOCKBENCH, protocol papers, and the Brewer DOI.
-- Chapters 3-4 cite EIP-4844, OP Stack specifications, Nightshade, IBC documentation, and Ethereum's sharding material for L1/L2 and sharding mechanisms.
+- Chapters 3-4 cite EIP-4844, EIP-7594, the Fusaka mainnet announcement, OP Stack specifications, Nightshade, and the current ICS-004 channel specification.
 - Chapter 5 cites the original Lightning, Sprites, and Plasma papers.
-- Chapters 6-8 cite current Ethereum specifications and original data-availability work.
-- Chapter 9 cites platform transaction specifications and the Block-STM paper.
-- Chapter 10 cites the original HotStuff, Sync HotStuff, and Narwhal/Tusk papers.
-- Chapter 11 cites current roadmap specifications for PeerDAS and state-tree evolution.
+- Chapters 6-8 cite current rollup documentation, Ethereum specifications, original data-availability work, the EigenDA security-parameter specification, and Avail implementation repositories.
+- Chapter 9 cites platform transaction specifications, the Block-STM paper, and the Mysticeti paper.
+- Chapter 10 cites the original HotStuff, Sync HotStuff, Narwhal/Tusk, and Mysticeti papers.
+- Chapter 11 cites current implementation and roadmap sources for PeerDAS, MEV-Boost, Across, Espresso, and Succinct.
 
 ## Release Rule
 

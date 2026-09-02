@@ -2,7 +2,7 @@
 
 ## **Introduction**
 
-Blockchain scalability is the ability to support increasing useful demand while keeping verification, participation, and failure recovery within acceptable resource and latency bounds. The definition deliberately includes more than transactions per second. It asks what work completed, when it became final, which machines and operators were required, and what happens when a component fails.
+Blockchain scalability is the ability to support increasing useful demand while keeping verification, participation, and failure recovery within acceptable resource and latency bounds. The definition deliberately includes more than transactions per second (TPS). It asks what work completed, when it became final, which machines and operators were required, and what happens when a component fails.
 
 Public blockchains combine replicated execution and storage with adversarial consensus. That redundancy lets users verify shared state without trusting one database operator, but it also makes capacity expensive. The techniques in this book divide, compress, schedule, or prove the work while trying to preserve that independent check.
 
@@ -30,7 +30,7 @@ Imagine a shared notebook copied to hundreds of desks. Everyone checks each new 
 
 An **account** identifies an owner or program and may hold assets or data. A **smart contract** is a program stored and executed under blockchain rules. It does not understand legal intent; it applies code to inputs and current state.
 
-A **virtual machine (VM)** defines the contract instruction set and execution rules. Ethereum's VM is the **EVM**. Every EVM validator must calculate the same result for the same ordered transactions. This shared execution enables applications to interact, but it also makes computation a replicated resource.
+A **virtual machine (VM)** defines the contract instruction set and execution rules. Ethereum's VM is the **Ethereum Virtual Machine (EVM)**. Every EVM validator must calculate the same result for the same ordered transactions. This shared execution enables applications to interact, but it also makes computation a replicated resource.
 
 ### **Hashes, trees, and commitments**
 
@@ -114,13 +114,13 @@ Trace one congested birth. A user submitted the breeding transaction and waited 
 
 The application had also created a time-sensitive external incentive. Anyone could call `giveBirth()` and receive the birthing fee. Under normal fees, community-operated bots performed this work. When gas cost exceeded the fixed reward, those operators stopped and the CryptoKitties team paid the difference itself. Congestion therefore changed more than latency: it changed who could economically perform a safety- and fairness-related application action.
 
-MetaMask reported user confusion over long-pending and failed transactions, expanded infrastructure capacity, and added a way to resubmit with a higher gas price.[^5] Consensys's retrospective describes rising pending queues, overloaded read infrastructure, fees that could exceed the item being purchased, and application changes that moved nonessential activity away from on-chain transactions.[^6] These are observable consequences of offered load exceeding several capacities at once: block gas, fee estimation, mempool management, RPC service, user nonce management, and application support.
+MetaMask reported user confusion over long-pending and failed transactions, expanded infrastructure capacity, and added a way to resubmit with a higher gas price.[^5] Consensys's retrospective describes rising pending queues, overloaded read infrastructure, fees that could exceed the item being purchased, and application changes that moved nonessential activity away from on-chain transactions.[^6] These are observable consequences of offered load exceeding several capacities at once: block gas, fee estimation, mempool management, remote procedure call (RPC) service, user nonce management, and application support.
 
 Failure path: the user saw no completion and resent without understanding nonce replacement. The wallet could create another pending transaction rather than more capacity. An underpriced earlier nonce could hold later actions. A centralized birth bot could keep the game moving but change the application's operational trust. The correct short-term tools were status, fee replacement, queue visibility and reducing unnecessary writes. The long-term lesson was to separate which actions require global consensus from browsing, offers, indexing and other work that can remain off-chain.
 
 ### **Arbitrum One: the same demand enters a layered pipeline**
 
-Now place an NFT marketplace workload on Arbitrum One. Users submit transfers, listings and contract calls to the Arbitrum sequencer. Nitro executes EVM-compatible transactions and the sequencer feed gives applications fast soft confirmations. A batch poster compresses ordered transactions and publishes them to Ethereum through blobs or calldata. Validators reproduce execution, state assertions are governed by the BoLD dispute protocol, and canonical withdrawals wait for the accepted state path described in Chapter 6.[^7] [^8]
+Now place a non-fungible token (NFT) marketplace workload on Arbitrum One. Users submit transfers, listings and contract calls to the Arbitrum sequencer. Nitro executes EVM-compatible transactions and the sequencer feed gives applications fast soft confirmations. A batch poster compresses ordered transactions and publishes them to Ethereum through blobs or calldata. Validators reproduce execution, state assertions are governed by the Bounded Liquidity Delay (BoLD) dispute protocol, and canonical withdrawals wait for the accepted state path described in Chapter 6.[^7] [^8]
 
 At the user interface, this feels faster because the application need not wait for every individual call to win space in an Ethereum L1 block. Many L2 transactions share one compressed data-publication cost. But the production workload now consumes a resource vector:
 
@@ -209,7 +209,7 @@ The output should be a curve. At low load, latency is stable. As offered load ap
 <p align="center">
   <img src="../assets/course/ch01_scalability_stack.svg" width="760" alt="Execution, settlement, consensus, and data availability">
   <br>
-  <em>Figure 1.4: A blockchain transaction depends on execution, settlement, consensus, and data availability. Monolithic chains combine them; modular systems separate some roles. Original figure for this book.</em>
+  <em>Figure 1.1: A blockchain transaction depends on execution, settlement, consensus, and data availability. Monolithic chains combine them; modular systems separate some roles. Original figure for this book.</em>
 </p>
 
 

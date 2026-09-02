@@ -4,7 +4,7 @@ The Blockchain Scalability Book explains how blockchains increase capacity while
 
 ## Download the Book
 
-**[Download the latest PDF edition from GitHub Releases](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest)**
+**[Download the latest PDF edition from GitHub Releases](https://github.com/neilstripe/Blockchain-Scalability-Book/releases/latest)**
 
 The release page includes the PDF as a direct download. Readers who prefer the web or source edition can use the chapter links below.
 
@@ -52,7 +52,7 @@ cargo install mdbook
 ```
 ### Clone this repository
 ```bash
-git clone https://github.com/neilydhan/Blockchain-Scalability-Book.git
+git clone https://github.com/neilstripe/Blockchain-Scalability-Book.git
 cd Blockchain-Scalability-Book
 ```
 ### Build and serve the book

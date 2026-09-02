@@ -4,7 +4,7 @@
 
 Blockchain scalability is moving from one-chain throughput contests toward specialized stacks. Execution, proving, sequencing, data availability, settlement, and interoperability are becoming separate services that can improve independently.
 
-The next bottleneck is therefore not one number such as TPS. It is coordination: making many fast execution environments feel like one secure, usable system.
+The next bottleneck is therefore not one number such as TPS. It is coordination: making many fast execution environments feel like one coherent, usable system with explicit end-to-end security assumptions.
 
 ---
 
@@ -88,7 +88,7 @@ Aggregation reduces settlement cost and lets small rollups share proving economi
 
 ## **More Data Through Sampling**
 
-EIP-4844 created blobspace for rollups. PeerDAS and full danksharding aim to increase capacity without requiring every node to download all blob data.[^1]
+EIP-4844 created blobspace for rollups, and PeerDAS activated on Ethereum mainnet with Fusaka on December 3, 2025.[^1] [^14] PeerDAS uses erasure-coded cells, custody assignments, peer requests, and sampling so an individual node need not download every blob. Further blob-capacity increases and full danksharding remain evolving protocol work; deployment reviews should separate the live PeerDAS mechanism from later roadmap stages.
 
 Dedicated data layers will also compete on throughput, sampling security, retention, and integration. The market may support different tiers: tightly integrated base-layer blobs for high-value settlement and cheaper external availability for applications willing to accept another consensus assumption.
 
@@ -382,7 +382,7 @@ Trace one proposal slot. Searchers and users send transactions through public or
 
 This division protects a builder's payload before the proposer commits, but it introduces timing and service dependencies. The proposer observes bid value, relay identity, response latency, payload delivery, and whether the full block arrived before the slot deadline. A local block-building path is the liveness fallback when MEV-Boost or its relays fail. The Flashbots risk documentation explicitly calls out liveness and local fallback, builder centralization, builder-relay collusion, malicious relays, and hidden MEV.[^7]
 
-Suppose the winning relay withholds the full payload after the proposer signs. The validator can miss the slot unless its client and timing policy safely fall back. Suppose instead one builder controls most profitable order flow. The blocks remain valid, but censorship and market power can concentrate. A relay can also advertise a fraudulent bid that MEV-Boost itself cannot fully verify from a blinded header. Monitoring and reputation can detect abuse, but they are not the same as eliminating the relay assumption. MEV-Boost therefore shows both the value and the limit of a production PBS market: specialization can increase proposer revenue and builder competition while leaving relay trust and concentration for later protocol work.
+Suppose the winning relay withholds the full payload after the proposer signs. The validator misses the slot: signing a different payload for the same slot would risk an equivocation violation. A safe local fallback must be selected before the proposer signs the blinded header, using deadlines and a circuit breaker that leave time to build and publish locally. Suppose instead one builder controls most profitable order flow. The blocks remain valid, but censorship and market power can concentrate. A relay can also advertise a fraudulent bid that MEV-Boost itself cannot fully verify from a blinded header. Monitoring and reputation can detect abuse, but they are not the same as eliminating the relay assumption. MEV-Boost therefore shows both the value and the limit of a production PBS market: specialization can increase proposer revenue and builder competition while leaving relay trust and concentration for later protocol work.
 
 ### **Espresso: shared settlement and sequencing integration**
 
@@ -398,7 +398,7 @@ The visible boundary is an Espresso finality certificate or commitment associate
 
 Trace Maya moving an asset from an origin chain to a destination. She calls `depositV3`, binding destination chain, output token, output amount, recipient, fill deadline, optional message, and any exclusivity fields. The origin `SpokePool` escrows her input and emits `V3FundsDeposited`. Relayers watch that event. A relayer that accepts the quote calls `fillV3Relay` on the destination `SpokePool` using its own inventory. The destination event records fulfillment and prevents another ordinary fill of the same intent. Maya can treat the destination fill as delivered without waiting for the relayer's reimbursement cycle.
 
-Settlement happens later. A dataworker aggregates covered deposits and fills into a root bundle containing relayer refunds, token-rebalancing instructions, slow-fill data, and block ranges. It proposes that bundle to the Ethereum `HubPool` with a bond. Across documents an optimistic verification model in which invalid bundles can be disputed and adjudicated through its UMA-based rules.[^10] After acceptance, relayers receive repayment and liquidity is rebalanced through the protocol's routes.
+Settlement happens later. A dataworker aggregates covered deposits and fills into a root bundle containing relayer refunds, token-rebalancing instructions, slow-fill data, and block ranges. It proposes that bundle to the Ethereum `HubPool` with a bond. During the challenge period, one honest monitor can dispute an invalid bundle. A dispute is then resolved by UMA's Data Verification Mechanism, whose token-holder vote determines the winning bond under the documented model.[^10] The often-stated "one of N honest" assumption therefore covers detection and initiation of a dispute; final disputed settlement also depends on the DVM and its governance and economic assumptions. After an undisputed or successfully resolved bundle is accepted, relayers receive repayment and liquidity is rebalanced through the protocol's routes.
 
 The architecture moves latency from the user to the relayer's balance sheet. Maya sees a deposit transaction, quoted deadline, destination fill event, and eventual settlement status; the relayer additionally tracks inventory, repayment chain, bundle coverage, and dispute state. If no relayer fills before the deadline, the system needs the documented slow or refund path rather than inventing a destination transfer. If a relayer fills the wrong recipient or too little output, the event does not satisfy Maya's signed intent. If a proposed root bundle repays a nonexistent fill, an honest verifier must dispute it during the optimistic window. If destination-chain finality reverts after a fill is observed, settlement rules must not blindly repay it. The protocol is fast because a relayer fronts value, not because cross-chain finality becomes atomic.
 
@@ -884,3 +884,4 @@ Its central challenge is preserving verifiability while complexity moves between
 [^11]: CoW Protocol Documentation. "Flow of an order." <https://docs.cow.fi/cow-protocol/concepts/how-it-works/flow-of-an-order>.
 [^12]: Succinct Docs. "Protocol Architecture." <https://docs.succinct.xyz/docs/protocol/spn/architecture>.
 [^13]: Succinct Docs. "Migrate to Mainnet." <https://docs.succinct.xyz/docs/sp1/prover-network/migration-guide>.
+[^14]: Ethereum Foundation. "Fusaka Mainnet Announcement" (November 6, 2025). <https://blog.ethereum.org/2025/11/06/fusaka-mainnet-announcement>.
