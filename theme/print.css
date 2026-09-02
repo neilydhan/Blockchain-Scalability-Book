@@ -4,17 +4,6 @@
     margin: 0.7in 0.65in 0.75in;
   }
 
-  h1 {
-    break-before: page;
-    page-break-before: always;
-  }
-
-  .chapter:first-of-type h1,
-  h1:first-child {
-    break-before: auto;
-    page-break-before: auto;
-  }
-
   h2, h3, h4 {
     break-after: avoid-page;
     page-break-after: avoid;
