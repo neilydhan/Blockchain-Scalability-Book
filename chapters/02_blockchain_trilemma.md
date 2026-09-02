@@ -22,7 +22,7 @@ These are not percentages to add into one score. A chain can have decentralized 
 
 ### **Trade-off versus improvement**
 
-An efficiency improvement performs the same secure work using fewer resources. Better signature verification is an example. A trade-off changes the service or assumption: larger blocks may exclude slower validators; a committee checks work instead of everyone; a rollup moves execution to a sequencer and restores verifiability with data and proofs.
+An efficiency improvement performs the same verified work using fewer resources. Better signature verification is an example. A trade-off changes the service or assumption: larger blocks may exclude slower validators; a committee checks work instead of everyone; a rollup moves execution to a sequencer and restores verifiability with data and proofs.
 
 Both can be reasonable. The reader should ask whether the result still protects the same workload, assets, finality boundary, and recovery path.
 
@@ -122,7 +122,7 @@ Failure path: two payments spend the same UTXO. Nodes may relay one under policy
 
 ### **Ethereum: account nonces, gas, execution, and proof-of-stake finality**
 
-Each payer signs a typed Ethereum transaction naming chain, nonce, recipient, value, gas limit, fee caps and signature. Nodes check format, signature, account nonce, balance and fee conditions for admission. A block builder orders eligible transactions. The Ethereum Virtual Machine applies them against account state, charging gas even though a plain native transfer uses little execution compared with a contract call.[^6] [^7]
+Each payer signs a typed Ethereum transaction naming chain, nonce, recipient, value, gas limit, fee caps and signature. Nodes check format, signature, account nonce, balance and fee conditions for admission. A block builder orders eligible transactions. Ethereum's execution-layer state-transition function applies them against account state and charges gas. The EVM executes recipient code when the destination is a contract; a plain transfer to an externally owned account performs the protocol's balance and nonce updates without application bytecode.[^6] [^7]
 
 The 10,000 users have distinct sender accounts, so they do not contend on one nonce. They still share block gas, builder ordering, state access, propagation and consensus. Inclusion changes balances and increments each sender nonce. Proof-of-stake validators attest to blocks; Ethereum's consensus exposes justified and finalized checkpoints under its Gasper design rather than asking applications to count proof-of-work confirmations indefinitely.[^8]
 
@@ -238,7 +238,7 @@ Suppose a proof-of-stake network advertises 1,200 active validator keys. Key cou
 | Validator client | 68% of stake |
 | Cloud provider | 46% of stake |
 | Geographic region | 39% of stake |
-| MEV relay or block-builder path | 72% of proposed blocks |
+| Maximum extractable value (MEV) relay or block-builder path | 72% of proposed blocks |
 | Governance delegation bloc | 37% of votes |
 
 These percentages cannot be added: one validator may belong to every category. Instead, construct correlation scenarios.
@@ -314,7 +314,7 @@ A defensible comparison names workload, completion boundary, validator burden, d
 [^2]: Hill, Mark D. "What is Scalability?" *ACM SIGARCH Computer Architecture News* (1990). Referenced in Chapter 1.
 [^3]: Wood, Gavin. "Ethereum: A Secure Decentralised Generalised Transaction Ledger." *Ethereum Yellow Paper* (2014). Available at: <https://ethereum.github.io/yellowpaper/paper.pdf>.
 [^4]: Nakamoto, Satoshi. "Bitcoin: A Peer-to-Peer Electronic Cash System" (2008). Available at: <https://bitcoin.org/bitcoin.pdf>.
-[^12]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). Available at: <https://doi.org/10.1145/343477.343502>.
+[^12]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). <https://doi.org/10.1145/343477.343502>.
 
 [^5]: Bitcoin Developer Reference. "Transactions." <https://developer.bitcoin.org/reference/transactions.html>.
 [^6]: Ethereum.org. "Transactions." <https://ethereum.org/developers/docs/transactions/>.

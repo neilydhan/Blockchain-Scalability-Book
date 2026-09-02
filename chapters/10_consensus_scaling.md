@@ -66,13 +66,13 @@ Voting on a block hash can be fast while distributing and executing the block bo
 
 Later sections introduce HotStuff, threshold signatures, DAG mempools, weighted quorums, and protocol traces. Each builds on the same questions: what evidence is signed, which quorums overlap, what state survives a crash, and how progress resumes after delay.
 
-## **Safety, Liveness, and Finality**
+## **Safety, Liveness, and the Finality Boundary**
 
-A consensus protocol must separate three properties:
+A consensus analysis must separate two protocol properties from the decision boundary applications observe:
 
-- **Safety** - honest nodes do not finalize conflicting blocks.
-- **Liveness** - the protocol continues to finalize blocks.
-- **Finality** - once finalized, a block cannot be reverted without violating the fault assumption.
+- **Safety** means honest nodes do not finalize conflicting blocks while the stated fault and protocol assumptions hold.
+- **Liveness** means valid work eventually reaches the protocol's commit or finality condition once its timing and quorum-reachability assumptions hold.
+- A **finality rule** identifies the evidence that marks a block or prefix committed. Reversing a deterministically finalized BFT block requires some assumption to have failed, such as excessive Byzantine weight, broken authentication, or an implementation violating its voting rules. Nakamoto-style protocols instead provide a probability of reorganization that generally decreases with additional confirmations.
 
 Network timing matters. A synchronous model assumes a known message-delay bound. A partially synchronous model assumes the bound eventually holds but its starting time is unknown. An asynchronous model makes no timing bound.
 
@@ -84,7 +84,7 @@ These assumptions determine both fault tolerance and latency. Performance claims
 
 Nakamoto consensus selects a chain through accumulated proof of work. It scales to an open validator set and tolerates temporary forks, but finality is probabilistic. Larger or faster blocks increase stale-block pressure and may favor well-connected miners.
 
-Classical Byzantine fault tolerant protocols use voting rounds. Under partial synchrony, a committee of *3f + 1* replicas can make progress and remain safe with up to *f* Byzantine replicas. Once a quorum certificate is formed, finality can be deterministic.
+Classical Byzantine fault tolerant protocols use voting rounds. A common `3f + 1` partially synchronous design preserves safety with up to `f` Byzantine replicas and regains liveness after the network becomes timely and enough honest replicas share a view. A quorum certificate is evidence for one protocol phase; it is not automatically a commit. Once the protocol-specific sequence of certificates, locks, or voting phases satisfies its commit rule, finality is deterministic under the stated assumptions.
 
 The challenge is communication. A naive all-to-all vote exchange requires quadratic messages as the validator set grows.
 
@@ -100,6 +100,8 @@ The challenge is communication. A naive all-to-all vote exchange requires quadra
 
 
 HotStuff is a leader-based BFT protocol designed for linear communication in the normal case. Replicas vote on a leader's proposal, and the leader aggregates votes into a quorum certificate. A sequence of certified proposals creates the locking conditions needed for safety.[^1]
+
+One QC does not finalize its block in chained HotStuff. A later certified chain advances the logical prepare, pre-commit, and commit phases for ancestors, and only the specified commit rule makes an ancestor final. This distinction is essential when reading explorers or implementations that expose "certified" and "committed" as separate states.
 
 Its key contributions include:
 
@@ -188,9 +190,11 @@ For the user, the observable boundaries are submission to a fullnode, admission,
 
 **Deployment labels: Narwhal and Bullshark are implemented research systems and prior production components; Mysticeti is Sui's production consensus.** Narwhal separates reliable transaction dissemination from consensus ordering by building a directed acyclic graph (DAG) of certified batches. Bullshark orders that DAG. The conceptual gain is that validators continuously disseminate data instead of waiting for one leader to carry a large block to everyone.[^3]
 
-Sui's current consensus documentation names **Mysticeti** as its consensus protocol. Validators create signed blocks that reference earlier blocks, forming a DAG. A block can carry transaction information and votes implicit in those references. The protocol applies a decision rule to DAG structure and stake to commit leaders and derive one order. Sui also distinguishes consensus transactions from transactions that can use its object-centric fast path; not every operation needs identical consensus work.[^6]
+Sui's current protocol uses **Mysticeti-C** for total-order consensus and integrates **Mysticeti-FPC** for transactions that can use the owned-object fast path.[^6] [^9] Validators create signed blocks that reference earlier blocks, forming a DAG. The blocks carry transaction information, causal references, and fast-path votes. Mysticeti-C applies a decision rule to DAG structure and stake to commit leaders and derive an order for consensus transactions. Mysticeti-FPC can certify and finalize a nonconflicting fast-path transaction before a Mysticeti-C commit, while reusing the DAG blocks rather than running a separate signature-gathering protocol.
 
-Trace a Sui transaction that touches a shared object and therefore needs consensus. The client obtains the required signatures and sends the transaction to validators. Validators validate it and include it in DAG blocks. Other validators receive those blocks and reference them in later blocks, providing evidence of dissemination and support. Mysticeti's rule identifies commit decisions from this DAG and yields a deterministic transaction order. Validators execute against Sui's object model and the client observes effects and finality under the network's rules.
+Trace a Sui transaction that touches a shared or party object and therefore needs consensus. The user signs it and sends it to a full node. The full node's transaction driver forwards it to a selected validator, which checks authorization, object access, and gas and includes it in a proposed Mysticeti block. Peer validators validate the transaction and place accept votes in later blocks. Mysticeti-C commits the DAG position and yields the deterministic order and consensus-managed object versions. Validators then execute against Sui's object model, return effects, and the full node obtains quorum acknowledgements or waits for a certified checkpoint.[^6]
+
+For comparison, an address-owned fast-path transaction is also carried and voted on in Mysticeti DAG blocks, but it does not need a total order against unrelated transactions. The Mysticeti paper defines certification after votes from `2f + 1` distinct validators and permits finalization either from quorum support for that certificate or when a Mysticeti-C commit contains it in its causal history.[^9] This reconciles two descriptions that can otherwise look inconsistent: fast-path traffic is integrated into Mysticeti's communication DAG, yet it can bypass total-order consensus.
 
 What carried over from Narwhal/Bullshark is the DAG-first intuition: dissemination and causal references continue across rounds, payload availability is not reduced to one leader's broadcast, and ordering can use accumulated DAG evidence. What did **not** carry over unchanged is the two-box textbook picture "Narwhal mempool plus Bullshark consensus." Mysticeti changes the DAG and commit protocol to reduce latency and integrates with Sui's transaction model. A reader should not assume that every Narwhal certificate type, Bullshark wave, or earlier round structure remains a live Mysticeti mechanism merely because the systems share authors and lineage.
 
@@ -200,7 +204,7 @@ The visible evidence is therefore richer than "block height." Operators inspect 
 
 ### **From the PBFT family to Tendermint and CometBFT**
 
-**Deployment label: CometBFT is production infrastructure used by application-specific chains.** Practical Byzantine Fault Tolerance (PBFT) established the familiar setting of a fixed validator group, fewer than one-third Byzantine faults, authenticated messages, and quorum intersection. Tendermint adapted the family for blockchains with repeated heights, stake-weighted validators, rotating proposers, locking, and two named voting steps. CometBFT is the maintained state-machine replication engine in that lineage and exposes the application through the Application Blockchain Interface.[^7] [^8]
+**Deployment label: CometBFT is production infrastructure used by application-specific chains.** Practical Byzantine Fault Tolerance (PBFT) established the familiar setting of a fixed validator group, fewer than one-third Byzantine faults, authenticated messages, and quorum intersection. Tendermint adapted the family for blockchains with repeated heights, stake-weighted validators, rotating proposers, locking, and two named voting steps. CometBFT is the maintained state-machine replication engine in that lineage and exposes the application through the Application Blockchain Interface (ABCI).[^7] [^8]
 
 Trace one height. A proposer chooses a block for height `h` and round `r`. Validators receive and validate the proposal against consensus and application rules. They broadcast **prevotes** for the proposal or nil. If a validator observes more than two-thirds of voting power prevote a block, it can lock according to the protocol rule and broadcast a **precommit** for that block. More than two-thirds precommits for the same block at the height form the commit evidence; the engine advances to the next height and the application commits the resulting state. If no proposal or quorum arrives before a timeout, validators move to a higher round with a new proposer.[^7]
 
@@ -215,21 +219,21 @@ Application behavior is part of the trace. CometBFT orders and replicates calls,
 | Earlier family | Production descendant | Ideas that carried over | Ideas that changed or did not carry over |
 |---|---|---|---|
 | HotStuff | DiemBFT, then AptosBFT | Rotating leaders, chained quorum certificates, safe voting state, pacemaker/view change | Payload dissemination is split through Quorum Store; stake epochs, execution, state sync, and operations are part of the real system |
-| Narwhal/Bullshark | Sui Mysticeti | DAG dissemination, causal references, continued data flow despite an imperfect leader | Mysticeti uses a different low-latency DAG decision protocol and Sui integration; do not project every Bullshark wave or Narwhal certificate onto it |
+| Narwhal/Bullshark | Sui Mysticeti-C and Mysticeti-FPC | DAG dissemination, causal references, continued data flow despite an imperfect leader | Mysticeti changes the DAG decision protocol and embeds fast-path certification; do not project every Bullshark wave or Narwhal certificate onto it |
 | PBFT family/Tendermint | CometBFT | Authenticated Byzantine quorum, proposer, quorum intersection, lock-like safety across retries | Propose-prevote-precommit rounds, weighted validators, repeated blockchain heights, gossip, ABCI, and non-pipelined commit distinguish the production engine |
 
-These are not three brand names for one algorithm. AptosBFT emphasizes a chained-certificate core with separate payload availability. Mysticeti lets the DAG carry both dissemination and ordering evidence. CometBFT uses explicit prevote and precommit rounds with locking at each height. All still need quorum reachability, persisted signing safety, authenticated validator sets, deterministic execution, and tested recovery when timing assumptions fail.
+These are not three brand names for one algorithm. AptosBFT emphasizes a chained-certificate core with separate payload availability. Mysticeti lets the DAG carry total-order evidence and integrated fast-path votes. CometBFT uses explicit prevote and precommit rounds with locking at each height. All still need quorum reachability, persisted signing safety, authenticated validator sets, deterministic execution, and tested recovery when timing assumptions fail.
 
 
 ## **Comparison**
 
-| Family | Finality | Typical Fault Bound | Communication Idea | Main Trade-Off |
+| Family | Finality rule | Typical fault condition | Communication idea | Main trade-off |
 |---|---|---|---|---|
-| Nakamoto | Probabilistic | Resource majority | Gossip and longest/heaviest chain | Slow certainty and fork risk |
-| Practical Byzantine Fault Tolerance (PBFT)-style | Deterministic | `< 1/3` Byzantine | Multi-phase voting | Quadratic communication in basic form |
-| HotStuff | Deterministic | `< 1/3` Byzantine | Leader aggregation and certificates | Leader/pacemaker complexity |
-| Sync HotStuff | Deterministic | `< 1/2` Byzantine | Synchronous echo and wait | Relies on known delay bound |
-| DAG + BFT | Deterministic | Usually `< 1/3` Byzantine | Separate dissemination and order | More protocol components |
+| Nakamoto | Reorganization probability generally falls with confirmations | Honest majority of effective block-production resource in the standard model | Gossip and longest/heaviest chain | Slow certainty and fork risk |
+| Practical Byzantine Fault Tolerance (PBFT)-style | Deterministic commit under assumptions | Usually Byzantine weight `< 1/3` | Multi-phase voting | Quadratic communication in basic form |
+| HotStuff | Deterministic commit after the certified-chain rule | Byzantine weight `< 1/3` under partial synchrony for liveness | Leader aggregation and certificates | Leader and pacemaker complexity |
+| Sync HotStuff | Deterministic commit after synchronous waiting and echo rules | Byzantine weight `< 1/2` under the known delay bound | Synchronous echo and wait | Relies on a defensible delay bound |
+| DAG + BFT | Protocol-specific deterministic commit rule | Often Byzantine weight `< 1/3`; protocol dependent | DAG dissemination and ordering evidence | More protocol components |
 
 ## **Worked Example: Why a Quorum Certificate Matters**
 
@@ -629,6 +633,7 @@ No protocol is unconditionally "faster consensus." Each result depends on its ne
 
 [^4]: Aptos Documentation. "Life of a Transaction." <https://aptos.dev/network/blockchain/blockchain-deep-dive>.
 [^5]: Diem Documentation. "Consensus crate." <https://diem.github.io/diem/consensus/index.html>.
-[^6]: Sui Documentation. "Consensus." <https://docs.sui.io/develop/sui-architecture/consensus>.
+[^6]: Sui Documentation. "Life of a Transaction." <https://docs.sui.io/concepts/sui-architecture/transaction-lifecycle>.
 [^7]: CometBFT Documentation. "Byzantine Consensus Algorithm." <https://docs.cometbft.com/v0.37/spec/consensus/consensus>.
 [^8]: CometBFT Documentation. "ABCI 2.0." <https://docs.cometbft.com/main/spec/abci/>.
+[^9]: Danezis, George, et al. "Mysticeti: Reaching the Latency Limits with Uncertified DAGs." <https://docs.sui.io/paper/mysticeti.pdf>.

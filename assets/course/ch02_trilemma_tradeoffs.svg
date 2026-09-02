@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="760" viewBox="0 0 1200 760"><title>Measurable blockchain trilemma trade-offs</title><desc>A comparison diagram relates scalability, decentralization, and security to measurable resources and design costs.</desc>
 <rect width="1200" height="760" fill="white"/><style>.h{font:bold 34px Arial;fill:#172554}.t{font:bold 25px Arial;fill:#172554}.s{font:20px Arial;fill:#334155}.w{font:bold 23px Arial;fill:white}.edge{stroke:#64748b;stroke-width:7;fill:none}.node{stroke-width:4}</style>
 <text x="600" y="52" text-anchor="middle" class="h">Scaling changes resource and trust trade-offs</text>
 <path d="M600 155 L255 525 L945 525 Z" class="edge"/>

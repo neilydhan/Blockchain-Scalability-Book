@@ -30,7 +30,7 @@ Cryptographic evidence that the holder of a private key authorized specific byte
 
 **Finality**
 
-The condition under which a block or transaction should not be reverted under stated protocol and fault assumptions. Finality may be probabilistic or based on explicit validator certificates.
+The condition under which a block or transaction should not be reverted under stated protocol and fault assumptions. Finality may be probabilistic or based on an explicit protocol commit rule. A sequencer confirmation, proposal, or quorum certificate is not settlement or BFT finality unless that commit rule explicitly makes it so.
 
 **Full node**
 
@@ -90,10 +90,6 @@ The ability of applications or contracts to interact. Synchronous composability 
 
 Applying ordered transactions to prior state to compute new state.
 
-**Finality**
-
-The point after which a block or state should not revert under a stated fault model. Sequencer confirmation, proof acceptance, consensus finality, and economic finality are different boundaries.
-
 **Layer 1 (L1)**
 
 The base blockchain whose consensus defines its canonical history and native state.
@@ -126,7 +122,7 @@ The bridge enforced by a rollup's settlement contracts rather than an external l
 
 **Challenge period**
 
-The interval during which an optimistic state assertion can be disputed.
+The interval during which an optimistic state assertion can be disputed. Expiry without a successful challenge makes the assertion acceptable under the protocol's challenger, data, timing, and contract assumptions; it is not a validity proof of the transition.
 
 **Channel**
 
@@ -202,6 +198,10 @@ A set of parties attesting that off-chain data is available. It reduces publicat
 
 A method by which light nodes request random pieces of erasure-coded data to gain confidence that the full block can be reconstructed.
 
+**PeerDAS**
+
+Ethereum's peer data availability sampling protocol, activated in the Fusaka upgrade on December 3, 2025. Nodes custody and sample subsets of erasure-coded blob columns rather than every node downloading every blob.
+
 **Erasure coding**
 
 Encoding that expands data into redundant shares so the original can be reconstructed from a threshold subset.
@@ -263,6 +263,10 @@ Replacement of a previously preferred but not final chain segment. Cross-chain s
 **Relayer**
 
 An actor that transports a message or proof between systems. A well-designed bridge does not trust a relayer for correctness and allows any party to replace a failed relayer.
+
+**Remote procedure call (RPC)**
+
+An application interface through which a client asks a node or gateway to submit transactions or read chain data. An RPC response reports what that endpoint observed or accepted; it is not consensus evidence unless the client independently verifies the corresponding proof, certificate, or finalized chain state.
 
 **Social recovery**
 
@@ -372,6 +376,10 @@ A subset of validators assigned to vote on or process part of the system.
 
 Agreement on an ordered canonical history among independent nodes despite faults.
 
+**Fast path**
+
+A protocol route that reaches an outcome with fewer phases or less ordering work under favorable conditions. The term is system specific. In current Sui terminology, address-owned objects can use Mysticeti fast-path certification without waiting for total-order consensus, while shared and party objects use consensus sequencing.
+
 **Hot state**
 
 State accessed by many concurrent transactions. Hot state creates conflicts and limits parallel execution.
@@ -398,7 +406,7 @@ Executing independent transactions concurrently while producing a deterministic 
 
 **Quorum certificate (QC)**
 
-Aggregated evidence that a quorum of replicas voted for a proposal.
+Aggregated evidence that a quorum of replicas voted for a proposal in one protocol phase. A QC does not by itself imply finality unless the protocol's commit rule explicitly says it does; chained protocols commonly require later certificates.
 
 **Quorum intersection**
 

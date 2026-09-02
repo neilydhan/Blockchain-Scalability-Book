@@ -117,25 +117,25 @@ These categories describe architecture, not a marketing label. A system should b
 
 ---
 
-## **Named Case Study: Polygon PoS Is a Sidechain, Not a Rollup**
+## **Named Case Study: Polygon Chain Has Independent Consensus**
 
-**Deployment label: production.** Polygon PoS provides EVM-compatible execution through its own validator and block-production system, connected to Ethereum by bridge and checkpoint contracts. Its documentation describes three layers: staking contracts on Ethereum, Heimdall-v2 as the validation layer, and Bor as the block-production layer.[^4] [^5] This makes it a useful contrast with the rollups in Chapter 6.
+**Deployment label: production. Naming checked September 2026.** Current documentation calls the network **Polygon Chain**, while many bridge interfaces and documentation paths retain the **Polygon PoS** name. It provides EVM-compatible execution through its own validator and block-production system, connected to Ethereum by staking, checkpoint, and bridge contracts. The documented chain architecture has two operating layers: Heimdall-v2 for consensus and finality, and Bor for block production and EVM execution.[^4] [^5] This makes it a useful contrast with the rollups in Chapter 6.
 
-Trace Maya depositing ETH, making a Polygon payment, and withdrawing. On Ethereum, Maya calls the PoS bridge and locks the asset. The bridge event is observed and processed through Polygon's state-sync path, which delivers a corresponding message to Polygon PoS. After that message executes, Maya receives the mapped representation on Polygon. This first leg already crosses two security domains: Ethereum finalized the escrow event, while Polygon validators and bridge logic must recognize and apply it exactly once.[^6]
+Trace Maya depositing ETH, making a Polygon payment, and withdrawing. On Ethereum, Maya calls the PoS bridge and locks the asset. The bridge event is observed and processed through Polygon's state-sync path, which delivers a corresponding message to Polygon Chain. After that message executes, Maya receives the mapped representation on Polygon. This first leg already crosses two security domains: Ethereum finalized the escrow event, while Polygon validators and bridge logic must recognize and apply it exactly once.[^6]
 
 Maya sends the payment to a Polygon RPC endpoint. Bor block producers order and execute EVM transactions. Heimdall-v2 validators participate in the network's validation and checkpoint process. A checkpoint summarizes a span of Bor blocks with a Merkle commitment and is proposed, validated in Heimdall, and submitted to the checkpoint contract on Ethereum. Ethereum records the checkpoint acknowledgement. The checkpoint lets a later bridge proof refer to Polygon events without asking Ethereum to execute every Polygon transaction.[^5]
 
 For the return path, Maya initiates a withdrawal on Polygon by burning or otherwise invoking the mapped-token exit logic. She waits for the Bor block containing the exit event to be covered by an accepted Ethereum checkpoint. She then submits the required Merkle proof to the Ethereum bridge so it can verify event inclusion and release the escrowed asset. The bridge marks the exit as consumed to prevent replay.[^7]
 
-The important contrast is correctness. A rollup posts data and a state claim that Ethereum can accept or reject through a validity proof or fault-proof rule. Polygon PoS reaches transaction consensus with its own validator set; Ethereum checkpoint contracts authenticate commitments produced through that system, but do not run a rollup proof that every Bor state transition followed EVM rules. Ethereum custody and checkpoints strengthen the bridge boundary. They do not make Polygon execution inherit Ethereum's rollup security model.
+The important contrast is correctness. A rollup posts data and a state claim that Ethereum can accept or reject through a validity proof or fault-proof rule. Polygon Chain reaches transaction consensus with its own validator set; Ethereum checkpoint contracts authenticate commitments produced through that system, but do not run a rollup proof that every Bor state transition followed EVM rules. Ethereum custody and checkpoints strengthen the bridge boundary. They do not make Polygon execution inherit Ethereum's rollup security model.
 
 The user-visible stages should therefore be explicit: Ethereum deposit included; deposit final enough for policy; Polygon state-sync message observed; Polygon balance minted; Polygon payment included; payment checkpointed to Ethereum; withdrawal burn included; containing checkpoint accepted; exit proof submitted; Ethereum asset released. "On Ethereum" can describe the staking and checkpoint contracts while still leaving Polygon consensus as a separate assumption.
 
 Failure path: Bor stops producing blocks. Polygon transactions and withdrawals stop advancing even if Ethereum continues normally. If Heimdall cannot validate or submit a checkpoint, Polygon may continue producing some local history while new exits cannot obtain the Ethereum checkpoint evidence required by the bridge. Polygon's checkpoint documentation includes an acknowledgement path and a missing-acknowledgement path precisely because submission and recognition are separate operational events.[^5] If enough Polygon validator power violates safety, a fraudulent or conflicting history can threaten the bridge according to its verification and governance rules. If bridge contracts contain a bug or an upgrade authority is compromised, correct Polygon consensus does not protect Ethereum escrow.
 
-Now compare three designs on operator failure. In a payment channel, Maya can use signed states to close on-chain under the channel contract. In an optimistic rollup, she can force data through L1 and rely on an honest challenge against invalid state. In Polygon PoS, she depends on Polygon validators, checkpoint production, bridge proof machinery, and the bridge's pause and upgrade controls. A checkpoint delay is mainly liveness; acceptance of a bad authenticated commitment or a bridge-verification bug can be a safety failure.
+Now compare three designs on operator failure. In a payment channel, Maya can use signed states to close on-chain under the channel contract. In an optimistic rollup, she can force data through L1 and rely on an honest challenge against invalid state. In Polygon Chain, she depends on Polygon validators, checkpoint production, bridge proof machinery, and the bridge's pause and upgrade controls. A checkpoint delay is mainly liveness; acceptance of a bad authenticated commitment or a bridge-verification bug can be a safety failure.
 
-| Property | Polygon PoS sidechain | Optimistic rollup | Validity rollup |
+| Property | Polygon Chain | Optimistic rollup | Validity rollup |
 |---|---|---|---|
 | Transaction consensus | Polygon validator/Bor-Heimdall system | Rollup ordering plus Ethereum-enforced dispute rule | Rollup ordering plus Ethereum-verified validity proof |
 | Data needed to reconstruct state | Served by Polygon network and archives under its protocol | Published to the specified DA path for challengers and users | Published to the specified DA path for users and future state |
@@ -510,7 +510,7 @@ No Layer 2 is free of trade-offs. Its safety depends on its exit path, data mode
 [^2]: Miller, Andrew, et al. "Sprites and State Channels." <https://arxiv.org/abs/1702.05812>.
 [^3]: Poon, Joseph, and Vitalik Buterin. "Plasma: Scalable Autonomous Smart Contracts." <http://plasma.io/plasma.pdf>.
 
-[^4]: Polygon Documentation. "Polygon PoS Overview." <https://docs.polygon.technology/pos/overview>.
+[^4]: Polygon Documentation. "Polygon Chain overview." <https://docs.polygon.technology/pos/overview>.
 [^5]: Polygon Documentation. "Checkpoints." <https://docs.polygon.technology/pos/architecture/heimdall_v2/checkpoints>.
 [^6]: Polygon Documentation. "Ethereum to PoS." <https://docs.polygon.technology/pos/how-to/bridging/ethereum-polygon/ethereum-to-matic>.
 [^7]: Polygon Documentation. "PoS to Ethereum." <https://docs.polygon.technology/pos/how-to/bridging/ethereum-polygon/matic-to-ethereum>.

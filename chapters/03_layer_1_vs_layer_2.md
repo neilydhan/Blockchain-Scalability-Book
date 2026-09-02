@@ -53,10 +53,10 @@ Sharding partitions some combination of data, state, execution, or validator wor
   Better interpreters, compilers, storage layouts, state commitments, and parallel runtimes reduce the resource cost of executing or verifying a unit of work. A VM choice alone does not guarantee parallelism; the state-access model and workload determine conflicts.
 
 - **Consensus Optimization**  
-  Pipelining, signature aggregation, efficient block propagation, and linear-message BFT protocols can reduce latency or communication. Changing Sybil resistance from proof of work to proof of stake changes energy use and security economics, but does not by itself create execution capacity.
+  Pipelining, signature aggregation, efficient block propagation, and linear-message Byzantine fault tolerant (BFT) protocols can reduce latency or communication. Changing Sybil resistance from proof of work to proof of stake changes energy use and security economics, but does not by itself create execution capacity.
 
 - **Sharding**  
-  Dividing the blockchain into smaller parts (shards) so different transactions can be processed in parallel. This increases throughput while keeping node requirements manageable.
+  Assigning different data or execution work to shards so that not every validator performs every task. Aggregate capacity can increase when committees, cross-shard communication, data availability, and state movement do not become the new bottlenecks. Whether node requirements remain manageable is a measured result, not a consequence of the label.
 
 ---
 
@@ -76,16 +76,16 @@ Optimistic rollups use a dispute window and at least one honest party able to re
 ### **Common Layer 2 Techniques**
 
 - **State Channels**  
-  Two parties lock funds on L1 and interact off-chain, only submitting the final state to L1. Great for recurring transactions between fixed participants.
+  A fixed participant set locks assets or state under an L1 adjudicator, exchanges successively newer signed states off-chain, and can submit evidence on-chain to close or resolve a dispute. Channels can have more than two participants, but membership, online monitoring, liquidity, and dispute deadlines constrain the workloads they fit.[^5]
 
 - **Plasma**  
-  A hierarchical chain structure where child chains handle transactions and periodically commit results to L1.
+  A family of child-chain constructions that commits roots to L1 while requiring users to retain data and use exit games when the operator withholds data or proposes invalid history. Plasma does not provide the general data-publication and arbitrary-state guarantees of a rollup.[^6]
 
 - **Optimistic Rollups**  
-  Transactions are executed off-chain and posted to L1 with a challenge period. Assumes correctness unless proven otherwise. Lower cost, but slower finality due to dispute windows.
+  An operator executes transactions outside L1 and publishes the data and commitments required by the rollup protocol. The L1 contract provisionally accepts state commitments and rejects an invalid transition when a valid fault proof succeeds during the challenge window. Sequencer confirmation and L1 data inclusion can be fast, but uncontested state and ordinary withdrawals reach their strongest protocol status only after the dispute window.
 
-- **Zero-Knowledge Rollups (zkRollups)**  
-  Batch transactions are executed off-chain and verified on-chain using succinct cryptographic proofs. Offers fast finality and lower gas, but comes with higher complexity.
+- **Validity Rollups, often called ZK Rollups**
+  An operator executes a batch outside L1 and submits a succinct proof whose public inputs bind the claimed transition to the verifier program. The proof need not hide transaction data, so "validity" is the more precise term. A valid proof establishes only the statement encoded by the circuit and verifier; settlement still depends on verifier correctness, data availability, contract upgrades, and L1 inclusion and finality.[^7]
 
 ---
 
@@ -319,3 +319,6 @@ A sound choice starts with workload and follows one transaction through ordering
 [^2]: Ethereum.org. "Optimistic Rollups." <https://ethereum.org/developers/docs/scaling/optimistic-rollups/>.
 [^3]: Optimism. "Derivation." *OP Stack Specification*. <https://specs.optimism.io/protocol/derivation.html>.
 [^4]: Optimism. "Withdrawals." *OP Stack Specification*. <https://specs.optimism.io/protocol/withdrawals.html>.
+[^5]: Poon, Joseph, and Thaddeus Dryja. "The Bitcoin Lightning Network: Scalable Off-Chain Instant Payments" (2016). <https://lightning.network/lightning-network-paper.pdf>.
+[^6]: Poon, Joseph, and Vitalik Buterin. "Plasma: Scalable Autonomous Smart Contracts" (2017). <https://plasma.io/plasma.pdf>.
+[^7]: Ethereum.org. "Zero-knowledge rollups." <https://ethereum.org/developers/docs/scaling/zk-rollups/>.

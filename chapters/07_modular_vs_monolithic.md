@@ -126,9 +126,9 @@ The security statement must be precise: the data layer can show that data was pu
 
 ---
 
-## **Named Deployment Trace: An OP Stack Chain With Celestia DA**
+## **Named Architecture Trace: An OP Stack Chain With Celestia DA**
 
-**Deployment label: production-capable stack and deployed integrations; the exact security label belongs to each chain configuration.** The OP Stack separates sequencing, derivation, execution, data availability, settlement and governance into named components. Celestia's OP Stack integration replaces Ethereum as the primary location for transaction batch data while retaining an Ethereum-facing commitment and verification path through the configured alternative-DA contracts.[^2] [^3] This is a concrete modular deployment, not a hypothetical four-box diagram.
+**Maturity label checked September 2026: beta integration specification; deployment status is chain specific and requires separate verification.** The OP Stack separates sequencing, derivation, execution, data availability, settlement and governance into named components. The OP alternative data availability specification explicitly labels the integration beta and warns that backward incompatible changes may occur.[^6] Celestia documents an OP Stack integration that moves transaction batch data from Ethereum to Celestia while retaining an Ethereum-facing commitment and retrieval path through configured alternative-DA components.[^2] [^3] [^4] The following trace explains the specified architecture. It does not assert that every deployment has production-hardened fallback, fault proofs, bridge configuration, or governance.
 
 Trace Maya's payment on an OP Stack chain configured for Celestia DA. Maya signs an EVM transaction and sends it to the chain's sequencer. The sequencer's execution client checks and executes it, while `op-node` coordinates L2 block production. Maya receives a fast L2 result under the sequencer's ordering promise. At this point the transaction has executed in the operator's view, but independent derivation still depends on publication.
 
@@ -169,7 +169,7 @@ Suppose Blobstream or another bridge carrying Celestia commitments pauses. Celes
 | Added module | None beyond normal OP path | DA adapter, Celestia client/retriever, commitment verification or Blobstream path |
 | Distinct failure | Ethereum data price/capacity | Cross-layer finality mismatch, retriever failure, adapter/bridge failure |
 
-The modular design can reduce publication cost or add capacity, and it lets execution and DA evolve separately. Its cost is a longer proof chain. A production claim should therefore state the complete route: "OP Stack execution, Celestia data availability, Ethereum settlement through these contracts and this bridge version," followed by the exact fallback and upgrade controls. "Secured by Ethereum" alone leaves out the layer whose data makes an Ethereum challenge possible.
+The modular design can reduce publication cost or add capacity, and it lets execution and DA evolve separately. Its cost is a longer proof chain. A deployment claim should therefore state the complete route: "OP Stack execution, Celestia data availability, Ethereum settlement through these contracts and this bridge version," followed by the exact maturity, fallback, and upgrade controls. "Secured by Ethereum" alone leaves out the layer whose data makes an Ethereum challenge possible.
 
 
 ## **Sovereign and Settled Rollups**
@@ -758,3 +758,4 @@ The gain is flexibility and scale. The cost is fragmentation and a larger set of
 [^3]: Optimism Documentation. "Transaction flow." <https://docs.optimism.io/op-stack/transactions/transaction-flow>.
 [^4]: Celestia Documentation. "OP Stack integration." <https://docs.celestia.org/build/stacks/op-alt-da/introduction/>.
 [^5]: Celestia Documentation. "Blobstream." <https://docs.celestia.org/learn/blobstream/>.
+[^6]: Optimism. "Alt-DA Mode." *OP Stack Specification*. <https://specs.optimism.io/experimental/alt-da.html>.

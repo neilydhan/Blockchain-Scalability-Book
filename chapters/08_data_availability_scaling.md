@@ -147,7 +147,7 @@ EIP-4844 added blobs as a separate data type for rollups. The EVM cannot directl
 
 This is enough because rollups need the data during the period when nodes reconstruct state and, for optimistic designs, issue challenges. Permanent historical storage can be supplied by archival services rather than every consensus node.
 
-PeerDAS extends the design so nodes custody and request subsets of blob data instead of every node downloading every blob. EIP-7594 specifies a peer-to-peer sampling model built on erasure coding and data-column sidecars.[^4]
+PeerDAS activated on Ethereum mainnet with Fusaka on December 3, 2025.[^12] EIP-7594 extends blobs with one-dimensional erasure coding, divides the extended data into cells and columns, assigns each node deterministic custody responsibilities, and has nodes sample columns from peers each slot. A node can reconstruct the full data matrix after acquiring at least half of the columns under the specified coding scheme.[^4] PeerDAS reduces the fraction each node must download; it does not turn short-term protocol availability into permanent archival storage.
 
 ---
 
@@ -186,7 +186,9 @@ EigenDA uses a different shape. A disperser accepts `B`, erasure-codes it into c
 
 Trace the same batch. The rollup submits `B` with payment and dispersal parameters. The disperser returns an identifier before availability is necessarily certified, so the rollup marks the batch **dispersing**, not available. Operators validate and store their assigned chunks and sign acknowledgements. Once the threshold for every required quorum is met, the batch becomes confirmed. A verifier or retriever uses the blob key and certificate data to request chunks, reconstructs `B`, verifies its commitment and encoding, and re-executes the rollup transition.
 
-The trust boundary is not Celestia consensus. EigenDA's security model depends on its operator quorums, chunk assignment, encoding rate, threshold configuration, cryptographic commitments, and the economic or fork-based consequences defined for operator misbehavior.[^9] A rollup can configure quorum participation, but adding quorums changes cost and failure correlation rather than turning the certificate into Ethereum blob inclusion. The settlement contract must know exactly which EigenDA certificate format, quorum set, threshold, reference block, and commitment it accepts.
+The trust boundary is not Celestia consensus. EigenDA's security model depends on operator quorums, chunk assignment, the reconstruction threshold, the certificate confirmation threshold, cryptographic commitments, and the stake controlled by an adversary. Its specification requires the configured thresholds to leave enough honestly held chunks for reconstruction; in its notation, `ConfirmationThreshold - SafetyThreshold >= ReconstructionThreshold`.[^9] Each quorum linked to an attestation supplies a redundant availability guarantee under its own stake distribution and thresholds.
+
+The current security documentation also states a separate liveness assumption: until decentralized dispersal replaces the present model, a trusted disperser must not censor a client's request, and adversarial stake must remain below the configured liveness threshold. If operators certify data that later proves unavailable, the documented recovery is not an automatic cryptographic repair. A community member raises a data-unavailability alarm and, after social confirmation, the EIGEN-token mechanism can use a fork to penalize the dishonest side.[^13] A rollup must decide whether that delayed, intersubjective recovery meets its loss and availability objectives. The settlement contract must also know exactly which certificate format, quorum set, thresholds, reference block, and commitment it accepts.
 
 Failure path: the disperser crashes after accepting `B` but before enough operators acknowledge it. The blob remains unconfirmed and the rollup must retry through a healthy path without changing `B` or creating an ambiguous second batch. If a threshold certificate exists but retrievers cannot reconstruct, the incident targets operator storage, assignment, or serving assumptions and may trigger the protocol's accountability path. If the rollup configures one highly correlated operator set, nominal operator count can overstate resilience. If a settlement contract accepts an outdated quorum configuration or fails to bind the certificate to `H(B)`, a formally valid certificate can authorize the wrong bytes.
 
@@ -253,7 +255,7 @@ A cheaper data layer can materially reduce rollup fees. It also changes the syst
 
 Suppose erasure coding expands a block so that an adversary must hide at least half the shares to prevent reconstruction. One uniformly random request misses the attack with probability at most one-half. Twenty independent requests miss every hidden share with probability at most `(1/2)^20`, roughly one in a million.
 
-The arithmetic is simple; its assumptions are not. Samples must be unpredictable. Peers must not selectively answer one client while isolating the wider network. The commitment must prove that returned shares belong to one correctly encoded block. Independence is weakened if a client asks one malicious peer for every sample. Practical DAS combines cryptographic commitments, peer diversity, and network distribution rules.
+The arithmetic is simple; its assumptions are not. The formula assumes each requested position is sampled uniformly against one fixed pattern of hidden shares. A malicious peer that selectively serves every position requested by one client while withholding the rest violates that model; it does not merely make the numerical samples slightly less independent. Samples must be unpredictable, commitments must authenticate cells under a correctly encoded block, and the network must prevent one producer or eclipse set from presenting incompatible availability views. Practical DAS therefore combines coding and commitments with custody rules, peer diversity, and distribution protocols.
 
 ## **A Data-Withholding Failure**
 
@@ -569,6 +571,8 @@ This technology connects Layer 1 sharding and rollup-centric scaling. Execution 
 [^6]: Celestia Documentation. "Blobstream." <https://docs.celestia.org/learn/blobstream/>.
 [^7]: Celestia Documentation. "Data retrievability and pruning." <https://docs.celestia.org/learn/celestia-101/retrievability/>.
 [^8]: EigenDA Documentation. "EigenDA Payment and Data Dispersal Guide." <https://docs.eigencloud.xyz/eigenda/integrations-guides/quick-start/v2/>.
-[^9]: EigenDA Documentation. "Security Model." <https://docs.eigencloud.xyz/eigenda/core-concepts/security/security-model>.
-[^10]: Avail. "Avail's Core Features Explained: DA Sampling & Validity Proofs." <https://blog.availproject.org/avails-core-features-explained/>.
-[^11]: Avail. "Getting Started: App-Specific Data with Avail Light Client." <https://blog.availproject.org/getting-started-app-specific-data-management-using-avail-light-client/>.
+[^9]: EigenDA Specification. "Security Parameters." <https://layr-labs.github.io/eigenda/protocol/architecture/security-parameters.html>.
+[^10]: Avail Project. "Avail Light Client README." <https://github.com/availproject/avail-light/blob/main/client/README.md>.
+[^11]: Avail Project. "Application client implementation." <https://github.com/availproject/avail-light/blob/main/core/src/app_client.rs>.
+[^12]: Ethereum Foundation. "Fusaka Mainnet Announcement" (November 6, 2025). <https://blog.ethereum.org/2025/11/06/fusaka-mainnet-announcement>.
+[^13]: EigenDA Documentation. "Security Model." <https://docs.eigencloud.xyz/eigenda/core-concepts/security/security-model>.
