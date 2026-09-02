@@ -320,6 +320,140 @@ The next action is not to pick the largest number. For the rollup, add prover re
 
 The final record names the selected commit and deployment, rejected alternatives, measured workload, finality policy, trust and key inventory, unresolved risks, launch limits, rollback trigger, and date for reassessment. A decision is temporary when protocols, control structures, or workloads change.
 
+## **Incident Command for Scaling Systems**
+
+A scaling incident often crosses sequencer, prover, data availability, settlement, bridge, wallet, and governance teams. The response must preserve evidence and user safety while ownership is still uncertain. Fast recovery does not mean changing state before the failure boundary is understood.
+
+### Severity and declaration
+
+Declare an incident when an observed condition threatens a published property: conflicting state, unavailable data, missed proof deadline, stalled forced inbox, incorrect fee or balance, bridge anomaly, prolonged finality loss, key compromise, or unsafe upgrade.
+
+Use severity based on impact, not publicity:
+
+- **SEV-0:** accepted conflicting state, unauthorized asset release, or active key compromise;
+- **SEV-1:** safety at material risk, exits unavailable, or a bounded loss event in progress;
+- **SEV-2:** major liveness or correctness degradation with safe state preserved;
+- **SEV-3:** limited degradation, elevated error rate, or a near miss requiring follow-up.
+
+The declaration records UTC time, detector, affected systems, first bad and last known good boundaries, current user impact, and incident commander.
+
+### Roles
+
+Assign one incident commander who coordinates but does not personally execute every change. Separate:
+
+- operations lead for sequencer, prover, DA, and node actions;
+- protocol lead for safety and canonical-state analysis;
+- bridge and asset lead for custody and supply reconciliation;
+- communications lead for user and partner updates;
+- evidence scribe for timeline, commands, hashes, and decisions;
+- independent safety reviewer who can veto an unsafe recovery.
+
+A role can have backups, but authority must be explicit. An unstructured group chat is not incident command.
+
+### First ten minutes
+
+1. confirm the alert through an independent source;
+2. freeze automated deploys, parameter changes, and key rotations;
+3. identify the last known safe state and current unsafe frontier;
+4. preserve logs, databases, proof artifacts, signatures, and provider responses;
+5. stop irreversible value release if its verification boundary is uncertain;
+6. keep read-only status and user exits available when they do not worsen the incident;
+7. open the timeline and assign roles;
+8. publish an initial factual status from an authenticated channel.
+
+Do not restart every component at once. Restarts destroy volatile evidence and can make a deterministic fault look intermittent.
+
+### Safety before liveness
+
+Choose an action by asking which property it can violate. If proof production stops but prior state remains valid, halt state acceptance before bypassing the verifier. If DA status is uncertain, do not finalize roots that users may be unable to reconstruct. If one bridge claim is suspicious, stop the relevant release path rather than rewriting unrelated chain state.
+
+Pause scope should be narrow enough to preserve safe functions and broad enough to bound loss. Document contracts, assets, message domains, and versions affected. Test that the pause actually blocks the intended transition without blocking the recovery transaction.
+
+### Canonical-state worksheet
+
+Record:
+
+```text
+last known safe L1 block and hash
+last safe L2 batch and state root
+latest data-available batch
+latest accepted proof or dispute result
+sequencer unsafe head
+bridge messages pending / consumed / disputed
+forced-inbox cursor and oldest deadline
+active protocol and verifier versions
+```
+
+Two teams independently derive the boundary from source data. If they disagree, preserve both hypotheses and halt at the earlier common safe point. Never choose a state root because it is operationally convenient.
+
+### Evidence preservation
+
+Use immutable or append-only storage where possible. Hash exported logs and artifacts. Preserve original time zones and monotonic timestamps, software versions, environment configuration, API responses, signer transactions, and network captures.
+
+External dashboards can change after the event. Export the underlying data and query, not only a screenshot. Redact secrets and personal data in the review copy while retaining protected originals under access control.
+
+### Communication cadence
+
+An initial notice states what is observed, user impact, safe actions, unsafe actions, and the next update time. Separate confirmed facts from hypotheses. Do not estimate restoration until the recovery path has been tested.
+
+Update even when the state has not changed. Name the exact boundary: "withdrawal finalization paused" is more useful than "network issues." When users must act, give verifiable contract, chain, version, and deadline details through authenticated channels.
+
+Keep internal forensic details that would enable active exploitation restricted during containment, but do not use security as a reason to hide user impact or custody status.
+
+### Recovery plan
+
+A recovery proposal includes:
+
+- the fault and affected boundary;
+- chosen canonical state and evidence;
+- exact commands, transactions, artifact hashes, and signers;
+- asset and message reconciliation before and after;
+- test or simulation result;
+- rollback or forward-fix path;
+- expected user-visible transitions;
+- abort thresholds;
+- independent reviewer approval.
+
+Rehearse on a production-sized snapshot or fork. A patch that starts successfully is not enough; prove deposits, forced transactions, proofs, withdrawals, and monitoring across the repaired boundary.
+
+### Worked reconciliation
+
+Suppose source escrow contains 1,000 tokens. Destination wrapped supply is 940, with 40 tokens in proven pending withdrawals and 20 in deposits finalized on source but not minted:
+
+```text
+source escrow 1,000
+= wrapped supply 940
++ pending withdrawal liability 40
++ pending deposit liability 20
+```
+
+The accounting balances. If wrapped supply is 950 instead, there is an unexplained 10-token excess. Do not resume the bridge until every identifier and owner is reconciled; aggregate totals alone can hide a duplicate claim and an offsetting omission.
+
+### Resumption gates
+
+Resume only when:
+
+- the fault is contained or the vulnerable transition is disabled;
+- canonical state and data availability agree across independent implementations;
+- assets and message identifiers reconcile;
+- the repair was reproduced from preserved inputs;
+- monitoring detects recurrence at the earliest boundary;
+- keys and credentials exposed during response are rotated safely;
+- the user exit and recovery paths have been exercised;
+- the incident commander and independent reviewer sign the gate record.
+
+Stage resumption. Start read paths and low-risk production, then proving, batching, and value release under caps. Remove temporary caps only after an observation window.
+
+### Postmortem
+
+Publish a blameless but accountable timeline: detection, escalation, decisions, mitigations, restoration, and user impact. Identify technical causes, control failures, and why defenses did not detect or contain the issue sooner.
+
+Every corrective action needs an owner, testable completion condition, and deadline. "Improve monitoring" is not an action; "alert when the forced-inbox cursor is within two batches of its deadline and test the alert in staging" is.
+
+Include counterfactual loss: what would have happened without the alert, pause, or cap. Near misses reveal safety margin before users pay for the lesson.
+
+Incident readiness is a scalability property. As throughput and cross-domain value grow, manual reconciliation and improvised recovery become slower than the system's failure rate. A credible design can stop at a known boundary, explain user status, reconcile state, and resume without trusting an administrator's undocumented choice.
+
 ## **Upgrade Operations and User Exit Windows**
 
 An upgrade changes the code or parameters that protect user state. Treat it as a protocol migration, not a software deployment. The operational goal is to prove that the proposed transition is authorized, understood, reproducible, reversible where possible, and gives users a meaningful chance to exit when trust assumptions change.
