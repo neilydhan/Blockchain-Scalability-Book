@@ -295,6 +295,124 @@ Settlement should be atomic from the user's perspective: either the output condi
 
 Chain abstraction can make routing invisible while keeping the signed conditions visible. Wallets should still report which domains hold funds and when the result reaches finality.
 
+## **Intent Protocol and Solver Settlement Trace**
+
+An intent states an outcome the user authorizes rather than one exact execution path. A solver can choose routes, venues, bridges, and timing that satisfy the constraints. This can hide cross-domain complexity, but it also moves safety into signatures, quote competition, settlement proofs, and solver incentives.
+
+A user exchanging asset `X` on chain `A` for asset `Y` on chain `B` might sign:
+
+```text
+Intent {
+  owner,
+  input_chain,
+  input_asset,
+  max_input,
+  output_chain,
+  output_asset,
+  min_output,
+  recipient,
+  expiry,
+  nonce,
+  partial_fill_policy,
+  fee_limit,
+  settlement_contract,
+  intent_version
+}
+```
+
+The signature must bind every constraint and domain. A wallet should display the maximum input, minimum received amount, recipient, destination, expiry, fees, partial-fill rule, and approval scope. "Get the best result" is not a safe authorization boundary.
+
+### Quote and fill path
+
+1. The user publishes an intent or requests private quotes.
+2. Solvers compute routes and submit signed quotes tied to the intent hash.
+3. The user or an auction rule selects a quote without broadening the signed intent.
+4. A solver delivers the required output on `B` or locks a verifiable guarantee.
+5. Settlement verifies destination delivery and releases no more than `max_input` on `A`.
+6. The intent nonce and fill amount are updated atomically so replay or overfill fails.
+
+A solver is replaceable only before it receives exclusive rights or user funds. If the protocol grants an exclusive fill window, specify its duration and the fallback when the solver disappears.
+
+### Delivery proof
+
+A destination transaction hash alone is not proof of final delivery. Settlement must verify that the right asset and amount reached the bound recipient on the right chain under the required finality policy.
+
+The proof may use a light client, canonical bridge message, validity proof, optimistic claim, or bonded oracle. Each gives a different safety and latency boundary. Name it in the interface. A solver payment observed by an indexer is not equivalent to a finalized, on-chain delivery proof.
+
+Fee-on-transfer, rebasing, callback-capable, frozen, or upgradeable tokens complicate delivery. Verify the recipient's effective balance change or a protocol-defined transfer event whose semantics are stable. Token symbols are not identifiers; bind chain and contract address or another canonical asset ID.
+
+### Atomicity without synchronous chains
+
+Chains `A` and `B` do not share one atomic transaction. The protocol therefore chooses who fronts risk. A solver can pay output first and later claim input with proof. The user is protected if input remains recoverable on expiry; the solver is protected if valid delivery guarantees the input claim.
+
+If input is released first, the user takes solver performance risk unless collateral or another mechanism guarantees output. Do not call this atomic merely because both operations normally complete.
+
+### Partial fills
+
+Suppose the user permits up to 100 X for at least 200 Y, with proportional partial fills. After a solver fills 30 X for 61 Y, remaining authorization is at most 70 X. Rounding must preserve the user's minimum rate.
+
+For a fill of `x`, require:
+
+```text
+output >= ceil(x × min_output / max_input)
+```
+
+With 30 of 100 input and a minimum 200 output:
+
+```text
+ceil(30 × 200 / 100) = 60 Y
+```
+
+The 61 Y fill is valid. Track cumulative input and output because individually rounded fills can otherwise overconsume input or underdeliver aggregate output. Define whether fees are inside or outside the minimum.
+
+### Nonces, cancellation, and races
+
+A nonce prevents replay, but cancellation is itself a state transition. If a solver delivers on `B` while the user cancels on `A`, one side can lose unless the protocol defines a cutoff and proof order.
+
+Cancellation may be valid only before an exclusive fill acceptance, or it may require a delay long enough for destination delivery evidence to arrive. Wallets should show "cancellation requested" separately from "canceled and no longer fillable."
+
+A replacement intent must not accidentally reactivate an old allowance. Bind permits to the settlement contract, intent hash, asset, amount, nonce, and expiry. Revoke unused token approval after settlement when possible.
+
+### Solver economics
+
+Solvers price gas, bridge latency, inventory imbalance, reorganization risk, and adverse selection. A quote that looks one basis point better but relies on an unsafe bridge is not automatically better execution.
+
+Quote comparison should expose expected output, worst-case output, all fees, estimated completion, finality assumption, solver collateral, and recovery path. Auctions need rules for late bids, bid withdrawal, ties, private orderflow, and information leakage.
+
+Collateral should cover plausible non-performance or invalid claims, but proof conditions must be objective. A bond that governance can slash only after a discretionary vote provides a different guarantee from automatic on-chain settlement.
+
+### Denial of service and griefing
+
+Users can request quotes they never accept, and solvers can win auctions they never fill. Rate-limit unauthenticated requests, require bounded quote validity, and consider small objective bonds where griefing costs are material. Do not impose deposits that make ordinary comparison inaccessible.
+
+An attacker may create many intents sharing one allowance or nonce, submit destination dust transfers to confuse indexers, or race proofs across replicas. Settlement state must serialize fills by intent hash and reject evidence already consumed elsewhere.
+
+### Privacy and information leakage
+
+Public intents reveal desired assets, size, deadline, and willingness to trade. Solvers can infer urgency and move markets. Private requests reduce public leakage but give the request-for-quote operator power over access and quote visibility.
+
+Support size buckets, short quote lifetimes, multiple independent endpoints, and delayed public audit records where appropriate. State which party sees plaintext and when. "Private mempool" does not mean private from its operator.
+
+### Failure matrix
+
+| Failure | Safe state | Recovery |
+|---|---|---|
+| No solver quotes | user retains input | retry or use another route |
+| Selected solver disappears before delivery | input remains locked or unspent | exclusivity expires; another solver fills |
+| Delivery occurs but proof is delayed | recipient has output; solver claim pending | permissionless relayer submits proof |
+| Destination reorganizes | input is not released against reverted delivery | wait for policy finality and reprove |
+| Claim is replayed | consumed fill identifier rejects it | alert; no second release |
+| Intent expires unfilled | unused input returns to user | permissionless expiry transaction |
+| Settlement pauses | no ambiguous release | documented unpause or user escape delay |
+
+### Production assertions
+
+Test exact, better-than-minimum, partial, duplicate, expired, canceled, and overfill cases. Reorganize each chain around delivery and claim; delay proof relayers; change token behavior; crash during nonce persistence; submit conflicting solver quotes; and exercise escape while governance is unavailable.
+
+Assert conservation of every asset, no input release without qualifying delivery, no fill beyond authorization, one consumption of each proof, eventual user refund after expiry, and an observable state for every delay.
+
+Intent systems improve usability only when outcome freedom remains inside a narrow signed envelope. The solver may choose the path; it may not choose a different recipient, asset, cost ceiling, deadline, finality rule, or recovery outcome than the user authorized.
+
 ## **Stateless Validation Pipeline**
 
 A stateless block includes or makes available witnesses for every state access. Validators begin with the prior state root, verify each witness, execute transactions, update touched commitments, and compute the new root without storing the entire state.
