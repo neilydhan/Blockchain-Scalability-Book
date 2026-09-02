@@ -2,7 +2,7 @@
 
 Review date: 2026-09-02
 
-Repository: <https://github.com/neilstripe/Blockchain-Scalability-Book>
+Repository: <https://github.com/neilydhan/Blockchain-Scalability-Book>
 
 Review branch: `academic-review-corrections-2026-09`
 
@@ -93,7 +93,7 @@ This pass reread the corrected sequence from the stated prerequisite level. It f
 | P2, Moderate | High | `chapters/01_introduction.md`, first-use terminology; related Chapters 3, 9, 10, and glossary | TPS, EVM, NFT, BoLD, BFT, DAG, RPC, and ABCI were used without adequate first-use expansion in the learning sequence. | Expanded each acronym at first use and added an RPC glossary entry that distinguishes endpoint responses from consensus evidence. | Internal terminology audit | Fixed |
 | P2, Moderate | High | All twelve `assets/course/*.svg` files and `STYLE.md`, Figures | SVG source files lacked internal accessibility metadata. | Added `title` and `desc` elements to every course SVG and made the requirement explicit in the style guide. | Internal accessibility audit | Fixed |
 | P3, Minor | High | `chapters/01_introduction.md`, `chapters/15_figure_credits.md`, Chapter 6 figure order | Figure 1 was numbered 1.4, and Chapter 6 figure numbering did not support the corrected teaching order. | Corrected Figure 1.1 and made the lifecycle Figure 6.1 and named rollup traces Figure 6.2 in text and credits. | Internal figure audit | Fixed |
-| P2, Moderate | High | `book.toml`, lines 1 to 15; `README.md`; `RELEASE.md` | mdBook 0.5.4 rejected the obsolete multilingual key and canonical repository links used the previous owner. | Removed the obsolete key and updated release, clone, canonical-source, repository, and edit URLs. | [mdBook documentation](https://rust-lang.github.io/mdBook/), [canonical repository](https://github.com/neilstripe/Blockchain-Scalability-Book) | Fixed |
+| P2, Moderate | High | `book.toml`, lines 1 to 15; `README.md`; `RELEASE.md` | mdBook 0.5.4 rejected the obsolete multilingual key and canonical repository links used the previous owner. | Removed the obsolete key and updated release, clone, canonical-source, repository, and edit URLs. | [mdBook documentation](https://rust-lang.github.io/mdBook/), [canonical repository](https://github.com/neilydhan/Blockchain-Scalability-Book) | Fixed |
 | P2, Moderate | High | `scripts/build-pdf.sh`, browser discovery and isolation | The script did not discover macOS Chrome and could reuse a desktop browser profile. | Added macOS application discovery and an isolated temporary profile with background services disabled. The managed Chrome process still failed to finish the large print render in this environment. | Local execution evidence | Partially fixed |
 
 ## 4. Files Changed

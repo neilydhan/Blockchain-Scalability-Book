@@ -3,7 +3,7 @@
 **Title:** *Blockchain Scalability Book*
 **Author:** Neil Han
 **Status:** First-edition release candidate
-**Canonical source:** `main` in https://github.com/neilstripe/Blockchain-Scalability-Book
+**Canonical source:** `main` in https://github.com/neilydhan/Blockchain-Scalability-Book
 
 This first edition covers the scalability problem from measurement and decentralization constraints through Layer 1 execution, payment channels, rollups, modular architecture, data availability, parallel execution, consensus, and research-to-production evaluation. It includes worked calculations, protocol traces, implementation checklists, exercises, instructor solutions, a glossary, and a practitioner handbook.
 
