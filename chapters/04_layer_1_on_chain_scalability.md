@@ -492,6 +492,113 @@ Before enabling expiry:
 
 State expiry is operationally credible only when a user can return after the horizon, obtain the right data from more than one source, verify it against consensus commitments, and safely resume activity.
 
+## **History Expiry, Archives, and Verifiable Queries**
+
+Live consensus does not require every validator to retain every old block forever. **History expiry** lets ordinary nodes discard old bodies, receipts, or auxiliary indexes after a retention window while preserving commitments needed to authenticate the canonical past.
+
+History expiry differs from state expiry. History explains how state arrived; state contains values execution may need next. A node can prune old receipts while retaining current balances, or expire inactive state while archives retain history.
+
+### Data classes
+
+Specify retention separately for:
+
+- block headers and finality evidence;
+- block bodies and transactions;
+- receipts, logs, and events;
+- state snapshots and diffs;
+- consensus votes and slashing evidence;
+- blobs or external DA payloads;
+- indexes derived from canonical data;
+- debugging traces that may not be consensus data.
+
+Applications often depend on logs and indexes even when consensus does not. "The chain retains history" is incomplete without class and duration.
+
+### Commitments and proofs
+
+A retained header may commit to transaction and receipt roots. An archive can answer a query with the item plus a Merkle proof to the finalized header. The client also needs an authenticated header chain or checkpoint.
+
+An indexer response such as "all transfers by Alice" is harder. A Merkle proof can authenticate returned events but does not prove no matching event was omitted unless the protocol commits to a suitable index. Completeness may require scanning every relevant block or using a verifiable indexed structure.
+
+Distinguish:
+
+- **membership:** this item is in committed history;
+- **non-membership:** this key is absent from a committed set;
+- **completeness:** these are all items matching a query;
+- **canonicality:** the containing header is on finalized history.
+
+### Archive providers
+
+Archive service is operationally replaceable only when data formats, proofs, and request APIs are open and several providers retain the same history. A single public endpoint backed by one hidden database is a centralized dependency even if responses are authenticated.
+
+Providers can omit or delay data without forging proofs. Clients use redundant sources, content-addressed snapshots, peer exchange, and local verification. Publish retention commitments and measure whether old random ranges remain retrievable.
+
+### Portal and peer networks
+
+A distributed history network can partition data across peers and retrieve by content key. Availability depends on replication, incentives, routing, and repair. Cryptographic hashes authenticate content but do not ensure a peer stores it.
+
+Measure unique providers by failure domain, replica count by age, lookup latency, failed ranges, repair time, and survival after high-capacity peers leave.
+
+### Pruning safety
+
+A node should prune only after finality and the maximum reorganization window required by policy. Delete in resumable batches and preserve enough metadata to distinguish intentionally pruned data from corruption.
+
+Snapshots used for sync need a verified successor path. Do not delete the only local state needed to reconstruct or roll back a snapshot activation still in progress.
+
+Pruning can race RPC queries and indexers. Return an explicit "pruned before height H" response rather than null, which users may misread as proof that no event exists.
+
+### Worked storage budget
+
+Suppose canonical history grows by 3 MB/s. Raw annual growth is:
+
+```text
+3 MB/s × 31,536,000 s ≈ 94.6 TB/year
+```
+
+Ten independent full replicas require about 946 TB before encoding, indexes, backups, and overhead. If ordinary nodes retain 30 days:
+
+```text
+3 MB/s × 2,592,000 s ≈ 7.78 TB
+```
+
+That is still substantial. Compression, data-class separation, and lower-rate historical serving matter. Report measured rather than theoretical compression.
+
+### Retrieval economics
+
+Uploading data once does not fund indefinite serving. Archive models include protocol rewards, storage contracts, application payments, institutional archives, and voluntary replication.
+
+Price retrieval separately from retention. A provider paid to store data may still throttle egress during mass exits. Recovery capacity must cover correlated demand, not ordinary query traffic.
+
+If users need old data to withdraw, retention duration and retrieval throughput are part of asset safety. A proof window longer than data retention creates an impossible recovery path.
+
+### Migration and format changes
+
+Old history may use earlier transaction, receipt, commitment, or compression formats. Archive software needs versioned decoders and test vectors. Converting data into a new container must preserve the old canonical hash and proof relationship.
+
+Retain original bytes when signatures or hashes cover exact encoding. Semantic reserialization can change hashes even if fields look equal.
+
+### Privacy and legal operations
+
+Public history may contain personal or unlawful content that cannot be removed from commitments. Service operators can limit indexing or serving under law, but should not claim the protocol erased what remains reconstructible elsewhere.
+
+Avoid collecting unnecessary off-chain metadata in archive logs. Access patterns can reveal user interests even when chain data is public.
+
+### Recovery drill
+
+From a new machine and no privileged database:
+
+1. authenticate a finalized old header;
+2. retrieve a random block body, receipt, and blob from independent providers;
+3. verify each commitment and canonicality;
+4. reconstruct an application query across a range and test completeness;
+5. remove the largest provider and repeat under burst load;
+6. identify a deliberately unavailable range and exercise escalation or repair.
+
+### Release assertions
+
+Publish retention by data class, provider and region diversity, oldest retrievable height, random-range success rate, proof-verification tooling, pruning boundary, format migration policy, and recovery throughput.
+
+History expiry is responsible when ordinary validation becomes cheaper while old evidence remains verifiably recoverable from a plural archive ecosystem for every protocol and user deadline that depends on it.
+
 ## **Mempool Admission and Denial-of-Service Control**
 
 Before a transaction reaches a block, nodes receive, validate, store, and relay it in a **mempool**. Mempool capacity is not consensus capacity: attackers can consume CPU, memory, bandwidth, and database lookups with transactions that never become valid blocks.
