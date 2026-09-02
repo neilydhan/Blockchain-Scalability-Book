@@ -8,6 +8,79 @@ This is the **data availability problem**. It appears whenever nodes want assura
 
 ---
 
+## **Intuition: A Correct Answer Needs Recoverable Inputs**
+
+Suppose a teacher writes only "the class total is 742" on the board. The number might be correct, but students cannot check it or continue calculating averages without the individual scores. A commitment or proof of correct processing does not necessarily reveal the underlying data.
+
+**Data availability (DA)** means the data needed to verify or reconstruct a block was published and can be obtained when the protocol requires it. It is not the same as:
+
+- **validity:** whether transactions followed the rules;
+- **retrievability:** whether a convenient service answers a request now;
+- **permanent storage:** whether the data will remain archived years later.
+
+A protocol can guarantee availability near publication while applications pay separate archives for historical queries.
+
+### **Withholding attacks**
+
+A producer can publish a block header containing a commitment while sending the actual block to too few peers. The header looks compact and valid, but users cannot reconstruct state or prove that hidden transactions were invalid.
+
+The difficult case is a **partial withholding attack**. The producer serves requested pieces selectively so some nodes believe data exists while no honest group possesses enough to reconstruct the whole block. Merely asking one server for one copy does not solve this.
+
+### **Erasure coding**
+
+**Erasure coding** expands `k` original pieces into `n` encoded pieces so any sufficiently large subset can reconstruct the original. It resembles cutting a document into pieces and adding carefully designed redundancy: losing some pieces is harmless, but preventing recovery requires hiding many.
+
+This differs from ordinary replication. Three complete copies tolerate loss of two whole hosts. Erasure coding spreads smaller redundant pieces and can use bandwidth more efficiently, but clients must verify that the producer encoded them consistently.
+
+**Reed-Solomon coding** is one mathematical family used for this purpose. Readers do not need its polynomial algebra to follow the security argument: correct encoding creates redundant shares, and a reconstruction threshold defines how many are needed.
+
+### **Sampling**
+
+A light client cannot download the entire large block without losing the scalability benefit. Instead, it asks for random encoded shares and verifies proofs that each share belongs to the committed block. This is **data availability sampling (DAS)**.
+
+If an attacker must hide a large fraction to prevent reconstruction, random requests have a chance of hitting hidden pieces. Repeating independent samples makes missing every hidden piece exponentially less likely.
+
+If hidden fraction is `h` and the client takes `s` independent samples, the chance that all samples avoid the hidden fraction is:
+
+```text
+(1 - h)^s
+```
+
+For `h = 0.5` and `s = 10`:
+
+```text
+(1 - 0.5)^10 = 0.5^10 = 1 / 1,024 ≈ 0.098%
+```
+
+This number is a model, not a complete guarantee. Requests must be unpredictable, peers must be diverse, proofs must be valid, and attackers must not show each client a different view.
+
+### **Commitments and inclusion proofs**
+
+A block header commits to encoded shares. An **inclusion proof** shows that one returned share occupies a particular position under that commitment. It prevents a peer from answering with invented data.
+
+The proof does not by itself show that every other share exists. Sampling combines many authenticated spot checks with the coding threshold. Peer-to-peer exchange then helps sampled shares spread among honest nodes.
+
+### **Two dimensions and namespaces**
+
+Some designs arrange data in rows and columns and apply coding in both directions. Two-dimensional coding gives clients structured samples and supports reconstruction from rows or columns.
+
+A **namespace** labels data belonging to one application or rollup. A namespaced Merkle tree lets that application retrieve and prove its portion without downloading unrelated data. Namespace separation improves selective access; it does not let an application ignore the chain's overall availability assumptions.
+
+### **How to read DA claims**
+
+Ask:
+
+1. What exact bytes are committed?
+2. Who performs and checks erasure coding?
+3. How many shares reconstruct the data?
+4. How are random sample positions chosen?
+5. Can one peer or gateway answer every request?
+6. When does consensus treat availability as sufficient?
+7. How long is data retained, and who archives it afterward?
+8. What does the dependent rollup do when availability is uncertain?
+
+The rest of the chapter turns this intuition into probability, client, network, and integration details.
+
 ## **Validity Is Not Availability**
 
 State validity asks whether a transition followed the protocol rules. Data availability asks whether the inputs behind that transition can be obtained.
