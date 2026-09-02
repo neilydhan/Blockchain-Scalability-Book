@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this book in research, teaching, or technical work, please cite the version you used."
+title: "Blockchain Scalability Book"
+type: book
+authors:
+  - family-names: "Han"
+    given-names: "Neil"
+version: "1.1.1"
+date-released: 2026-09-02
+url: "https://neilydhan.github.io/Blockchain-Scalability-Book/"
+repository-code: "https://github.com/neilydhan/Blockchain-Scalability-Book"
+license: CC-BY-SA-4.0
+abstract: >-
+  A mechanism-first guide to blockchain scalability as a resource, systems,
+  security, and recovery problem. The book covers Layer 1, Layer 2, rollups,
+  modular data availability, parallel execution, consensus, threat modeling,
+  and benchmark evaluation through end-to-end paths and worked calculations.
+keywords:
+  - blockchain scalability
+  - distributed systems
+  - layer 2
+  - rollups
+  - data availability
+  - parallel execution
+  - consensus
+  - blockchain benchmarking

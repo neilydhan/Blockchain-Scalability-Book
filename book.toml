@@ -2,9 +2,12 @@
 authors = ["Neil Han"]
 language = "en"
 src = "."
+exclude = [".git/**", ".github/**", "book/**", "qa/**", "release/**", ".DS_Store"]
 title = "Blockchain Scalability Book"
+description = "A mechanism-first guide to blockchain scalability, security, trust, and recovery"
 
 [output.html]
+site-url = "/Blockchain-Scalability-Book/"
 additional-css = ["theme/print.css"]
 default-theme = "light"
 preferred-dark-theme = "navy"

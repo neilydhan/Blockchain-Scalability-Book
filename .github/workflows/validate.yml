@@ -1,0 +1,27 @@
+name: Validate book
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  book:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: mdbook@0.4.52
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+          python -m pip install --requirement requirements-pdf.txt
+      - name: Check and build HTML
+        run: ./scripts/build-book.sh
+      - name: Build and validate EPUB
+        run: ./scripts/build-epub.sh

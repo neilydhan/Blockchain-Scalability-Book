@@ -71,3 +71,19 @@ The script requires a clean tree and creates `release/v<version>/` with the PDF,
 The packaging gate also reads the generated PDF with `pdfinfo` and `pdftotext`. It records the page count and page size in the manifest and refuses to package a PDF containing Unicode replacement characters. The reported word count covers all repository Markdown, including release and QA records; chapter-only editorial counts should be computed separately when needed.
 
 mdBook inserts explicit page-break elements between source files in `print.html`. Do not add another unconditional `break-before` rule to every `h1`; the doubled break can produce blank pages. The release visual audit should scan extracted PDF pages for unexpectedly empty pages as well as inspect representative pixels.
+
+## Build EPUB
+
+Install Pandoc, then run:
+
+```bash
+./scripts/build-epub.sh
+```
+
+The command follows the chapter order in `SUMMARY.md`, writes an EPUB 3 file to `book/blockchain-scalability-book.epub`, and verifies the archive. Treat archive validity as a minimum gate, not an accessibility or device-compatibility review. Inspect navigation, code, tables, equations, diagrams, links, metadata, and reading order in representative EPUB readers before release.
+
+## Web Deployment
+
+GitHub Actions builds the mdBook web edition from `main` and deploys the generated `book/` directory to GitHub Pages. The build adds canonical links, publication metadata, `robots.txt`, and `sitemap.xml`. Repository Markdown is the canonical source; generated HTML is not committed.
+
+Changing the production site still requires reviewing the Pages workflow result and the rendered URL. Check desktop and narrow mobile layouts, sidebar and search behavior, tables, code blocks, diagrams, and every primary reader path.

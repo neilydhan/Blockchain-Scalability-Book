@@ -11,6 +11,10 @@ python3 "$(dirname "$0")/check-book.py"
 rm -rf book
 mdbook build
 
+# With the repository root as mdBook source, remove source-control, CI, QA, and
+# local metadata that must never ship in the Pages artifact.
+rm -rf book/.git book/.github book/qa book/release book/.DS_Store
+
 # Mark unusually wide tables for compact print-only styling.
 python3 - <<'PY2'
 from pathlib import Path
@@ -23,6 +27,8 @@ for table in soup.find_all("table"):
         table["class"] = list(table.get("class", [])) + ["wide-table"]
 p.write_text(str(soup))
 PY2
+
+python3 "$(dirname "$0")/enrich-html.py"
 
 echo "HTML book: book/index.html"
 echo "Print layout: book/print.html"

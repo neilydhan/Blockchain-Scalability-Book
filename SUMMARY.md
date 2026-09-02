@@ -1,7 +1,9 @@
 # Summary
 
-[Introduction](README.md)
+[Introduction](./README.md)
 [Preface](chapters/00_preface.md)
+[Representative Sample](SAMPLE.md)
+[Instructor and Course Adoption Guide](ACADEMIC.md)
 
 # Core Chapters
 
@@ -20,7 +22,12 @@
 # Additional Information
 
 - [Contributing Guide](CONTRIBUTING.md)
+- [Editorial Style Guide](STYLE.md)
+- [Publishing Guide](PUBLISHING.md)
+- [Publishing Decisions](PUBLISHING-DECISIONS.md)
+- [Source Contents](SUMMARY.md)
 - [License](LICENSE.md)
+- [Analytics and Privacy](ANALYTICS.md)
 - [Glossary](chapters/12_glossary.md)
 - [Review Questions and Design Exercises](chapters/13_review_questions.md)
 - [Practitioner Evaluation Handbook](chapters/14_evaluation_handbook.md)
