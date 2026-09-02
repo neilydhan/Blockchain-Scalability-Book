@@ -8,6 +8,58 @@ The problem is not merely starting several threads. Transactions can read and wr
 
 ---
 
+## **Intuition: Which Transactions Can Run Together?**
+
+A block defines an ordered list of transactions. The simplest executor processes transaction 1, updates state, then processes transaction 2 against that new state. This **sequential execution** is easy to reason about but uses only one execution path at a time.
+
+Parallel execution asks whether independent transactions can run simultaneously on several CPU cores while producing exactly the result the canonical order requires.
+
+Imagine two cashiers. Alice transfers funds between accounts A and B while Chen transfers funds between C and D. The account sets do not overlap, so both updates can be calculated together. If Chen instead spends from B, his result depends on Alice's earlier update and the two operations conflict.
+
+### **Reads, writes, and conflicts**
+
+A transaction's **read set** is the state it inspects. Its **write set** is the state it changes. Two transactions conflict when canonical order can affect the result:
+
+- both write the same value;
+- one writes a value the other reads;
+- a dynamic call discovers another overlapping key.
+
+Two reads of the same value do not conflict because neither changes it.
+
+A **conflict graph** represents transactions as points and conflicts as connecting lines. Transactions with no line between them can be candidates for the same parallel wave. This is a planning model; actual virtual-machine behavior may discover more accesses.
+
+### **Declared and optimistic execution**
+
+A **declared-access** system requires a transaction to identify accounts or objects it may touch before execution. The scheduler can separate non-overlapping declarations. Over-declaring reduces parallelism; under-declaring must fail or follow a protocol rule.
+
+An **optimistic executor** starts transactions in parallel without knowing every access. It records what each attempt read and wrote. At commit time, it checks whether an earlier canonical transaction changed something the attempt read. If so, the attempt is **aborted** and retried against newer state.
+
+"Optimistic" here means doing speculative work first and validating conflicts later. It does not change the canonical transaction order or permit different nodes to keep different outcomes.
+
+### **Multi-version state**
+
+A **multi-version database** keeps several versions of a value tagged by transaction position. A speculative transaction reads the newest version that should precede it. If an earlier transaction later creates a newer relevant version, validation detects that the speculative read was stale.
+
+Think of draft pages numbered by order. A worker assigned page 8 may read the latest accepted edit before 8. If page 5 later changes that paragraph, page 8's work must be checked again.
+
+### **Determinism and commitment**
+
+CPU thread timing differs between machines. One worker may finish first on one validator and last on another. Consensus remains safe only if every valid schedule commits the same ordered result.
+
+The executor may schedule freely internally, but state roots, receipts, logs, gas, return values, and failure outcomes must match the reference sequential semantics. Parallelism is an implementation method, not a new meaning for the block.
+
+### **The hot-state limit**
+
+A popular counter, liquidity pool, or market price can become **hot state** touched by many transactions. More CPU cores do not help when every update must follow one another. This is like adding checkout lanes when every cashier still needs the same single stamp.
+
+Applications improve concurrency by splitting independent balances or markets, using append-only claims, aggregating later, and avoiding unnecessary global counters. The protocol can schedule better only when the workload contains real independence.
+
+### **Reading speedup**
+
+If a fraction of work must remain serial, it limits total speedup. Eight cores cannot make a program eight times faster when half its work uses one ordered path. Retries, validation, database locking, and final root construction add more overhead.
+
+Worked examples later show attempts and milliseconds explicitly. Count all speculative attempts, including discarded ones; reporting only successfully committed transactions hides wasted resources.
+
 ## **Why the EVM Is Commonly Sequential**
 
 <p align="center">
