@@ -360,6 +360,73 @@ Before enabling a PBS path, assert that:
 
 PBS should be judged as a consensus-adjacent market with safety, liveness, timing, privacy, and competition requirements. Higher bids are useful only when the block is valid, arrives in time, propagates safely, and does not make transaction inclusion depend on a small hidden supply chain.
 
+## **Named Implementation Atlas: What Runs, What Is Piloted, What Is Proposed**
+
+The mechanisms above are easier to judge when attached to a named system. The labels below describe the implementation stage documented in September 2026, not an assurance that a deployment is decentralized, bug-free, or permanent. A production protocol can still depend on a concentrated service; a pilot can handle real transactions while retaining explicit limits; a research design can have working code without a settled operating model.
+
+### **ERC-4337: account abstraction through an alternate mempool**
+
+**Maturity label: production standard and production deployments.** ERC-4337 implements account abstraction without changing Ethereum's consensus transaction format. Its official documentation defines a `UserOperation`, an alternate mempool, bundlers, the singleton-style `EntryPoint` contract, smart accounts, and optional paymasters.[^3][^4] This is a named instance of the account, bundler, and sponsor mechanics developed earlier in the chapter.
+
+Trace one sponsored operation. Maya's smart account signs a `UserOperation` that calls a game contract. The object binds the account address, nonce, call data, gas limits, fee caps, paymaster data, and signature. She sends it to a bundler rather than directly to Ethereum's native transaction mempool. The bundler simulates validation against the specified `EntryPoint`. The entry point calls the account's `validateUserOp`; when sponsorship is requested it also calls the paymaster's validation logic. The bundler groups Maya's operation with others and sends one native transaction invoking `handleOps`. The entry point validates each operation, executes its call, accounts for gas, and pays the bundler's beneficiary from an account or paymaster deposit.
+
+The observable consequence is that Maya can transact without first holding the chain's native fee asset, while Ethereum still sees a normal transaction from the bundler. Her wallet should expose separate states: accepted by one bundler, included in a bundle, executed by `EntryPoint`, and successful at the application call. A simulation result is not inclusion. A bundler can refuse an otherwise valid operation, so portability across bundlers is part of liveness.
+
+The failure path is concrete. If the paymaster's deposit is exhausted or its policy rejects the operation, sponsorship fails even if Maya's account signature is valid. If state changes after simulation, on-chain validation remains authoritative. A malformed operation can cost the bundler resources, which is why the standard limits validation behavior and uses staking or reputation rules for some entities. The account must explicitly trust the intended entry-point contract; a look-alike dispatcher must not gain authorization. Finally, a wallet upgrade key can replace Maya's validation policy. ERC-4337 makes programmable authorization possible, but the smart-account implementation decides whether recovery, session keys, and upgrades are safe.
+
+### **MEV-Boost: proposer-builder separation through relays**
+
+**Maturity label: production middleware on Ethereum.** Flashbots describes MEV-Boost as open-source middleware run by validators to access a competitive block-building market. It is an implementation of proposer-builder separation outside Ethereum's consensus protocol, sometimes called proposer-builder separation through an external market.[^5]
+
+Trace one proposal slot. Searchers and users send transactions through public or private paths to builders. Builders assemble full execution payloads and include a payment to the validator's registered fee recipient. They submit payloads to relays. A relay validates a payload and returns a blinded header and bid rather than revealing the transactions immediately. The validator's MEV-Boost sidecar asks its configured relays for bids and forwards the selected header to the consensus client. The proposer signs the blinded block. After checking that signature, the winning relay returns the full payload, which the proposer publishes for Ethereum attestation.[^6]
+
+This division protects a builder's payload before the proposer commits, but it introduces timing and service dependencies. The proposer observes bid value, relay identity, response latency, payload delivery, and whether the full block arrived before the slot deadline. A local block-building path is the liveness fallback when MEV-Boost or its relays fail. The Flashbots risk documentation explicitly calls out liveness and local fallback, builder centralization, builder-relay collusion, malicious relays, and hidden MEV.[^7]
+
+Suppose the winning relay withholds the full payload after the proposer signs. The validator can miss the slot unless its client and timing policy safely fall back. Suppose instead one builder controls most profitable order flow. The blocks remain valid, but censorship and market power can concentrate. A relay can also advertise a fraudulent bid that MEV-Boost itself cannot fully verify from a blinded header. Monitoring and reputation can detect abuse, but they are not the same as eliminating the relay assumption. MEV-Boost therefore shows both the value and the limit of a production PBS market: specialization can increase proposer revenue and builder competition while leaving relay trust and concentration for later protocol work.
+
+### **Espresso: shared settlement and sequencing integration**
+
+**Maturity label: production network with integration-dependent guarantees.** Espresso's current documentation describes a proof-of-stake network that provides decentralized settlement and finality for blocks proposed by integrated chains and applications. Each application retains its own execution environment and ordering rules; Espresso does not execute those application transactions or prove that their state transition was correct.[^8] This is an important correction to the loose phrase "shared sequencer": shared ordering or settlement does not automatically validate application execution.
+
+Trace an integrated rollup payment. The rollup receives Maya's transaction and executes it under its own virtual machine. It submits the resulting block or commitment through the Espresso integration. Espresso consensus orders and finalizes the submitted object. Another application can verify Espresso state when coordinating with the rollup, subject to the integration and verification path. The rollup still publishes or serves the data its users need and still applies its own proof or dispute rule for execution correctness.
+
+The visible boundary is an Espresso finality certificate or commitment associated with the rollup block. An application can distinguish "accepted by the rollup operator" from "finalized by Espresso" and from "execution accepted at the rollup's settlement contract." Those are separate claims. If Espresso stalls, an integration needs an explicit fallback or the rollup's finality path stalls with it. If the rollup sequencer constructs an invalid state transition, Espresso can faithfully finalize the submitted block without detecting the application error because execution correctness remains outside Espresso's stated responsibility. If at least the threshold required to corrupt Espresso consensus is dishonest, ordering finality itself can fail. A deployment review must therefore inspect the exact integration, validator and staking state, fallback rules, DA choice, and how a target chain verifies Espresso commitments.
+
+### **Across: intents with relayer capital and optimistic settlement**
+
+**Maturity label: production cross-chain intent protocol.** Across supplies a named implementation of the chapter's intent and solver path. Its documented V3 lifecycle has three phases: initiation, fill, and settlement. A user deposits on an origin-chain `SpokePool`; a relayer advances its own funds on the destination; later, protocol settlement verifies the fill and repays the relayer.[^9]
+
+Trace Maya moving an asset from an origin chain to a destination. She calls `depositV3`, binding destination chain, output token, output amount, recipient, fill deadline, optional message, and any exclusivity fields. The origin `SpokePool` escrows her input and emits `V3FundsDeposited`. Relayers watch that event. A relayer that accepts the quote calls `fillV3Relay` on the destination `SpokePool` using its own inventory. The destination event records fulfillment and prevents another ordinary fill of the same intent. Maya can treat the destination fill as delivered without waiting for the relayer's reimbursement cycle.
+
+Settlement happens later. A dataworker aggregates covered deposits and fills into a root bundle containing relayer refunds, token-rebalancing instructions, slow-fill data, and block ranges. It proposes that bundle to the Ethereum `HubPool` with a bond. Across documents an optimistic verification model in which invalid bundles can be disputed and adjudicated through its UMA-based rules.[^10] After acceptance, relayers receive repayment and liquidity is rebalanced through the protocol's routes.
+
+The architecture moves latency from the user to the relayer's balance sheet. Maya sees a deposit transaction, quoted deadline, destination fill event, and eventual settlement status; the relayer additionally tracks inventory, repayment chain, bundle coverage, and dispute state. If no relayer fills before the deadline, the system needs the documented slow or refund path rather than inventing a destination transfer. If a relayer fills the wrong recipient or too little output, the event does not satisfy Maya's signed intent. If a proposed root bundle repays a nonexistent fill, an honest verifier must dispute it during the optimistic window. If destination-chain finality reverts after a fill is observed, settlement rules must not blindly repay it. The protocol is fast because a relayer fronts value, not because cross-chain finality becomes atomic.
+
+CoW Protocol gives a complementary, same-chain example. Users sign trade intents; solvers compete over an auction; the selected solution settles through the protocol's settlement contract.[^11] Across emphasizes cross-chain delivery and later reimbursement, while CoW emphasizes batch auctions, coincidence of wants, and on-chain trade settlement. In both, the signature constrains the acceptable outcome and the solver chooses a path. Neither design gives a solver permission to alter recipient, limit price, fee cap, expiry, or replay scope.
+
+### **Succinct Prover Network: a market for SP1 proofs**
+
+**Maturity label: production prover service moving through a protocolized mainnet market.** Succinct documents a prover network and migration path for SP1 applications, as well as a protocol architecture that connects proof requesters and provers through auctions and Ethereum settlement.[^12][^13] The distinction matters: a hosted proving service can be production-ready before every auction, staking, and decentralized settlement component reaches its intended end state.
+
+Trace one proof request. A rollup or application submits the program, inputs or input commitments, a maximum prover-gas bound, maximum fee, minimum prover stake, deadline, and verification key. Eligible provers bid in a proof contest. The assignment service chooses a bid under the market rule. The winning prover runs SP1, returns a proof before the deadline, and receives payment when fulfillment is accepted. The requester verifies the proof against the expected program and public inputs before using it to advance an application state.
+
+The market separates **correctness** from **delivery**. A sound verifier rejects a fabricated proof regardless of which prover won. Staking and deadlines address liveness and economic performance: a prover that accepts work and misses the deadline can lose stake under the documented rules. The user-visible evidence includes request identifier, program and verification-key identity, assigned prover, deadline, proof hash, verification result, fee, and settlement state.
+
+Suppose the cheapest winning prover crashes halfway through a deadline-sensitive rollup batch. The coordinator must reassign or the application misses its proof deadline. A second prover helps only if it can obtain the program and inputs and does not share the same software, cloud region, or hardware bottleneck. Suppose the off-chain auctioneer censors Maya's request. The on-chain proof may remain cryptographically sound, but the service has a liveness and access failure. Suppose the requester names the wrong verification key. The network can correctly prove the wrong program. These failures show why a prover market needs requester-side program binding, redundant capacity, transparent assignment, deadline enforcement, and a route to recover funds or reissue work.
+
+## **Mechanism-to-Implementation Map**
+
+| Mechanism in this chapter | Named implementation | September 2026 label | What the implementation proves - and what it does not |
+|---|---|---|---|
+| Account abstraction, bundlers, paymasters | ERC-4337 | Production standard/deployments | EntryPoint enforces account and sponsor validation; a bundler receipt does not guarantee inclusion, and account upgrades still define authorization |
+| Proposer-builder separation | Flashbots MEV-Boost | Production middleware | Relay-validated blinded bids connect builders and proposers; external relays and concentrated builders remain operational and censorship risks |
+| Shared sequencing/settlement | Espresso | Production network, guarantee depends on integration | Consensus finalizes submitted application blocks; it does not execute or validate each application's state transition |
+| Intents and solver delivery | Across; CoW Protocol | Production protocols | Signed limits constrain outcomes and contracts record fulfillment; relayers/solvers still control route choice and can fail to deliver |
+| Decentralized prover market | Succinct Prover Network | Production service and protocolized mainnet market | Verifiers decide proof correctness; auctions, stake, redundancy, and deadlines decide whether a usable proof arrives |
+
+The maturity column is deliberately more specific than "live." Production says real systems and value use the mechanism. It does not erase the failure path. A reader evaluating a later release should revisit the linked official documentation, identify the deployed version and contracts, and update the label when participation, controls, or fallbacks change.
+
+
 ## **How to Judge Future Claims**
 
 New systems should be evaluated across the entire stack:
@@ -805,3 +872,15 @@ Its central challenge is preserving verifiability while complexity moves between
 
 [^1]: Feist, Dankrad, et al. "EIP-7594: PeerDAS." <https://eips.ethereum.org/EIPS/eip-7594>.
 [^2]: Ethereum.org. "The Verge." <https://ethereum.org/roadmap/verkle-trees/>.
+
+[^3]: ERC-4337 Documentation. "ERC-4337." <https://docs.erc4337.io/core-standards/erc-4337.html>.
+[^4]: ERC-4337 Documentation. "The EntryPoint Contract." <https://docs.erc4337.io/smart-accounts/entrypoint-explainer.html>.
+[^5]: Flashbots Docs. "MEV-Boost Overview." <https://docs.flashbots.net/flashbots-mev-boost/introduction>.
+[^6]: Flashbots Docs. "MEV-Boost Block Proposal." <https://docs.flashbots.net/flashbots-mev-boost/architecture-overview/block-proposal>.
+[^7]: Flashbots Docs. "MEV-Boost Risks and Considerations." <https://docs.flashbots.net/flashbots-mev-boost/architecture-overview/risks>.
+[^8]: Espresso Documentation. "Rollup Architecture." <https://docs.espressosys.com/network/learn/rollup-architecture>.
+[^9]: Across Docs. "Intent Lifecycle in Across." <https://docs.across.to/guides/concepts/intent-lifecycle>.
+[^10]: Across Docs. "Security Model and Verification." <https://docs.across.to/introduction/security>.
+[^11]: CoW Protocol Documentation. "Flow of an order." <https://docs.cow.fi/cow-protocol/concepts/how-it-works/flow-of-an-order>.
+[^12]: Succinct Docs. "Protocol Architecture." <https://docs.succinct.xyz/docs/protocol/spn/architecture>.
+[^13]: Succinct Docs. "Migrate to Mainnet." <https://docs.succinct.xyz/docs/sp1/prover-network/migration-guide>.
