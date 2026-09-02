@@ -87,3 +87,9 @@ The command follows the chapter order in `SUMMARY.md`, writes an EPUB 3 file to 
 GitHub Actions builds the mdBook web edition from `main` and deploys the generated `book/` directory to GitHub Pages. The build adds canonical links, publication metadata, `robots.txt`, and `sitemap.xml`. Repository Markdown is the canonical source; generated HTML is not committed.
 
 Changing the production site still requires reviewing the Pages workflow result and the rendered URL. Check desktop and narrow mobile layouts, sidebar and search behavior, tables, code blocks, diagrams, and every primary reader path.
+
+## Print Interior (7x10 KDP Paperback)
+
+`./scripts/build-print.py` builds `print/blockchain-scalability-book-interior-7x10.pdf` from the rendered mdBook HTML. It selects the print sections (Preface, Chapters 1-11, glossary, review questions, evaluation handbook, figure credits, worksheets, benchmark template), adds the title page, copyright page, and table of contents, generates the back-of-book index from glossary terms and a curated system list, and typesets with `theme/print-7x10.css`: 7x10in pages, 0.8in top/bottom/inside and 0.65in outside margins, Noto Serif body at 10.5pt on 13.8pt, running heads, outside page numbers, and chapters opening on recto pages. SVG figures are rasterized at 2400px with cairosvg because WeasyPrint mis-renders some styled SVGs. Install dependencies from `requirements-pdf.txt` first.
+
+Gates before KDP upload: confirm the final page count against KDP margin minimums, eyeball every figure in grayscale, order a proof copy, and only then approve distribution. The print ISBN (KDP free ISBN) goes on the copyright page at upload time.
