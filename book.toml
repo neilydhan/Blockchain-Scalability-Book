@@ -9,6 +9,7 @@ description = "A mechanism-first guide to blockchain scalability, security, trus
 [output.html]
 site-url = "/Blockchain-Scalability-Book/"
 additional-css = ["theme/print.css"]
+additional-js = ["theme/analytics.js"]
 default-theme = "light"
 preferred-dark-theme = "navy"
 git-repository-url = "https://github.com/neilydhan/Blockchain-Scalability-Book"
