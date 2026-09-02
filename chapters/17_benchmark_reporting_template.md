@@ -91,7 +91,7 @@ Do not run only at one selected rate. Record a sweep:
 | Warm-up | | | fill caches and queues |
 | Low load | | | baseline |
 | Ramp steps | | | locate capacity knee |
-| Sustained target | | | validate SLO |
+| Sustained target | | | validate service-level objective (SLO) |
 | Overload | | | observe admission/backpressure |
 | Recovery | | | drain queues and reconcile |
 

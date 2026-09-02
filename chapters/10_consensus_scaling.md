@@ -145,6 +145,9 @@ Different consensus stages for consecutive blocks overlap. Throughput rises even
 
 ### **DAG-Based Mempools**
 
+A **directed acyclic graph (DAG)** is a set of items connected by one-way references with no path that loops back to its start. Unlike one chain where each block has one parent, a DAG can record several independently disseminated batches at the same time. A DAG mempool spreads and certifies transaction data before a later consensus step chooses its order.
+
+
 Protocols can separate transaction dissemination from ordering. Validators first certify batches in a directed acyclic graph, then consensus orders references to those batches. This reduces duplicated data transmission and keeps the ordering layer small.[^3]
 
 ---
@@ -170,7 +173,7 @@ The layers still interact. Consensus cannot finalize unavailable data safely, an
 | Family | Finality | Typical Fault Bound | Communication Idea | Main Trade-Off |
 |---|---|---|---|---|
 | Nakamoto | Probabilistic | Resource majority | Gossip and longest/heaviest chain | Slow certainty and fork risk |
-| PBFT-style | Deterministic | `< 1/3` Byzantine | Multi-phase voting | Quadratic communication in basic form |
+| Practical Byzantine Fault Tolerance (PBFT)-style | Deterministic | `< 1/3` Byzantine | Multi-phase voting | Quadratic communication in basic form |
 | HotStuff | Deterministic | `< 1/3` Byzantine | Leader aggregation and certificates | Leader/pacemaker complexity |
 | Sync HotStuff | Deterministic | `< 1/2` Byzantine | Synchronous echo and wait | Relies on known delay bound |
 | DAG + BFT | Deterministic | Usually `< 1/3` Byzantine | Separate dissemination and order | More protocol components |

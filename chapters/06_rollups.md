@@ -117,7 +117,7 @@ The honest verifier requirement does not mean every user must personally watch t
 
 Validity rollups, often called ZK rollups, attach a succinct proof that the new state was computed correctly. The Layer 1 verifier checks the proof rather than replaying the entire batch.
 
-The proof may use a SNARK or STARK. These families differ in proof size, prover cost, verification cost, transparency, and cryptographic assumptions. The phrase "zero knowledge" describes the ability to hide witness data, but a validity rollup can use validity proofs without offering transaction privacy.
+The proof may use a **SNARK** (succinct non-interactive argument of knowledge) or **STARK** (scalable transparent argument of knowledge). Both let a verifier check a computation with a proof much smaller than replaying all the work. "Succinct" emphasizes small, cheap-to-check proofs. "Non-interactive" means the final verifier needs one proof rather than a back-and-forth protocol. "Transparent" means the system avoids a secret trusted-setup ceremony. These families differ in proof size, prover cost, verification cost, transparency, and cryptographic assumptions. The phrase "zero knowledge" describes the ability to hide witness data, but a validity rollup can use validity proofs without offering transaction privacy.
 
 ### **Benefits**
 
