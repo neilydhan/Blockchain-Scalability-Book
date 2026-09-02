@@ -106,6 +106,54 @@ These architectures should not be reduced to "centralized versus decentralized."
 
 The CAP theorem and blockchain trilemma are not interchangeable. CAP concerns consistency and availability when a network partition occurs.[^12] A blockchain additionally deals with Byzantine actors, Sybil resistance, economic incentives, public verifiability, and irreversible asset movement. CAP vocabulary can clarify partition behavior, but it does not prove a trilemma claim.
 
+## **Named Case Study: Bitcoin, Ethereum, and Solana on One Fixed Workload**
+
+**Deployment label: all three are production networks.** Compare one workload: 10,000 users each authorize a simple native-asset payment to a distinct recipient, with no smart-contract call beyond the chain's normal transfer rules. Measure four boundaries separately: node admission, block inclusion, the chain's strongest commonly exposed finality or confirmation policy, and independent verification from protocol data. This is not a live throughput benchmark; transaction sizes, fees, congestion, hardware and software versions change. It is an architectural trace that keeps the work constant.
+
+### **Bitcoin: UTXOs, mempool policy, and probabilistic confirmation**
+
+Each payer constructs a transaction consuming one or more unspent transaction outputs (UTXOs), creates a recipient output and usually a change output, and signs the relevant spending conditions. A node checks syntax, scripts, input availability and local relay policy before admitting it to its mempool. Mempool acceptance is not consensus: another node can apply different policy, and miners choose transactions under fee and block constraints.[^4][^5]
+
+A miner includes a subset in a proof-of-work block. Nodes validate the block and update the UTXO set. A payment has one confirmation when its block is accepted on the node's best-work chain; each later block increases the work that would need to be replaced by a competing history. There is no Byzantine-finality certificate after a fixed number of rounds. An application chooses a confirmation policy based on value and reorganization risk.
+
+The 10,000 payments can spend distinct UTXOs and be individually verified, but Bitcoin's canonical state transition is still applied in block order. The workload consumes serialized bytes, signature checks, script execution, UTXO reads and writes, propagation bandwidth, and long-term history. Scaling the block limit would admit more payments but increases propagation, validation and storage load for every fully validating participant.
+
+Failure path: two payments spend the same UTXO. Nodes may relay one under policy, but a valid chain can include at most one. A low-fee transaction may remain in some mempools or be evicted without confirmation. A shallow reorganization can remove an included payment, so an exchange should not equate "seen" or one block with its high-value completion rule.
+
+### **Ethereum: account nonces, gas, execution, and proof-of-stake finality**
+
+Each payer signs a typed Ethereum transaction naming chain, nonce, recipient, value, gas limit, fee caps and signature. Nodes check format, signature, account nonce, balance and fee conditions for admission. A block builder orders eligible transactions. The Ethereum Virtual Machine applies them against account state, charging gas even though a plain native transfer uses little execution compared with a contract call.[^6][^7]
+
+The 10,000 users have distinct sender accounts, so they do not contend on one nonce. They still share block gas, builder ordering, state access, propagation and consensus. Inclusion changes balances and increments each sender nonce. Proof-of-stake validators attest to blocks; Ethereum's consensus exposes justified and finalized checkpoints under its Gasper design rather than asking applications to count proof-of-work confirmations indefinitely.[^8]
+
+The workload shows why "one transfer" is not identical across chains. Ethereum carries an account and gas model designed for general stateful computation. That flexibility lets the same transaction envelope call contracts, but also makes shared execution and state access a base-layer resource. A higher gas limit can fit more transfers while raising worst-case block processing and propagation requirements.
+
+Failure path: the user submits nonce 8 before nonce 7 is available. The later transaction waits or is rejected under node policy. A base-fee rise can make the fee cap insufficient. A transaction included before finality can move to a noncanonical branch. A builder can reorder transactions, though a native transfer with distinct accounts has less application-level ordering sensitivity than an exchange call.
+
+### **Solana: declared accounts, compute budget, and slot commitment**
+
+Each payer signs a Solana transaction whose message includes a recent blockhash, instructions, and every account the runtime needs. Writable and read-only flags expose dependencies before execution. The pipeline receives and deserializes the transaction, verifies signatures, sanitizes it, checks compute budget and age, validates nonce and fee payer, loads accounts, executes instructions, and commits or rolls back.[^9][^10]
+
+For 10,000 transfers over distinct sender and recipient accounts, the writable sets are mostly disjoint. Solana's runtime can schedule independent transactions across cores. If all payments also update one writable global counter, that account lock serializes the workload. The declared-access model converts application state layout directly into available parallelism.
+
+A leader includes transactions in slots, validators replay them, and RPC commitment levels describe progressively stronger observation of the cluster's voted history. Applications must name the commitment level they treat as complete. A recent blockhash also gives an ordinary transaction a finite validity window; a client that cannot find a result must distinguish expiry from a transaction that landed under a signature it is about to resend.
+
+Failure path: two payments write the same sender account or another hot account and encounter lock contention. A transaction with an expired blockhash cannot be newly processed through the ordinary path. A leader or RPC acknowledgement is not finality, and a skipped or reorganized slot can change an early observation. High parallel execution does not remove networking, leader, state-storage or vote-processing bottlenecks.
+
+### **Architectural result**
+
+| Boundary | Bitcoin | Ethereum | Solana |
+|---|---|---|---|
+| Payment state model | Consume and create UTXOs | Update sender/recipient accounts with nonce and gas | Execute instruction over declared accounts |
+| Admission evidence | Local mempool policy and input/script checks | Local pool policy, nonce, balance and fee checks | Pipeline checks, recent blockhash, signatures, account loading |
+| Parallelism exposed by workload | Independent validation, but one canonical block transition | Distinct accounts reduce nonce conflict; block execution and state remain shared | Disjoint writable account sets are schedulable in parallel |
+| Strong completion notion | Application-selected depth on best-work chain | Consensus finality checkpoint for containing history | Named RPC/consensus commitment and cluster finality policy |
+| Main duplicate/conflict guard | UTXO can be spent once | Sender nonce orders transactions | Signatures, recent blockhash/nonces, and writable-account state |
+| Scale cost paid by verifiers | Bytes, scripts, UTXO/state growth, bandwidth | Gas execution, state access/growth, bytes, attestations | Signatures, account locks, compute, high-throughput networking/storage |
+
+The trilemma appears in the resources required to reproduce and defend the result. Bitcoin spends latency and limited block capacity to keep validation rules and hardware demands conservative. Ethereum supports general synchronous state and economic finality while budgeting gas and validator load. Solana exposes parallel account access and uses higher-performance validator pipelines to reduce latency and increase throughput. None "solves" the workload without cost. The costs move among hardware, bandwidth, state, consensus timing, application design and the population able to verify independently.
+
+
 ## The Trilemma Is a Constraint, Not a Theorem
 
 The blockchain trilemma is a design heuristic, not a mathematical impossibility result with one universal definition. A protocol can improve all three dimensions through better cryptography, networking, or hardware. The constraint appears when it scales one dimension by increasing the burden on another.
@@ -267,3 +315,10 @@ A defensible comparison names workload, completion boundary, validator burden, d
 [^3]: Wood, Gavin. "Ethereum: A Secure Decentralised Generalised Transaction Ledger." *Ethereum Yellow Paper* (2014). Available at: <https://ethereum.github.io/yellowpaper/paper.pdf>.
 [^4]: Nakamoto, Satoshi. "Bitcoin: A Peer-to-Peer Electronic Cash System" (2008). Available at: <https://bitcoin.org/bitcoin.pdf>.
 [^12]: Brewer, Eric A. "Towards Robust Distributed Systems." *PODC Keynote* (2000). Available at: <https://doi.org/10.1145/343477.343502>.
+
+[^5]: Bitcoin Developer Reference. "Transactions." <https://developer.bitcoin.org/reference/transactions.html>.
+[^6]: Ethereum.org. "Transactions." <https://ethereum.org/developers/docs/transactions/>.
+[^7]: Ethereum.org. "Ethereum gas and fees." <https://ethereum.org/developers/docs/gas/>.
+[^8]: Ethereum.org. "Gasper." <https://ethereum.org/developers/docs/consensus-mechanisms/pos/gasper/>.
+[^9]: Solana Documentation. "Transactions." <https://solana.com/docs/core/transactions>.
+[^10]: Solana Documentation. "Transaction processing pipeline." <https://solana.com/docs/core/transactions/transaction-pipeline>.
