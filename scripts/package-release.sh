@@ -37,8 +37,10 @@ pdf="book/blockchain-scalability-book.pdf"
 pages=$(pdfinfo "$pdf" | awk '/^Pages:/{print $2}')
 page_size=$(pdfinfo "$pdf" | awk -F: '/^Page size:/{sub(/^[[:space:]]*/, "", $2); print $2}')
 replacement_characters=$(pdftotext "$pdf" - | grep -o $'�' | wc -l || true)
+blank_pages=$(pdftotext "$pdf" - | awk -v RS='\f' '{ page=$0; gsub(/[[:space:]]/, "", page); if (length(page)==0) count++ } END { print count+0 }')
 [[ "$pages" =~ ^[1-9][0-9]*$ ]] || { echo "could not verify PDF page count" >&2; exit 1; }
 [[ "$replacement_characters" -eq 0 ]] || { echo "PDF contains replacement characters" >&2; exit 1; }
+[[ "$blank_pages" -eq 0 ]] || { echo "PDF contains $blank_pages blank pages" >&2; exit 1; }
 cp "$pdf" "$out/blockchain-scalability-book-v${version}.pdf"
 tar -czf "$out/blockchain-scalability-book-v${version}-html.tar.gz" -C book --exclude='blockchain-scalability-book.pdf' .
 
@@ -54,7 +56,8 @@ cat > "$out/manifest.json" <<JSON
   "browser_version": "$browser_version",
   "pdf_pages": $pages,
   "pdf_page_size": "$page_size",
-  "pdf_replacement_characters": $replacement_characters
+  "pdf_replacement_characters": $replacement_characters,
+  "pdf_blank_pages": $blank_pages
 }
 JSON
 (
