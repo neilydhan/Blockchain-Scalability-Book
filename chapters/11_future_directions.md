@@ -340,6 +340,85 @@ The committee can withhold shares and halt execution. If members decrypt early, 
 
 Encryption hides content but not all metadata. Sender, ciphertext size, timing, and fee may still reveal strategy. It also complicates simulation and fee estimation because builders cannot inspect execution before ordering.
 
+## **Threshold-Encrypted Mempool Protocol Trace**
+
+A threshold-encrypted mempool hides transaction contents until an ordering point, reducing opportunities to copy, front-run, or selectively exclude transactions based on their payload. It does not hide arrival metadata, eliminate all ordering power, or guarantee that decryption will be live.
+
+Let an epoch committee hold shares of a decryption key. Users encrypt transactions under public key `PK_e` and submit ciphertext envelopes:
+
+```text
+EncryptedTransaction {
+  chain_id,
+  epoch,
+  ciphertext,
+  commitment,
+  sender_fee_cap,
+  expiry_height,
+  encryption_version
+}
+```
+
+The outer fields let nodes reject wrong-network, stale, oversized, or underfunded envelopes before decryption. They must not reveal enough application detail to recreate the MEV problem.
+
+### Commit, order, decrypt, execute
+
+1. The user builds and signs an ordinary transaction, pads it under a canonical rule, and encrypts it to `PK_e`.
+2. Gossip nodes validate envelope bounds and propagate the ciphertext.
+3. Consensus orders ciphertext commitments without seeing plaintext.
+4. After the ordering boundary is final enough under policy, committee members publish decryption shares.
+5. Nodes verify shares, combine the threshold, decrypt the payload, check the transaction signature, and execute in committed order.
+6. Invalid plaintext consumes the sender's charged envelope allowance and cannot reorder later valid transactions.
+
+Decryption shares must bind chain, epoch, ciphertext commitment, and ordering boundary. Otherwise a share from one epoch or fork may help decrypt an unintended transaction.
+
+### Key generation and rotation
+
+Distributed key generation should produce `PK_e` without one party learning the full secret. The protocol must authenticate participants, complaints, exclusions, and the final participant set. A transcript that completes with different public keys at honest nodes is a consensus failure.
+
+Rotate keys at a defined epoch. Accepting old-key ciphertext too close to rotation can strand it; accepting new-key ciphertext early may leak or misroute it. Publish an overlap policy with explicit last-submission, ordering, share-release, and key-destruction heights.
+
+Back up availability, not the assembled private key. Committee members need recoverable shares or secure replacement rules, but reconstructing a central master secret removes the threshold assumption.
+
+### Early decryption and collusion
+
+If the threshold is `t` of `n`, any coalition with `t` valid shares can decrypt before ordering. Choose committee composition and threshold against the actual collusion and compromise model, including common cloud, operator, and jurisdiction failures.
+
+Slashing can deter publicly provable early share release, but private collusion may leave no evidence. Threshold encryption shifts trust from the sequencer to a decryption committee unless the committee is broad, rotating, and difficult to corrupt before the transaction expires.
+
+### Withholding and liveness
+
+Fewer than `t` timely shares prevent execution. The protocol needs a deadline and a fallback that does not let strategic members choose which transactions become visible.
+
+Possible policies include extending the share window, rotating in standby members, falling back to public plaintext after user-authorized expiry, or skipping the entire encrypted batch. Selective fallback is dangerous: revealing only profitable ciphertexts gives the fallback controller ordering information.
+
+Suppose a 16-member committee requires 11 shares. The system tolerates five unavailable members, but six withholding members halt decryption. Correlated failure analysis should ask whether six members share one provider, client implementation, or operator.
+
+### Invalid-ciphertext denial of service
+
+An attacker can submit ciphertext that passes cheap envelope checks but decrypts to malformed or computationally expensive input. Charge for bytes and reserved execution before inclusion, cap plaintext expansion, and make decryption and decoding costs predictable.
+
+Padding hides transaction length classes but raises bandwidth. If payloads are padded into 1, 4, 16, and 64 kB buckets, a 4.1 kB transaction consumes 16 kB, nearly four times its plaintext size. Report privacy gain and capacity loss together.
+
+### Censorship before decryption
+
+Encryption hides content, not sender IP, timing, fee cap, ciphertext size, or submission endpoint. A sequencer can censor all traffic from a user or private relay and can delay ciphertexts until expiry. Redundant public ingress, inclusion receipts, proposer inclusion rules, and measured inclusion latency remain necessary.
+
+After decryption, a block producer must not drop a valid but unfavorable transaction while retaining later ones. The committed-order rule should make such omission objectively invalid or require an explicit batch-abort rule whose cost cannot be targeted cheaply.
+
+### Reorganizations
+
+Releasing shares after a weak ordering signal can expose plaintext before the order is stable. A reorganization then lets a builder place transactions around already revealed content. Waiting for stronger finality reduces this risk but adds latency.
+
+Specify the release boundary and test reorganization depths around it. Shares for an orphaned commitment should not authorize another fork. If plaintext is revealed, the system cannot cryptographically make it secret again; recovery is about fair re-inclusion, not confidentiality restoration.
+
+### Production tests
+
+Test malformed proofs of share, duplicate shares, equivocation, wrong epoch and fork domain, committee changes, delayed finality, fewer than threshold shares, early threshold collusion, invalid plaintext, maximum padding, ciphertext flooding, and a reorganization immediately after release.
+
+Expose ciphertext queue age, time to ordering, shares observed by member, threshold completion time, invalid-decryption rate, abort reason, fallback use, and plaintext-to-ciphertext expansion. Rehearse losing the largest correlated member group.
+
+Threshold encryption is ready only when transaction order is fixed before contents become available under the stated adversary, decryption completes under realistic correlated failures, and abort or fallback cannot be selectively used to restore the very MEV advantage encryption was meant to reduce.
+
 ## **Cross-Domain MEV**
 
 A transaction on one rollup can change an asset price used on another. Whoever observes or controls message timing may arbitrage the difference. Shared sequencing can coordinate order, but settlement delays and independent reorganization rules remain.
