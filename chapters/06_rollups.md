@@ -287,6 +287,128 @@ Measure proofs per unit time, time to first proof, peak memory, accelerator coun
 
 Recursive proof systems split a block into segments, prove segments in parallel, and aggregate them. Segmentation shortens the critical path but adds recursive overhead. A scheduler balances segment size, available hardware, and settlement deadline.
 
+## **Prover Market Scheduling and Failure Recovery**
+
+A validity rollup may use several independent provers competing or taking assignments. Competition can reduce latency and operator dependence, but the market must preserve deterministic inputs, proof compatibility, confidentiality, and a safe response when every prover misses the deadline.
+
+### Proving job
+
+A scheduler should identify one immutable unit of work:
+
+```text
+ProvingJob {
+  chain_id,
+  batch_range,
+  pre_state_root,
+  post_state_root,
+  data_commitment,
+  execution_program_hash,
+  circuit_version,
+  public_input_hash,
+  proof_system,
+  deadline,
+  maximum_payment,
+  job_nonce
+}
+```
+
+Every bidder prices the same job. If the program hash, circuit, or public inputs can change after assignment, price comparison is meaningless and a proof may verify the wrong transition.
+
+Large batches may be split into segment proofs and recursively aggregated. The dependency graph must bind segment order and boundaries so two individually valid segments cannot omit or overlap a transaction range.
+
+### Assignment models
+
+A market can use:
+
+- **open race:** first valid proof earns payment;
+- **auction:** a prover commits to price and deadline;
+- **round robin:** registered provers receive predictable assignments;
+- **redundant assignment:** several provers work in parallel;
+- **primary/standby:** one starts immediately and backups start after checkpoints.
+
+An open race minimizes scheduling but wastes compute. A single winner auction is efficient under normal operation but creates deadline risk. Redundant assignment costs more but may be rational for high-value or time-critical batches.
+
+### Bid and bond
+
+A bid should bind job hash, price, delivery deadline, prover identity, software or capability class, and bond. The bond penalizes objectively provable non-delivery or malformed submission only under rules that distinguish prover failure from unavailable inputs or settlement outage.
+
+Do not slash a prover because the scheduler sent inconsistent data. Publish receipt hashes for assigned inputs and make cancellation states explicit. A dispute needs evidence that both parties can verify.
+
+Suppose a proof pays $180, expected compute and energy cost is $120, and a missed deadline loses a $300 bond. If the prover estimates a 5 percent miss probability:
+
+```text
+expected profit = 180 - 120 - (0.05 × 300) = $45
+```
+
+At a 25 percent miss probability, expected profit becomes `180 - 120 - 75 = -$15`; a rational prover should decline or bid higher. Markets that hide deadline risk attract unreliable bids or centralize around operators able to absorb losses.
+
+### Input availability
+
+A prover needs batch data, prior state or witnesses, execution trace, program artifacts, and parameters. The scheduler should provide content-addressed inputs from redundant stores. A valid commitment without retrievable bytes cannot produce a proof.
+
+Measure time to acquire inputs separately from proving time. If a 40 GB witness takes 12 minutes to download and 8 minutes to prove, optimizing the circuit by 20 percent saves less than improving distribution.
+
+Confidential transactions or private application state may require trusted execution environments, encryption, or restricted assignment. State what the prover learns. A proof hides witness details from the verifier only if the proof system is zero knowledge; sending the witness to a prover is a separate disclosure.
+
+### Checkpoints and resumability
+
+Long proving jobs should emit authenticated progress checkpoints when the proof system permits. A checkpoint is useful only if another compatible worker can resume it or if it proves that an assignment reached a payment milestone.
+
+Bind checkpoints to the exact job, prover software format, and stage. Treat deserialization as hostile input. Version formats, cap sizes, and never let a resume artifact change public inputs.
+
+If jobs cannot migrate, call checkpoints telemetry rather than failover. A backup must restart from inputs, and deadline planning must include that cost.
+
+### Proof verification and payment
+
+Payment follows successful verification of the proof against the registered program and public inputs. A scheduler's "complete" status is insufficient. Submitters must not be able to replay one proof for several jobs or claim both segment and aggregate rewards without policy.
+
+Record proof hash, verifier version, job nonce, submitter, verification result, settlement transaction, and payment. If verification is performed off-chain before on-chain submission, the on-chain verifier remains authoritative.
+
+### Capacity planning
+
+Let batches arrive every 10 seconds, while one prover needs 40 seconds per batch. Ignoring variance, at least four equally capable provers are needed to match arrival rate:
+
+```text
+40 s proving / 10 s arrival = 4 concurrent provers
+```
+
+At 70 percent target utilization for bursts and failures:
+
+```text
+4 / 0.70 ≈ 5.72
+```
+
+Provision at least six equivalent prover slots. Heterogeneous hardware, aggregation bottlenecks, witness generation, and queue variance require a measured model rather than rounding this formula into a guarantee.
+
+Track arrival rate, service rate, queue age, p50/p95/p99 proof latency, failure rate by stage, GPU memory, host bandwidth, and aggregation depth. A queue can be stable on average while deadline misses cluster during large or adversarial batches.
+
+### Market concentration
+
+Count effective capacity, wins, payments, hardware supply chain, cloud regions, codebases, and ownership. Ten registered provers renting the same scarce accelerator and using the same prover implementation can fail together.
+
+Avoid reputation rules that permanently favor incumbents. Publish qualification tests, permit new provers to shadow or prove historical jobs, and cap the damage a new prover can cause without preventing entry. Verification protects correctness; scheduling policy mainly protects latency and resources.
+
+### Missed deadlines
+
+When the primary misses:
+
+1. keep the prior accepted state safe;
+2. expose whether failure is input, witness, compute, aggregation, verification, or settlement;
+3. assign backups using the same immutable job;
+4. extend publication only under a bounded protocol rule;
+5. stop accepting an unbounded amount of new unproven state;
+6. activate the documented escape path if the proof window cannot recover.
+
+Continuing sequencing indefinitely while proofs lag creates a growing rollback and withdrawal boundary. Define a maximum unproven batch count, elapsed time, or value at risk.
+
+### Adversarial tests
+
+Submit malformed bids, duplicate job claims, stale circuit versions, correct proofs for wrong roots, oversized checkpoints, partial input stores, slow proofs that hold assignments, and valid proofs just after deadline. Kill the primary at every proving and upload boundary. Remove the dominant cloud region and common GPU model.
+
+Assert one payment per accepted job, no state acceptance without a valid registered proof, deterministic reassignment, bounded queue growth, correct bond outcomes, and user exit when the market cannot recover.
+
+A prover market decentralizes liveness only when jobs and artifacts are portable, verification remains permissionless, capacity survives correlated loss, and missed proofs stop the unsafe frontier before they endanger already accepted user state.
+
 ## **Sequencer Architecture**
 
 A sequencer commonly has an RPC/mempool layer, admission controls, ordering engine, execution engine, state database, block builder, and batch publisher. High availability can use an active-passive replica or a consensus group.
