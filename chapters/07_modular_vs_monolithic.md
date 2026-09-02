@@ -8,6 +8,43 @@ Modularity is not automatically more decentralized or more secure. It creates ex
 
 ---
 
+## **From One Machine to a Stack of Services**
+
+A **monolithic blockchain** asks one validator network to order transactions, execute them, agree on the result, and make block data available. "Monolithic" does not mean badly designed; it means the core jobs share one protocol and security boundary.
+
+A **modular blockchain stack** separates some jobs into different protocols. A rollup may execute transactions, Ethereum may settle its state claims, and a data-availability network may publish the batch bytes. Separation lets each layer specialize, but the user now depends on the interfaces between them.
+
+Think of sending a parcel. One company can collect, transport, clear, and deliver it end to end. A modular route may use a storefront, international carrier, customs broker, and local courier. Specialization can lower cost, but tracking "shipped" is ambiguous unless it names which service completed which step.
+
+### **Four jobs, four questions**
+
+- **Execution:** Given an ordered transaction and prior state, what new state results?
+- **Settlement:** Which claimed result is accepted, and where can a dispute or proof be enforced?
+- **Consensus:** Which ordered data history is canonical?
+- **Data availability:** Can participants obtain the data needed to verify or reconstruct that history?
+
+Consensus can agree on a data commitment without understanding an application's transactions. Settlement can accept a proof without storing every historical query. Execution can calculate a result before another layer considers it final.
+
+### **Sovereign and settled rollups**
+
+A **settled rollup** uses a settlement contract to decide which state root is valid. Its bridge can release assets according to that contract.
+
+A **sovereign rollup** publishes ordered data but its own nodes interpret the rules and choose upgrades or forks. The DA layer establishes what data was ordered, not which software version the rollup community should follow. A bridge to a sovereign rollup must therefore decide how it identifies the canonical fork.
+
+The word **sovereign** describes rule choice, not automatic safety. Users still need data, honest verification, and an explicit bridge or light-client policy.
+
+### **Messages between layers**
+
+Layers communicate through commitments and proofs. A message envelope usually binds source and destination, sender and recipient, payload, nonce, timeout, and protocol version. **Domain separation** prevents valid evidence from one chain or channel from being replayed in another.
+
+A **relayer** transports evidence. When verification is complete, the relayer need not be trusted for correctness: it can delay delivery, but it cannot change a proven amount or recipient. Permissionless relaying means another party can submit the same evidence.
+
+### **End-to-end security**
+
+Security does not add like independent features. A valid execution proof cannot rescue unavailable data; final data does not rescue a bridge with an upgrade key that can mint assets; correct layers do not rescue a decoder that interprets their interface differently.
+
+Use a chain of custody: name the evidence emitted by one layer, the verifier at the next layer, the finality required, and the recovery if evidence stops. The weakest accepted transition bounds the user outcome.
+
 ## **The Monolithic Model**
 
 In a monolithic chain, validators:
