@@ -266,6 +266,100 @@ Light clients need a chain of authenticated set changes. Skipping directly from 
 
 Long-range attacks occur when old validators, whose stake is no longer slashable, sign an alternative history. Weak subjectivity addresses this by requiring clients to obtain a recent trusted checkpoint within a defined period. This is a social/bootstrap assumption distinct from short-range BFT safety.
 
+## **Slashing Safety and Validator Key Operations**
+
+Slashing penalizes objectively provable validator behavior such as signing incompatible blocks. It strengthens incentives only when keys, domains, evidence, and appeal/recovery rules are correct. Operational mistakes can trigger the same signature evidence as malicious behavior.
+
+### Signing domain
+
+Every consensus signature binds:
+
+```text
+SigningDomain {
+  chain_id,
+  genesis_or_fork_id,
+  protocol_version,
+  epoch,
+  view_or_slot,
+  message_type,
+  payload_hash
+}
+```
+
+A vote, proposal, timeout, and aggregate have distinct message types. Reusing a signature across testnet/mainnet, old/new forks, or proposal/vote contexts must fail.
+
+### Slashing protection database
+
+Before signing, a validator records enough history to reject a double vote, surround vote, conflicting proposal, or other prohibited pair under protocol rules. Persist the record before releasing the signature.
+
+A remote signer must enforce protection itself; relying only on the validator client allows two clients to request conflicts. The database needs atomic writes, authenticated backups, versioning, and a merge procedure when migrating hosts.
+
+### Active-active danger
+
+Running two validators with one key for availability can cause equivocation during network partitions. A load balancer that sends requests to both is not safe redundancy.
+
+Use active-passive fencing, one remote signer, consensus-aware replicas, or a protocol that explicitly supports redundant shares. Promotion verifies that the old signer cannot continue and imports the latest protection state.
+
+### Key hierarchy
+
+Separate withdrawal, governance, consensus-signing, fee-recipient, and operator API keys. Compromise has different effects. A consensus key may equivocate without being able to withdraw stake; a withdrawal key may steal funds without voting.
+
+Keep online signing keys in hardened signers or hardware appropriate to latency needs. Backup and rotate under a documented ceremony. Never test recovery for the first time during an outage.
+
+### Threshold signing
+
+A threshold validator splits signing authority among members. A signature requires `t` shares, reducing one-device compromise risk. It adds network latency, share availability, distributed key generation, and membership operations.
+
+The threshold group represents one protocol validator, not `t` independent consensus votes. Slashing protection must be consistent across share signers so two subsets cannot sign conflicts.
+
+If `t=3` of `5`, any three shares sign. Two disjoint groups of three cannot exist, but groups `{A,B,C}` and `{C,D,E}` overlap only at C. If C signs both because its local state is inconsistent, conflicting signatures can form. Shared or cryptographically enforced signing state remains necessary.
+
+### Evidence lifecycle
+
+Slashing evidence includes both signed messages, signer identity, domain, and proof that they violate a rule. Nodes verify evidence before gossip and bound storage to the accountable window.
+
+Duplicate submission must not slash twice. Evidence from expired accountability windows, old forks, or wrong validator sets is rejected. Retain data long enough for network delays and censorship recovery.
+
+### False positives and software faults
+
+A slashing condition should be objective from signed bytes. Monitoring can be wrong, but the on-chain verifier must not slash from an unauthenticated alert.
+
+A common client bug can make many validators sign invalid or conflicting messages. The protocol may still slash according to rules, but governance intervention changes economic expectations. Document extraordinary authority rather than assuming it will or will not act.
+
+### Validator migration
+
+To move a validator:
+
+1. stop and fence the old signer;
+2. export and verify slashing-protection state;
+3. confirm the last signed slot/view through independent logs;
+4. import atomically on the new signer;
+5. test a no-sign dry run and chain/domain configuration;
+6. enable one active signing path;
+7. monitor duplicate-key and stale-view requests.
+
+If the old host cannot be proven off, wait through a safe inactivity window or rotate according to protocol. Missed rewards are cheaper than equivocation.
+
+### Clock and rollback
+
+A restored virtual-machine snapshot can roll back the protection database while the chain advances. Exclude active signers from generic snapshot rollback, or make the signer consult a monotonic external store.
+
+Wrong clocks can request signatures for stale or future slots. The signing domain prevents cross-slot replay, but repeated bad requests can exhaust resources or miss duties. Monitor time drift through independent sources.
+
+### Worked failure domain
+
+An operator runs 100 validator keys on two hosts, each with a copy of all keys. It appears redundant, but one software fault affects 100 keys and active-active failover can double-sign all of them.
+
+Splitting keys 50/50 lowers the immediate correlated set; using distinct clients, signers, regions, and staged upgrades lowers it further. Redundancy should reduce common-mode loss, not multiply signing authority.
+
+### Disaster drill
+
+Test signer outage, database corruption, restore from backup, failed fencing, network partition during promotion, wrong chain ID, epoch upgrade, threshold-member loss, and evidence submission.
+
+Assert no conflicting signatures, bounded missed duties, complete evidence verification, one penalty per violation, recoverable protection state, and separation of withdrawal authority.
+
+Slashing supports consensus security when signing is treated as an irreversible state transition. Key custody, persistence, fencing, migration, and evidence handling are protocol operations, not generic server administration.
+
 ## **Slashing and Equivocation Evidence**
 
 A validator equivocates by signing conflicting messages that protocol rules prohibit, such as two blocks at one height or incompatible votes in one view. Slashing evidence contains both signatures and enough context to verify conflict.
