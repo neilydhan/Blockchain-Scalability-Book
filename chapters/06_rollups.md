@@ -1031,6 +1031,121 @@ Test circuit boundaries: zero transactions, maximum rows, one step over capacity
 
 A proof system is production-ready when the statement is complete, execution and circuit semantics agree, every version is pinned, queues remain stable under realistic distributions, and independent parties can reproduce verification. Succinct proof size alone establishes none of those properties.
 
+## **Cross-Rollup Withdrawal and Liquidity Operations**
+
+A user moving assets between rollups may use canonical withdrawals, third-party liquidity, or a bridge protocol. Fast liquidity changes who fronts the waiting period; it does not make settlement finality instantaneous.
+
+### Canonical route
+
+For rollups settled on the same L1:
+
+1. burn or lock the asset on source rollup A;
+2. include the withdrawal message in A's state;
+3. publish data and accept A's proof or challenge result;
+4. finalize the containing L1 state;
+5. consume the message through a bridge or destination inbox;
+6. mint or release on rollup B under its own inclusion and finality rules.
+
+The source message binds both rollup domains, asset, amount, sender, recipient, nonce, expiry, and version. A proof valid for A's bridge must not be replayable into B's other deployments.
+
+### Liquidity provider route
+
+A liquidity provider (LP) pays the user on B before the canonical route completes, then claims the delayed asset on A or L1. The LP prices finality delay, reorganization, proof, bridge, inventory, and fee risk.
+
+The user exchanges waiting risk for LP and contract risk. Require a signed quote with exact output, destination, expiry, fee, and refund conditions. The LP's payment must reach the intended recipient with the required finality before its claim becomes releasable.
+
+### Inventory imbalance
+
+Flow may be mostly A-to-B, depleting the LP's B inventory while accumulating claims on A. Rebalancing uses the canonical bridge, another LP, market trades, or net settlement.
+
+Track available, reserved, paid-pending-claim, claimable, and disputed inventory per domain. A displayed balance that includes pending claims can overpromise liquidity.
+
+### Worked utilization
+
+An LP has 1,000 units available on B and wants 20 percent reserve. It can quote at most 800 units. After accepting three pending transfers of 200 each:
+
+```text
+available for new quotes = 800 - (3 × 200) = 200 units
+```
+
+If one user cancels before payment under the quote rule, release that reservation atomically. If payment was made, cancellation cannot restore inventory without a refund path.
+
+### Quote race and reservation
+
+Two users may accept quotes concurrently. Reserve destination inventory before returning a firm acceptance, with a short expiry and unique quote ID. Database reservation and on-chain payment need reconciliation after crashes.
+
+Idempotency keys prevent paying twice when the user or relayer retries. A payment transaction that times out at the RPC may still land; check canonical chain state before resubmission.
+
+### Price and fee risk
+
+Bridge fees and gas can change while a quote is open. Bind a maximum input, minimum output, and quote expiry. The LP bears movement inside that promise unless the quote states an objective adjustment.
+
+For volatile assets, destination output may be fixed in units or value. An oracle-based value promise adds oracle identity, freshness, spread, and manipulation risk.
+
+### Reorganizations
+
+If the LP pays after weak source confirmation and source state reorganizes, its claim may disappear. Define source evidence threshold by asset value and cap. Fast routes can require more confirmations for large transfers.
+
+A destination reorganization can remove the user's payment after the LP claims input if claim verification accepts weak evidence. Bind claim release to destination finality, or use collateral that covers reorg risk.
+
+### Partial and failed execution
+
+Destination tokens may charge transfer fees or callbacks may fail. Verify effective delivery under supported token semantics. If the LP sent less than the quote after fees, the claim should not receive full input.
+
+A destination call can be optional after asset delivery. Separate "asset received" from "application call succeeded" so one revert does not strand or double-send funds.
+
+### Netting
+
+Multiple opposite flows can be netted to reduce canonical bridge transactions. Netting saves fees but creates a batch obligation. Bind included transfer IDs, gross amounts, fees, net positions, and settlement boundary.
+
+A failed net settlement must not erase individual user claims. Preserve a ledger that reconstructs each obligation and prevents one transfer entering two nets.
+
+### Insolvency and run risk
+
+An LP can appear liquid while pending claims are invalid, slow, or pledged elsewhere. Publish verifiable on-chain inventory and liabilities where possible. Proof of assets without obligations is insufficient.
+
+Rate limits cap new exposure when claim age, dispute rate, or utilization rises. A circuit breaker can stop quotes while letting users with valid completed payments submit claims or refunds.
+
+### User statuses
+
+Expose:
+
+- quote reserved;
+- source transfer observed but not final;
+- destination payment submitted;
+- destination payment final;
+- LP claim pending;
+- transfer complete;
+- refund available;
+- disputed with a named boundary.
+
+"Bridged" is too vague for a multi-step fast route.
+
+### Reconciliation
+
+Per transfer:
+
+```text
+user input
+= LP claim + protocol fee + refund
+
+quoted destination output
+= delivered output + explicit shortfall/refund
+```
+
+Across the LP:
+
+```text
+opening inventory + inflows - finalized payments
+= available + reserved + explained adjustments
+```
+
+### Production tests
+
+Test concurrent quote acceptance, reservation expiry, RPC ambiguity, duplicate relays, source and destination reorgs, fee tokens, transfer-fee tokens, failed calls, inventory exhaustion, invalid claims, netting failure, operator crash, and LP insolvency.
+
+Fast cross-rollup liquidity is trustworthy when speed comes from transparent inventory and bounded risk, every claim is linked to final delivery, and users retain a canonical or refundable path when the LP disappears.
+
 ## **Rollup Fee Market and Batch-Packing Trace**
 
 A rollup fee pays for more than execution. The operator must recover local execution and storage cost, the cost of publishing compressed data, settlement transactions, proof or dispute infrastructure, and a risk margin for volatile base-layer prices.
