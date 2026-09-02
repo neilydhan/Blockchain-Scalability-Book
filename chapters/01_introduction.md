@@ -102,6 +102,57 @@ Scaling designs respond differently. A larger L1 block admits more shared activi
 
 The right design depends on whether the application needs global synchronous state, how valuable its assets are, what latency users need, and how they recover from operator failure.
 
+## **Named Case Study: From CryptoKitties Congestion to a Production Rollup Workload**
+
+**Deployment labels: the CryptoKitties episode is historical production; Arbitrum One is a current production rollup.** Together they show that scaling is not merely increasing one transactions-per-second number. The 2017 episode exposed a capacity knee on Ethereum's shared execution layer. A modern rollup moves much application execution into another pipeline, but adds sequencing, batch publication, proof and bridge boundaries that users must understand.
+
+### **Ethereum in December 2017: one application meets shared blockspace**
+
+CryptoKitties let users buy, breed and transfer unique on-chain cats. Breeding was not one cheap database update. The application's own incident post explained that `giveBirth()` combined genetic data in a contract call using more than 250,000 gas, over ten times the 21,000 gas of a simple ETH transfer. When demand surged, the team said Ethereum was "completely full," raised its suggested gas price to 25 gwei, and increased the birthing fee from 0.002 ETH to 0.015 ETH so independent callers would again have an incentive to execute births.[^4]
+
+Trace one congested birth. A user submitted the breeding transaction and waited through the gestation rule. A later `giveBirth()` call had to enter Ethereum's public transaction pool and compete for block gas with unrelated payments, token sales and contract calls. Miners selected transactions partly by fee. A previously reasonable gas price could become uncompetitive while the transaction waited. If the user's account then sent a higher-nonce transaction, that later work could wait behind the underpriced nonce.
+
+The application had also created a time-sensitive external incentive. Anyone could call `giveBirth()` and receive the birthing fee. Under normal fees, community-operated bots performed this work. When gas cost exceeded the fixed reward, those operators stopped and the CryptoKitties team paid the difference itself. Congestion therefore changed more than latency: it changed who could economically perform a safety- and fairness-related application action.
+
+MetaMask reported user confusion over long-pending and failed transactions, expanded infrastructure capacity, and added a way to resubmit with a higher gas price.[^5] Consensys's retrospective describes rising pending queues, overloaded read infrastructure, fees that could exceed the item being purchased, and application changes that moved nonessential activity away from on-chain transactions.[^6] These are observable consequences of offered load exceeding several capacities at once: block gas, fee estimation, mempool management, RPC service, user nonce management, and application support.
+
+Failure path: the user saw no completion and resent without understanding nonce replacement. The wallet could create another pending transaction rather than more capacity. An underpriced earlier nonce could hold later actions. A centralized birth bot could keep the game moving but change the application's operational trust. The correct short-term tools were status, fee replacement, queue visibility and reducing unnecessary writes. The long-term lesson was to separate which actions require global consensus from browsing, offers, indexing and other work that can remain off-chain.
+
+### **Arbitrum One: the same demand enters a layered pipeline**
+
+Now place an NFT marketplace workload on Arbitrum One. Users submit transfers, listings and contract calls to the Arbitrum sequencer. Nitro executes EVM-compatible transactions and the sequencer feed gives applications fast soft confirmations. A batch poster compresses ordered transactions and publishes them to Ethereum through blobs or calldata. Validators reproduce execution, state assertions are governed by the BoLD dispute protocol, and canonical withdrawals wait for the accepted state path described in Chapter 6.[^7][^8]
+
+At the user interface, this feels faster because the application need not wait for every individual call to win space in an Ethereum L1 block. Many L2 transactions share one compressed data-publication cost. But the production workload now consumes a resource vector:
+
+```text
+sequencer admission and execution
++ L2 state reads and writes
++ compressed bytes in an Ethereum batch
++ blob/calldata publication and settlement gas
++ validator replay and assertion/dispute capacity
++ bridge and withdrawal processing
+```
+
+Congestion can move rather than disappear. A popular mint can saturate sequencer execution or create one hot contract state. Ethereum blob prices can raise the shared publication component. A batch backlog can make soft confirmations diverge in age from L1-published data. A sequencer outage can stop the fast path, after which users rely on the delayed inbox and pay L1 cost. A proof or assertion dispute can delay canonical withdrawals even while the L2 interface remains responsive.
+
+The production dashboard should therefore report at least sequencer acceptance latency, L2 inclusion, oldest unpublished batch age, data-publication cost and bytes, assertion status, forced-inclusion queue, withdrawal age, and Ethereum settlement finality. L2BEAT's Arbitrum One page is an example of an independent view that separates activity, data posted, liveness, state validation, operator, sequencing, withdrawals, permissions and upgrades rather than compressing the system into TPS.[^9]
+
+Failure path: the sequencer accepts a user's purchase and then stops before publication. The user has a soft receipt but no canonical Ethereum batch evidence yet. The wallet should say this and offer the delayed-inbox route when warranted, not call the purchase settled. If Ethereum blobspace becomes expensive, the rollup can amortize cost across a batch, but users may still see higher L2 data fees or delayed posting. If a disputed assertion is false, BoLD needs an effective honest validator with data and the ability to act. If an emergency upgrade replaces critical code, ordinary proof assumptions do not answer whether governance used that power safely.
+
+### **What actually improved**
+
+| Question | 2017 Ethereum application | Production rollup application |
+|---|---|---|
+| User's fast path | Public L1 mempool and miner inclusion | Rollup sequencer and L2 execution |
+| Shared scarce resource | L1 block gas for each contract call | L2 execution plus compressed shared L1 data and settlement |
+| Early acknowledgement | Mempool visibility | Sequencer receipt or L2 block |
+| Stronger completion | Included history under Ethereum confirmation policy | Batch published, assertion accepted, Ethereum finality; withdrawal has another bridge boundary |
+| Congestion symptom | Pending nonces, gas bidding, RPC load, unaffordable application calls | Sequencer queue, hot L2 state, publication backlog, blob price, withdrawal delay |
+| Escape/recovery | Replace or wait for L1 transaction; application redesign | Forced L1 inbox, independent replay/challenge, canonical bridge path, plus governance controls |
+
+The rollup increases useful capacity by compressing data and avoiding repeated L1 execution. It also creates more completion states. That is an acceptable engineering trade when each state is measurable and recovery is real. The wrong comparison takes CryptoKitties-era L1 transactions per second and places it beside sequencer acknowledgements. The correct comparison fixes the contract workload, reports hardware and data cost, and follows each transaction to the security boundary the application actually needs.
+
+
 ## **From Database Benchmarks to Blockchain Benchmarks**
 
 Database benchmarks show why a workload must be specified. TPC-C, analytical queries, and key-value workloads exercise different resources. A result becomes meaningful through a transaction mix, dataset, concurrency, duration, hardware, tuning policy, and latency objective.
@@ -341,3 +392,10 @@ The rest of the book studies ways to divide or compress that work: sharding at L
 [^1]: Hill, Mark D. "What is Scalability?" *ACM SIGARCH Computer Architecture News* 18, no. 4 (1990). <https://minds.wisconsin.edu/bitstream/handle/1793/9676/file_1.pdf?sequence=1&isAllowed=y>.
 [^2]: Dinh, Tien Tuan Anh, et al. "BLOCKBENCH: A Framework for Analyzing Private Blockchains." SIGMOD 2017. <https://www.comp.nus.edu.sg/~ooibc/blockbench.pdf>.
 [^3]: Konstantopoulos, Georgios. "Reth's path to 1 gigagas per second, and beyond." Paradigm, 2024. <https://www.paradigm.xyz/writing/reth-perf>.
+
+[^4]: CryptoKitties. "CryptoKitties birthing fees increases in order to accommodate demand." <https://medium.com/cryptokitties/cryptokitties-birthing-fees-increases-in-order-to-accommodate-demand-acc314fcadf5>.
+[^5]: MetaMask. "CryptoKitty Performance Update." <https://medium.com/metamask/metamask-cryptokitty-performance-update-83d851af0147>.
+[^6]: Consensys. "The Inside Story of the CryptoKitties Congestion Crisis." <https://consensys.io/blog/the-inside-story-of-the-cryptokitties-congestion-crisis>.
+[^7]: Arbitrum Docs. "Transaction lifecycle on Arbitrum." <https://docs.arbitrum.io/how-arbitrum-works/deep-dives/transaction-lifecycle>.
+[^8]: Arbitrum Docs. "The Sequencer and Censorship Resistance." <https://docs.arbitrum.io/how-arbitrum-works/deep-dives/sequencer>.
+[^9]: L2BEAT. "Arbitrum One." <https://l2beat.com/layer2s/projects/arbitrum>.
