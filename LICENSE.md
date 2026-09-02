@@ -19,7 +19,7 @@ https://creativecommons.org/licenses/by-sa/4.0/legalcode
 
 Preferred attribution:
 
-> Neil Han, *Blockchain Scalability Book*, version used, https://github.com/neilydhan/Blockchain-Scalability-Book, CC BY-SA 4.0. Changes, if any, should be identified.
+> Neil Han, *Mastering Blockchain Scalability*, version used, https://github.com/neilydhan/Blockchain-Scalability-Book, CC BY-SA 4.0. Changes, if any, should be identified.
 
 Third-party quotations, trademarks, and materials identified in figure credits or citations remain subject to their respective rights. This license does not imply endorsement by Neil Han or any institution.
 

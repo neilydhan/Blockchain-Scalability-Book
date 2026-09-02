@@ -1,4 +1,4 @@
-# Blockchain Scalability Book
+# Mastering Blockchain Scalability
 
 **A mechanism-first guide to blockchain capacity, security, trust, and recovery.**
 
@@ -58,7 +58,7 @@ The additional material includes a glossary, review questions with solution sket
 
 Until a DOI is assigned, cite the versioned GitHub release:
 
-> Han, Neil. *Blockchain Scalability Book*. Version 1.1.1, 2026. GitHub. https://github.com/neilydhan/Blockchain-Scalability-Book/releases/tag/v1.1.1
+> Han, Neil. *Mastering Blockchain Scalability*. Version 1.1.1, 2026. GitHub. https://github.com/neilydhan/Blockchain-Scalability-Book/releases/tag/v1.1.1
 
 Machine-readable citation metadata is in [`CITATION.cff`](CITATION.cff). Cite a version-specific release when exact page numbers or claims matter.
 

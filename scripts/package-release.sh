@@ -46,7 +46,7 @@ tar -czf "$out/blockchain-scalability-book-v${version}-html.tar.gz" -C book --ex
 
 cat > "$out/manifest.json" <<JSON
 {
-  "title": "Blockchain Scalability Book",
+  "title": "Mastering Blockchain Scalability",
   "author": "Neil Han",
   "version": "$version",
   "commit": "$commit",

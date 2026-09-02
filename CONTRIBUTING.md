@@ -1,6 +1,6 @@
-# Contributing to the Blockchain Scalability Book
+# Contributing to the Mastering Blockchain Scalability
 
-Thank you for your interest in contributing to the Blockchain Scalability Book! This document provides guidelines and instructions for contributing.
+Thank you for your interest in contributing to the Mastering Blockchain Scalability! This document provides guidelines and instructions for contributing.
 
 ## How to Contribute
 

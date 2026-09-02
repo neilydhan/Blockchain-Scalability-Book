@@ -27,18 +27,18 @@ def clean_main(soup):
 
 def make_front_matter(soup, version):
     cover = soup.new_tag("section", attrs={"class": "pdf-front-page pdf-cover"})
-    h = soup.new_tag("h1"); h.string = "Blockchain Scalability Book"; cover.append(h)
+    h = soup.new_tag("h1"); h.string = "Mastering Blockchain Scalability"; cover.append(h)
     sub = soup.new_tag("p"); sub.string = "Mechanisms, Trade-offs, and Engineering Practice"; cover.append(sub)
 
     title = soup.new_tag("section", attrs={"class": "pdf-front-page pdf-title-page"})
-    h = soup.new_tag("h1"); h.string = "Blockchain Scalability Book"; title.append(h)
+    h = soup.new_tag("h1"); h.string = "Mastering Blockchain Scalability"; title.append(h)
     p = soup.new_tag("p"); p.string = "A systems guide to scaling execution, data availability, settlement, and consensus"; title.append(p)
     p = soup.new_tag("p", attrs={"class": "pdf-author"}); p.string = "Neil Han"; title.append(p)
 
     copyright_page = soup.new_tag("section", attrs={"class": "pdf-front-page pdf-copyright-page"})
     h = soup.new_tag("h1"); h.string = "Copyright"; copyright_page.append(h)
     for text in (
-        "Copyright © 2024 Blockchain Scalability Book Contributors.",
+        "Copyright © 2024 Mastering Blockchain Scalability Contributors.",
         f"Version {version}.",
         "Licensed under the MIT License.",
         "This book is provided without warranty. Protocols and roadmaps change; readers should verify current implementation and security details against primary sources.",
@@ -131,12 +131,12 @@ def paginate(pdf_path, map_path):
             continue
         if physical_number < first_main:
             label = roman(physical_number - 1)
-            header = "Blockchain Scalability Book · Front Matter"
+            header = "Mastering Blockchain Scalability · Front Matter"
         else:
             label = str(physical_number - first_main + 1)
             # The latest h1 at or before this page provides a stable running head.
             chapters = [r["title"] for r, p in zip(records, physical) if r["level"] == 1 and p <= physical_number]
-            header = chapters[-1] if chapters else "Blockchain Scalability Book"
+            header = chapters[-1] if chapters else "Mastering Blockchain Scalability"
         page.insert_text((54, 24), header, fontsize=8, color=(0.35, 0.35, 0.35))
         width = page.rect.width
         page.insert_text((width / 2 - len(label) * 2, page.rect.height - 18), label, fontsize=9, color=(0.25, 0.25, 0.25))

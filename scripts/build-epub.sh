@@ -26,7 +26,7 @@ pandoc "${sources[@]}" \
   --to=epub3 \
   --standalone \
   --toc \
-  --metadata title="Blockchain Scalability Book" \
+  --metadata title="Mastering Blockchain Scalability" \
   --metadata subtitle="A mechanism-first guide to blockchain capacity, security, trust, and recovery" \
   --metadata author="Neil Han" \
   --metadata lang="en" \

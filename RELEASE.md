@@ -1,6 +1,6 @@
 # First Edition 1.0.0
 
-**Title:** *Blockchain Scalability Book*
+**Title:** *Mastering Blockchain Scalability*
 **Author:** Neil Han
 **Status:** First-edition release candidate
 **Canonical source:** `main` in https://github.com/neilydhan/Blockchain-Scalability-Book

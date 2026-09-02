@@ -2,8 +2,8 @@
 <rect width="4523" height="3076" fill="#0f172a"/>
 <g font-family="Noto Sans, sans-serif">
 <!-- FRONT -->
-<text x="3435" y="430" font-size="168" font-weight="bold" fill="#f8fafc" text-anchor="middle">Blockchain</text>
-<text x="3435" y="600" font-size="168" font-weight="bold" fill="#f8fafc" text-anchor="middle">Scalability Book</text>
+<text x="3435" y="445" font-size="150" font-weight="bold" fill="#f8fafc" text-anchor="middle">Mastering Blockchain</text>
+<text x="3435" y="600" font-size="150" font-weight="bold" fill="#f8fafc" text-anchor="middle">Scalability</text>
 <text x="3435" y="690" font-size="46" fill="#94a3b8" text-anchor="middle">A mechanism-first guide to scalability, security, trust, and recovery</text>
 <rect x="3055" y="830" width="760" height="190" rx="18" fill="#1e3a5f" stroke="#3b82f6" stroke-width="4"/>
 <text x="3435" y="908" font-size="52" font-weight="bold" fill="#93c5fd" text-anchor="middle">Execution</text>
@@ -30,7 +30,7 @@
 <text x="3435" y="2106" font-size="36" fill="#fca5a5" text-anchor="middle" opacity="0.85">when it breaks</text>
 <text x="3435" y="2916" font-size="64" fill="#e2e8f0" text-anchor="middle">Neil Han</text>
 <!-- SPINE -->
-<text x="2261" y="1538" font-size="88" font-weight="bold" fill="#f8fafc" text-anchor="middle" transform="rotate(90 2261 1538)">Blockchain Scalability Book &#183; Neil Han</text>
+<text x="2261" y="1538" font-size="88" font-weight="bold" fill="#f8fafc" text-anchor="middle" transform="rotate(90 2261 1538)">Mastering Blockchain Scalability &#183; Neil Han</text>
 <!-- BACK -->
 <text x="128" y="330" font-size="72" font-weight="bold" fill="#f8fafc">Scalability is not one number.</text>
 <text x="128" y="420" font-size="42" fill="#64748b">Trace the whole path. State the assumptions. Test the claim.</text>
@@ -38,7 +38,7 @@
 <text x="128" y="698" font-size="38" fill="#cbd5e1">number hides the real engineering questions. Which resource becomes scarce? Who</text>
 <text x="128" y="756" font-size="38" fill="#cbd5e1">verifies the work? What data remains available? Which trust assumption changed? What</text>
 <text x="128" y="814" font-size="38" fill="#cbd5e1">happens when the sequencer, prover, bridge, committee, or governance process fails?</text>
-<text x="128" y="872" font-size="38" fill="#cbd5e1">Blockchain Scalability Book follows transactions and failures end to end across Layer</text>
+<text x="128" y="872" font-size="38" fill="#cbd5e1">Mastering Blockchain Scalability follows transactions and failures end to end across Layer</text>
 <text x="128" y="930" font-size="38" fill="#cbd5e1">1, Layer 2, payment channels, rollups, modular data availability, parallel execution,</text>
 <text x="128" y="988" font-size="38" fill="#cbd5e1">and consensus. Neil Han explains each mechanism with explicit security assumptions,</text>
 <text x="128" y="1046" font-size="38" fill="#cbd5e1">worked calculations, operational recovery paths, and methods for evaluating benchmark</text>

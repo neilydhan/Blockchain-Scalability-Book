@@ -156,12 +156,12 @@ def build():
             entry["def"] = aid
 
     # Assemble document.
-    doc = BeautifulSoup("<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>Blockchain Scalability Book - Print Interior</title></head><body></body></html>", "html.parser")
+    doc = BeautifulSoup("<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'><title>Mastering Blockchain Scalability - Print Interior</title></head><body></body></html>", "html.parser")
     body = doc.body
 
     body.append(BeautifulSoup("""
 <div class="tp titlepage">
-  <div class="t">Blockchain Scalability Book</div>
+  <div class="t">Mastering Blockchain Scalability</div>
   <div class="st">A mechanism-first guide to blockchain scalability, security, trust, and recovery</div>
   <div class="au">Neil Han</div>
   <div class="ed">Version 1.1.1 &middot; Print Edition Candidate</div>
@@ -170,13 +170,13 @@ def build():
     body.append(BeautifulSoup("""
 <div class="fm copyright">
   <p class="spacer"></p>
-  <p><b>Blockchain Scalability Book</b><br>Version 1.1.1, print edition candidate</p>
+  <p><b>Mastering Blockchain Scalability</b><br>Version 1.1.1, print edition candidate</p>
   <p>&copy; 2026 Neil Han. Book prose, exercises, tables, and original figures are licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/). Build software under scripts/, theme/, and .github/ is licensed under the MIT License. Third-party quotations, trademarks, and credited materials retain their respective rights. Figure sources and credits appear in the Figure Credits chapter.</p>
   <p>Free digital editions (web, PDF, EPUB): https://github.com/neilydhan/Blockchain-Scalability-Book/releases</p>
   <p>Independently published. Print ISBN: to be assigned through Amazon KDP.</p>
   <p>10 9 8 7 6 5 4 3 2 1</p>
   <p>This book is educational material, not financial, legal, or investment advice. Protocol details change; every time-sensitive claim carries a source and a date, and readers should verify the current specification.</p>
-  <p>Cite this edition: Han, Neil. <i>Blockchain Scalability Book</i>. Version 1.1.1, 2026.</p>
+  <p>Cite this edition: Han, Neil. <i>Mastering Blockchain Scalability</i>. Version 1.1.1, 2026.</p>
 </div>""", "html.parser"))
 
     # TOC

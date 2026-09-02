@@ -17,7 +17,7 @@ if not (OUT / "index.html").exists():
 book_schema = {
     "@context": "https://schema.org",
     "@type": "Book",
-    "name": "Blockchain Scalability Book",
+    "name": "Mastering Blockchain Scalability",
     "author": {"@type": "Person", "name": "Neil Han", "url": "https://github.com/neilydhan"},
     "bookFormat": "https://schema.org/EBook",
     "inLanguage": "en",
@@ -44,7 +44,7 @@ for path in sorted(OUT.rglob("*.html")):
     head=soup.head
     if not head: continue
     canonical = BASE if rel == "index.html" else BASE + rel
-    title_text = soup.title.get_text(" ", strip=True) if soup.title else "Blockchain Scalability Book"
+    title_text = soup.title.get_text(" ", strip=True) if soup.title else "Mastering Blockchain Scalability"
     for selector in ['link[rel="canonical"]','meta[name="description"]','meta[property="og:title"]','meta[property="og:description"]','meta[property="og:url"]','meta[property="og:type"]','meta[name="twitter:card"]','meta[name="twitter:title"]','meta[name="twitter:description"]']:
         for old in head.select(selector): old.decompose()
     def meta(**attrs):

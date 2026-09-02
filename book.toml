@@ -3,7 +3,7 @@ authors = ["Neil Han"]
 language = "en"
 src = "."
 exclude = [".git/**", ".github/**", "book/**", "qa/**", "release/**", ".DS_Store"]
-title = "Blockchain Scalability Book"
+title = "Mastering Blockchain Scalability"
 description = "A mechanism-first guide to blockchain scalability, security, trust, and recovery"
 
 [output.html]

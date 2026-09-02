@@ -1,0 +1,9 @@
+{
+  "upload_type": "publication",
+  "publication_type": "book",
+  "title": "Mastering Blockchain Scalability",
+  "creators": [{"name": "Han, Neil"}],
+  "description": "A mechanism-first guide to scalability, security, trust, and recovery. Scalability is treated as a resource, systems, security, and recovery problem, not a TPS contest. Free web, PDF, and EPUB editions; content CC BY-SA 4.0.",
+  "license": {"id": "CC-BY-SA-4.0"},
+  "keywords": ["blockchain", "scalability", "data availability", "consensus", "rollups", "recovery"]
+}

@@ -1,8 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
 <rect width="1200" height="630" fill="#0f172a"/>
 <g font-family="Noto Sans, sans-serif">
-<text x="80" y="150" font-size="64" font-weight="bold" fill="#f8fafc">Blockchain Scalability Book</text>
-<text x="80" y="205" font-size="27" fill="#94a3b8">A mechanism-first guide to scalability, security, trust, and recovery</text>
+<text x="80" y="130" font-size="64" font-weight="bold" fill="#f8fafc">Mastering Blockchain</text>
+<text x="80" y="195" font-size="64" font-weight="bold" fill="#f8fafc">Scalability</text>
+<text x="80" y="250" font-size="27" fill="#94a3b8">A mechanism-first guide to scalability, security, trust, and recovery</text>
 <g font-size="19" font-weight="bold">
 <rect x="80" y="290" width="180" height="72" rx="10" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
 <text x="170" y="322" fill="#93c5fd" text-anchor="middle">Execution</text>

@@ -1,4 +1,4 @@
-/* Simple Analytics wiring for the Blockchain Scalability Book web edition.
+/* Simple Analytics wiring for the Mastering Blockchain Scalability web edition.
  * Collects only the six aggregate events approved in ANALYTICS.md.
  * No metadata, no identifiers; honors Do Not Track. MIT-licensed build software.
  */

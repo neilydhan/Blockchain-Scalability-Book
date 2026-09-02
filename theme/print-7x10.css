@@ -26,7 +26,7 @@ body {
   font-family: 'Noto Serif', serif;
   font-size: 10.5pt; line-height: 1.315;  /* 10.5pt on 13.8pt */
   color: #111;
-  string-set: booktitle "Blockchain Scalability Book";
+  string-set: booktitle "Mastering Blockchain Scalability";
 }
 p { text-align: justify; hyphens: auto; widows: 2; orphans: 2; margin: 0 0 5.5pt 0; }
 

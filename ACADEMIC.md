@@ -2,7 +2,7 @@
 
 ## Why Use This Book
 
-*Blockchain Scalability Book* treats scalability as a resource, systems, security, and recovery problem. It is designed for courses that need more than a list of protocols or a comparison of advertised transactions-per-second figures. Students trace complete transaction and failure paths, calculate resource bounds, state trust assumptions, analyze recovery, and evaluate benchmark claims.
+*Mastering Blockchain Scalability* treats scalability as a resource, systems, security, and recovery problem. It is designed for courses that need more than a list of protocols or a comparison of advertised transactions-per-second figures. Students trace complete transaction and failure paths, calculate resource bounds, state trust assumptions, analyze recovery, and evaluate benchmark claims.
 
 The complete web and PDF editions are free. Instructors can assign individual chapters, reuse and adapt the worksheets under CC BY-SA 4.0, and pin a class to a versioned release so page numbers and exercises remain stable.
 
@@ -69,4 +69,4 @@ For a syllabus review, correction, or course-adoption discussion, open a GitHub 
 
 ## Recommended Citation
 
-> Han, Neil. *Blockchain Scalability Book*. Version 1.1.1, 2026. GitHub. https://github.com/neilydhan/Blockchain-Scalability-Book/releases/tag/v1.1.1
+> Han, Neil. *Mastering Blockchain Scalability*. Version 1.1.1, 2026. GitHub. https://github.com/neilydhan/Blockchain-Scalability-Book/releases/tag/v1.1.1
