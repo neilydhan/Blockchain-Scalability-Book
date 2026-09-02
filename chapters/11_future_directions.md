@@ -8,6 +8,48 @@ The next bottleneck is therefore not one number such as TPS. It is coordination:
 
 ---
 
+## **How to Read This Future-Facing Chapter**
+
+This chapter combines deployed ideas, active prototypes, and research proposals. A basic reader should not treat every named mechanism as a product that is already available or as one inevitable roadmap.
+
+For each idea, separate five questions:
+
+1. **What problem is it trying to solve?** Examples include proof delay, fragmented liquidity, censorship, or validator storage.
+2. **What is the mechanism?** Name the messages, proofs, committees, or markets that change the outcome.
+3. **Which assumption moved?** Faster service may require a new operator, timing bound, hardware class, or governance key.
+4. **What evidence exists?** A paper, prototype, testnet, audited deployment, and long-running permissionless production system provide different confidence.
+5. **How does failure appear to a user?** A wallet needs states such as pending, preconfirmed, proven, settled, refundable, or blocked.
+
+### **A glossary for the emerging stack**
+
+A **real-time proof** is a validity proof produced quickly enough to fit a protocol's next acceptance deadline. "Real time" is relative to a slot or batch interval, not literally instantaneous.
+
+**Proof aggregation** combines evidence for many computations so a verifier checks one smaller proof. **Recursion** means one proof verifies other proofs inside its proven computation. This is like checking a signed summary whose calculation includes checking the signed summaries beneath it.
+
+A **shared sequencer** orders transactions for several rollups. It may improve cross-rollup coordination, but the rollups still need settlement, DA, and rules for sequencer failure. A **based rollup** derives ordering from base-layer proposers rather than operating an entirely separate sequencer.
+
+A **preconfirmation** is a signed promise about future inclusion or order before full consensus finality. It is useful only when the signer, promise domain, expiry, violation evidence, and penalty are explicit.
+
+An **intent** states an authorized outcome, such as receiving at least 100 units of one asset for no more than 50 units of another. A **solver** chooses a route that satisfies it. The signature should bind recipient, assets, limits, expiry, fees, and settlement rules; the solver receives path freedom, not permission to change the outcome.
+
+**Proposer-builder separation (PBS)** separates the consensus participant proposing a block from specialized builders assembling profitable payloads. A **relay** may check and forward blinded bids between them. The design must handle withholding, censorship, relay failure, and builder concentration.
+
+An **encrypted mempool** hides transaction contents until an ordering point. **Threshold encryption** splits decryption power among members so a threshold must cooperate. It reduces content-based front-running only if the committee cannot decrypt early and still releases shares reliably.
+
+**Stateless validation** lets a validator verify using transaction data plus witnesses rather than a complete state database. **State expiry** removes inactive state from the active set while preserving a commitment and revival path. Someone still needs to retain or serve the expired values.
+
+**Chain abstraction** hides some chain and bridge choices from the user. It is an interface goal, not a security model: software still selects routes, assets, finality, and recovery on the user's behalf.
+
+### **Read maturity labels literally**
+
+- **Paper:** mechanism and argument, possibly without production code.
+- **Prototype:** code demonstrates feasibility under limited conditions.
+- **Testnet:** multiple parties can test behavior without normal production value.
+- **Limited production:** real users or value, often with restricted operators or caps.
+- **Permissionless production:** open participation and real value, still subject to bugs and governance.
+
+A mechanism can be mature in cryptography but immature in operations. The detailed sections keep formalism because implementation details decide safety; this guide supplies the intuition and vocabulary needed to follow them.
+
 ## **Real-Time Validity Proving**
 
 Validity proofs once required long proving times and specialized circuits. Faster provers, hardware acceleration, recursive aggregation, and general-purpose zkVMs are reducing that delay.
