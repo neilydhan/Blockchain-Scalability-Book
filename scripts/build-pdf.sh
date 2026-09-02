@@ -22,22 +22,45 @@ fi
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
 output="$root/book/blockchain-scalability-book.pdf"
-profile="$(mktemp -d)"
-trap 'rm -rf "$profile"' EXIT
-"$browser" \
-  --headless=new \
-  --no-sandbox \
-  --disable-gpu \
-  --disable-background-networking \
-  --disable-component-update \
-  --disable-extensions \
-  --disable-sync \
-  --no-first-run \
-  --user-data-dir="$profile" \
-  --allow-file-access-from-files \
-  --print-to-pdf="$output" \
-  --no-pdf-header-footer \
-  "file://$root/book/print.html"
+toc_map="$root/book/pdf-toc.json"
+helper="$root/scripts/pdf_toc.py"
+
+python3 - <<'PY2'
+try:
+    import fitz, pypdf
+except ImportError as exc:
+    raise SystemExit("error: PDF TOC build requires pymupdf and pypdf (python3 -m pip install pymupdf pypdf)") from exc
+PY2
+
+print_pdf() {
+  local profile
+  profile="$(mktemp -d)"
+  "$browser" \
+    --headless=new \
+    --no-sandbox \
+    --disable-gpu \
+    --disable-background-networking \
+    --disable-component-update \
+    --disable-extensions \
+    --disable-sync \
+    --no-first-run \
+    --user-data-dir="$profile" \
+    --allow-file-access-from-files \
+    --print-to-pdf="$output" \
+    --no-pdf-header-footer \
+    "file://$root/book/print.html"
+  rm -rf "$profile"
+}
+
+# Chrome cannot render target page numbers directly. Print once to resolve every
+# heading link, fill those page numbers into the HTML, then print the final PDF.
+python3 "$helper" prepare --html "$root/book/print.html" --map "$toc_map" --version "$(cat "$root/VERSION")"
+print_pdf
+python3 "$helper" fill --html "$root/book/print.html" --map "$toc_map" --pdf "$output"
+print_pdf
+python3 "$helper" paginate --map "$toc_map" --pdf "$output"
+python3 "$helper" outline --map "$toc_map" --pdf "$output"
+python3 "$helper" verify --map "$toc_map" --pdf "$output"
 
 test -s "$output"
 echo "PDF book: $output"

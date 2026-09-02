@@ -66,3 +66,87 @@
     padding: 3px 4px;
   }
 }
+
+/* Printed table of contents. Page numbers are filled by the two-pass PDF build. */
+@media print {
+  #pdf-table-of-contents {
+    break-after: page;
+    page-break-after: always;
+  }
+
+  #pdf-table-of-contents > h1 {
+    margin-bottom: 1.2em;
+  }
+
+  .pdf-toc-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 0.52em;
+    line-height: 1.1;
+  }
+
+  .pdf-toc-list li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    margin: 0 0 0.08em;
+  }
+
+  .pdf-toc-list a {
+    color: inherit;
+    display: flex;
+    gap: 0.45em;
+    text-decoration: none;
+  }
+
+  .pdf-toc-title {
+    display: flex;
+    flex: 1;
+    align-items: baseline;
+  }
+
+  .pdf-toc-title::after {
+    border-bottom: 1px dotted #999;
+    content: "";
+    flex: 1;
+    margin: 0 0.3em 0.22em;
+  }
+
+  .pdf-toc-page {
+    min-width: 2.2em;
+    text-align: right;
+  }
+
+  .pdf-toc-level-2 { padding-left: 1.2em; }
+  .pdf-toc-level-3 { padding-left: 2.4em; }
+  .pdf-toc-level-1 {
+    font-weight: 600;
+    margin-top: 0.55em !important;
+  }
+}
+
+@media print {
+  .pdf-front-page {
+    box-sizing: border-box;
+    min-height: 9.45in;
+    break-after: page;
+    page-break-after: always;
+    position: relative;
+  }
+
+  .pdf-cover, .pdf-title-page {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .pdf-cover h1 { font-size: 3.2em; margin-bottom: 0.5em; }
+  .pdf-cover p { font-size: 1.25em; color: #555; }
+  .pdf-title-page h1 { font-size: 2.6em; margin-bottom: 0.6em; }
+  .pdf-title-page > p { font-size: 1.1em; }
+  .pdf-title-page .pdf-author { margin-top: 4em; font-size: 1.35em; }
+  .pdf-copyright-page { padding-top: 4.8in; }
+  .pdf-copyright-page h1 { font-size: 1.3em; }
+  .pdf-copyright-page p { font-size: 0.85em; max-width: 34em; }
+}
