@@ -140,6 +140,55 @@ Cross-chain communication introduces more assumptions. A bridge is only as safe 
 
 ---
 
+## **Named Case Study: NEAR Receipts and the IBC Packet Lifecycle**
+
+**Deployment labels: NEAR sharding and Inter-Blockchain Communication (IBC) are production.** Both turn a user action into asynchronous work, but at different boundaries. NEAR receipts move work between shards inside one protocol. IBC packets move authenticated application data between sovereign chains through light-client proofs and relayers. In neither system does "sent" mean the remote state has already changed.
+
+### **NEAR: a transfer becomes receipts across shards**
+
+NEAR divides state and execution across shards while blocks contain shard chunks. A signed transaction is routed to the shard holding the signer's account. Executing that transaction can create **receipts**, which are protocol objects carrying actions or data to another account and possibly another shard. NEAR's official transaction lifecycle explicitly separates the block where a transaction arrives, a later block where a receipt is processed, further function-call receipts, and a final refund receipt.[^5]
+
+Trace Alice calling a contract on a different shard. Alice signs a transaction with her account, public-key context, nonce, receiver, actions, recent block hash, and fee-related fields. The transaction reaches the shard responsible for Alice. That shard validates authorization and nonce, charges the attached resources under the protocol rules, and converts the cross-shard action into an outgoing receipt addressed to the receiver. The source chunk commits to the outgoing work. The destination shard later receives the receipt through NEAR's routed receipt mechanism and executes the contract call against destination state.
+
+The destination call may produce another receipt. For example, a marketplace contract on shard B can call a token contract on shard C and then receive a callback. Gas or deposit refunds are also receipts. The user's one transaction hash can therefore lead to a tree or chain of outcomes. NEAR documentation warns that transaction finality and receipt completion are not the same event: a transaction can be final while its generated receipts are still being processed.[^5][^6]
+
+Observable evidence should include the transaction outcome, receipt IDs, predecessor and receiver accounts, block/chunk locations, execution status for each receipt, logs, generated child receipts, and final refund. A wallet that shows only Alice's top-level transaction as successful can hide a failed remote function call. The safe status model is **transaction accepted**, **source execution complete**, **cross-shard receipt routed**, **destination execution complete**, **callbacks complete**, and **refund complete**.
+
+Failure path: the destination contract panics. The source transaction and receipt creation can remain final while the destination execution records failure. The protocol does not roll back an already committed cross-shard history as if it were one database transaction. Application code must use callback results and idempotent state transitions. If a destination shard is temporarily congested, receipts queue and completion latency rises. If a resharding boundary moves accounts, routing and pending receipts must migrate together; otherwise a receipt can be lost or executed twice. If Alice resubmits because the interface still says pending, nonce and receipt identifiers must prevent accidental duplicate action.
+
+The trust assumptions are those of one NEAR protocol: validator consensus, correct chunk validation and availability, deterministic runtime execution, routing, and shard-state handoff. Users do not choose an external relayer for an ordinary cross-shard receipt. This tighter integration improves uniformity, but a bug in the shared runtime, routing rules, or resharding logic can affect all applications using the mechanism.
+
+### **IBC: send, relay, receive, acknowledge, or time out**
+
+IBC connects chains through on-chain light clients, connections, channels, packet commitments, and permissionless relayers. The packet lifecycle documentation names four application-visible stages: send on the source, receive on the destination, acknowledgement on the source, and timeout on the source.[^7][^8]
+
+Trace a fungible-token transfer from Chain A to Chain B. The application on A escrows or burns the source representation under the token-transfer rules and calls the IBC channel to send a packet. The packet binds source and destination ports and channels, a sequence, payload, and a timeout height or timestamp. Chain A stores a commitment to the packet. This commitment is the fact a relayer later proves; no trusted courier signature is required.
+
+A relayer observes the committed packet, waits for the source state needed by the destination's light client, and submits a receive message to Chain B with a proof. The IBC handler on B verifies that proof against its client of A, checks channel and sequence rules, prevents duplicate receipt, and invokes the destination application. The application writes an acknowledgement indicating success or an encoded error. Chain B commits that acknowledgement.
+
+A relayer then submits the acknowledgement and proof back to Chain A. A verifies it through its light client of B, deletes or completes the packet commitment under the protocol rule, and calls the source application acknowledgement callback. The token application can finalize accounting and emit a user-visible result. Relayers may be paid or operated by third parties, but they do not gain authority to forge a packet that fails light-client, channel, sequence, and commitment checks.
+
+If no valid receive occurs before the packet's timeout, a relayer or user submits a timeout proof to Chain A. The proof establishes that the destination passed the timeout condition without receiving the packet, under the channel rules. The source application runs its timeout callback and can unescrow or restore the user's asset. Receive and timeout race across two chains, so the proof rules and packet-receipt state ensure only one terminal outcome succeeds.
+
+Observable evidence includes the source transaction, packet sequence and commitment, client heights, relayer transactions, destination receipt, acknowledgement bytes, source acknowledgement callback, and any timeout proof. "Relayed" is ambiguous: it must say whether a receive proof was submitted, verified, executed, acknowledged, and processed back at the source. Ordered and unordered channels also differ. An ordered channel enforces sequence and can close or block on timeout under its protocol rules; an unordered channel permits independent packet delivery while still preventing replay.
+
+Failure path: every relayer goes offline. Funds are not automatically stolen, but progress stops until someone relays receive or timeout evidence. If Chain B halts before the timeout, Chain A may need a proof tied to a usable client state; client expiry or a frozen client can complicate recovery. If the destination application returns an error acknowledgement, the source callback must refund or unwind according to application rules rather than calling the packet a success. If a chain's consensus safety fails, its light-client security assumption fails too. IBC authenticates the state of the connected chains; it does not make a compromised source or destination chain honest.
+
+### **What the comparison teaches**
+
+| Boundary | NEAR cross-shard receipt | IBC packet |
+|---|---|---|
+| Security domain | One sharded protocol and validator system | Two sovereign chains plus on-chain light clients |
+| Transport actor | Protocol routes receipts between shard chunks | Permissionless relayers carry proofs and messages |
+| Unique work item | Receipt ID and receipt dependency graph | Port/channel pair and packet sequence |
+| Completion | Destination receipt and all required callbacks/refunds execute | Receive plus acknowledgement processed, or valid timeout executes |
+| Replay defense | Runtime receipt identity, nonce and execution state | Packet commitment, receipt/ack state, sequence and channel rules |
+| Main liveness failure | Congested or unavailable shard/chunk path | No relayer, halted chain, expired/frozen client, unavailable proof |
+| Application obligation | Handle asynchronous promise result and callback failure | Handle acknowledgement error and mutually exclusive timeout/refund |
+
+The shared programming rule is to record intent before sending asynchronous work, make the remote handler idempotent, bind callbacks to the original request, and expose a terminal error or timeout path. The major difference is proof scope. NEAR consensus knows the source and destination shards. IBC's destination verifies a proof of source-chain state through a client, then the source verifies destination acknowledgement or timeout evidence in return.
+
+
 ## **Ethereum's Rollup-Centric Data Sharding**
 
 Early Ethereum roadmaps emphasized execution shards. The rollup-centric roadmap shifted priority toward data capacity. Rollups execute outside Ethereum but publish data needed for reconstruction and verification. Increasing cheap data capacity can scale many rollups at once.
@@ -877,3 +926,8 @@ The emerging architecture is layered: the base layer supplies secure settlement 
 [^2]: Cosmos. "IBC Protocol Overview." <https://docs.cosmos.network/ibc/latest/intro>.
 [^3]: Buterin, Vitalik, et al. "EIP-4844: Shard Blob Transactions." <https://eips.ethereum.org/EIPS/eip-4844>.
 [^4]: Ethereum.org. "Danksharding." <https://ethereum.org/roadmap/danksharding/>.
+
+[^5]: NEAR Documentation. "Lifecycle of a Transaction." <https://docs.near.org/protocol/transactions/transaction-execution>.
+[^6]: NEAR Documentation. "Token transfer flow." <https://docs.near.org/protocol/data-flow/token-transfer-flow>.
+[^7]: Cosmos IBC Documentation. "IBC Lifecycle." <https://docs.cosmos.network/ibc/next/learn/ibc-lifecycle>.
+[^8]: Cosmos IBC Specification. "Channel & Packet Semantics." <https://docs.cosmos.network/ibc/latest/spec/core/ics-004-channel-and-packet-semantics/README>.
