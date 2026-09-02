@@ -67,3 +67,5 @@ Set the semantic version in `VERSION`, commit all source changes, and run:
 ```
 
 The script requires a clean tree and creates `release/v<version>/` with the PDF, compressed HTML edition, JSON build manifest, and SHA-256 checksums. Review and archive the build log separately. Generated release artifacts are not source files and should normally be attached to a signed repository release rather than committed.
+
+The packaging gate also reads the generated PDF with `pdfinfo` and `pdftotext`. It records the page count and page size in the manifest and refuses to package a PDF containing Unicode replacement characters. The reported word count covers all repository Markdown, including release and QA records; chapter-only editorial counts should be computed separately when needed.
