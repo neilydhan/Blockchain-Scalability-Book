@@ -66,6 +66,108 @@ A wallet can truthfully show several stages:
 
 Later sections use "unsafe," "safe," "accepted," and "final" for these boundaries. The exact labels vary by implementation; the evidence behind the label is what matters.
 
+## **Named Case Study: Arbitrum Nitro and BoLD**
+
+**Deployment label: production.** Arbitrum One runs the Nitro stack as an optimistic rollup. Its official documentation separates the fast path through a sequencer from the enforceable path through Ethereum, and describes BoLD as the dispute protocol used to resolve competing state claims.[^3][^4][^5] The distinction is the useful lesson: an optimistic rollup is not secured by optimism. It is secured by data that validators can replay, a state-transition program they agree to run, and a bounded route for rejecting a false claim.
+
+### **Architecture: four boundaries, not one chain**
+
+Nitro can be read as four connected systems. The **sequencer** accepts transactions, chooses an order, executes that order, and broadcasts a feed that gives applications a fast soft confirmation. The **batch poster** compresses the ordered data and sends it to Ethereum, normally using EIP-4844 blobs and with calldata as an alternative path described by the protocol documentation. Ethereum's **Sequencer Inbox** establishes the canonical data sequence. Nitro nodes read that sequence and execute the same state-transition function. Finally, validators make and check assertions about the resulting state; BoLD resolves a disagreement by reducing it until Ethereum can judge the disputed execution.
+
+This architecture creates several clocks. A wallet may see a sequencer receipt in seconds, while the batch is not yet on Ethereum. After publication, the transaction has stronger data availability, but a state assertion may still be disputable. A canonical L2-to-L1 withdrawal becomes executable only after the assertion supporting it is confirmed under the dispute rules and the required Ethereum conditions are met. Calling every one of these states "final" hides the exact risk the user is taking.
+
+<p align="center">
+  <img src="../assets/course/ch06_named_rollup_traces.svg" width="760" alt="Parallel transaction traces for Arbitrum Nitro and ZKsync Era">
+  <br>
+  <em>Figure 6.2: Named production rollups use different correctness paths after sequencing and data publication. Original figure for this book.</em>
+</p>
+
+### **Trace: deposit, transfer, publication, dispute, withdrawal**
+
+Suppose Lina moves 1 ETH from Ethereum to Arbitrum One, pays a merchant on Arbitrum, and later withdraws the remaining ETH.
+
+**1. Deposit.** Lina's Ethereum transaction calls the canonical bridge. The L1 contract escrows the asset and places an L1-to-L2 message into Arbitrum's delayed message path. This is not an ordinary transfer to a second custodian. The L1 event becomes an input that Nitro must consume in canonical order. After the message is included and executed on L2, the corresponding balance is created for Lina under the bridge rules. The L1 transaction can be reorganized before Ethereum finality, so software should retain the source transaction and report whether the deposit is merely observed, included, or final enough for its policy.
+
+**2. Sequencing and execution.** Lina signs the merchant payment and sends it to an Arbitrum RPC endpoint. The sequencer checks the transaction, orders it, executes it with the Nitro state-transition function, and emits a sequencer-feed result. The merchant can treat that result as a low-latency promise, but it is not an Ethereum settlement guarantee. A sequencer can delay or reorder a transaction, and a feed result can precede canonical batch publication.[^3][^4]
+
+**3. Data publication.** The batch poster compresses the chosen sequence and submits it to the Sequencer Inbox on Ethereum. Nitro documentation describes blob publication through `addSequencerL2BatchFromBlobs` and calldata publication through `addSequencerL2Batch`.[^6] Once the batch is in the canonical inbox, an independent Nitro node can recover the same ordered input and reproduce execution. Publication therefore changes what observers can verify: before it, they mainly have the sequencer's promise; after it, they have Ethereum-ordered data from which to derive the L2 state.
+
+**4. Assertion and BoLD.** A proposer posts an assertion about a state reached after executing the inbox. An honest validator replays the input and compares the result. If a conflicting or false assertion appears, BoLD lets participants challenge it. The dispute does not ask Ethereum to re-execute the whole rollup history. Parties commit to execution history, narrow the disagreement, and ultimately reach a small step that the on-chain verifier can decide. BoLD is designed so that an attacker cannot extend dispute resolution without bound merely by creating more conflicting claims; honest parties still need the data, software, capital for required bonds, and operational ability to act within protocol deadlines.[^5]
+
+**5. Withdrawal.** Lina initiates an L2-to-L1 message that burns or locks the L2 representation and names the L1 recipient and amount. That message is included in L2 state and supported by a state assertion. The canonical bridge must wait until the assertion is confirmed under the rollup's dispute rule before releasing escrowed ETH on Ethereum. A liquidity bridge may pay Lina sooner, but that is a separate market transaction with liquidity, pricing, and counterparty assumptions. It does not shorten the canonical security path.
+
+### **Trust and upgrade assumptions**
+
+Nitro limits what a faulty sequencer can do, but it does not make the sequencer irrelevant. The sequencer controls the fast ordering path and can temporarily censor or delay users. Arbitrum exposes a **Delayed Inbox** path on Ethereum. Official documentation states that a user can bypass the sequencer and that delayed messages can eventually be force-included after the protocol delay.[^4] This is censorship resistance with latency and L1 gas cost, not instantaneous inclusion.
+
+Correctness also depends on at least one capable honest validator monitoring assertions and being able to complete a dispute. Users depend on Ethereum for ordering, contract execution, and finality, and on available batch data for replay. They also depend on the deployed contracts, the Nitro program identified by the dispute machinery, and the governance and upgrade controls that can change those components. BoLD reduces one class of permission and delay risk. It does not remove contract bugs, implementation bugs, compromised upgrade keys, Ethereum failure, or the operational risk that nobody runs an effective validator.
+
+The practical audit question is therefore broader than "does Arbitrum have fraud proofs?" It is: which contracts and program versions define a valid state, who can replace them, what delay precedes a replacement, can users exit during that delay, and which emergency body can intervene? Those facts can change, so a deployment review should read the live contracts and current governance documentation rather than copy a static decentralization label from this book.
+
+### **Observable consequences and failure path**
+
+The layered design is visible. A block explorer or node can distinguish a transaction seen in the sequencer feed from one whose batch data is on Ethereum. An operator can measure the age of the oldest unpublished sequence, the delayed-inbox cursor, assertion status, and dispute activity. A wallet can tell Lina why a withdrawal is waiting instead of displaying one spinner.
+
+Now let the sequencer stop after giving Lina a receipt but before publishing her payment. The payment may be visible on the feed yet absent from the canonical inbox. Lina or her wallet resubmits through the L1 delayed path. She pays Ethereum gas and waits through the inclusion delay, but the sequencer cannot turn its outage into a permanent veto. If, instead, the batch is published and a proposer asserts a state that omits or misexecutes the payment, an honest validator reconstructs the state and challenges the assertion through BoLD. The bad assertion must not become the basis for Lina's canonical withdrawal. If no capable honest validator acts before the applicable deadline, the optimistic safety assumption has failed even though the protocol had a dispute contract.
+
+That last distinction is the transferable lesson. A sequencer failure is primarily a liveness and user-experience event when forced inclusion works. An unchallenged invalid assertion is a correctness failure. Missing data can make a challenge impossible. A malicious upgrade can change the rules by which every later state is judged. Each failure reaches a different boundary and needs a different alarm and recovery procedure.
+
+## **Named Case Study: ZKsync Era's Validity Pipeline**
+
+**Deployment label: production.** ZKsync Era is a validity rollup whose protocol documentation describes a three-stage batch lifecycle on Ethereum: a batch is committed, proved, and executed. Its L1-to-L2 communication path treats deposits and other priority operations as messages that the L2 bootloader must process, while its proof system lets Ethereum verify a batch transition without replaying EraVM execution.[^7][^8]
+
+### **Architecture: execution, data, proof, and bridge**
+
+A ZKsync transaction first runs under **EraVM**, with system contracts and the bootloader enforcing protocol rules. A sequencer forms L2 blocks and groups them into L1 batches. For rollup-mode operation, the operator publishes the information required by the protocol's data-availability rule and commits the batch metadata on Ethereum. A prover constructs a validity proof for the batch transition. Ethereum contracts verify the proof and later execute the batch, which makes its L2-to-L1 messages available to the bridge contracts under the protocol rules.
+
+"Execute" is easy to misunderstand here. It does not mean Ethereum reruns every user transaction. User computation already ran on L2 and was covered by the proof. The L1 execution stage advances the settlement contracts after the commitment and proof checks, and permits effects such as finalized withdrawals. Separating **commit**, **prove**, and **execute** makes failure diagnosis much sharper than one "pending" status.
+
+### **Trace: priority deposit, Era payment, proof, and exit**
+
+Suppose Lina deposits 1 ETH into ZKsync Era, makes an EraVM payment, then withdraws what remains.
+
+**1. L1 priority operation.** Lina sends an Ethereum transaction to the canonical bridge. The L1 contract escrows ETH and creates an L1-to-L2 transaction, also called a priority operation. The request carries the target, value, gas-related parameters, refund recipient, and data needed for L2 execution. ZKsync's documented communication flow passes the operation into the L2 bootloader rather than letting the sequencer silently invent the deposit.[^8] The same channel is used for protocol upgrade transactions, which is a reminder that system changes and user deposits both need explicit cross-layer ordering.
+
+**2. L2 execution.** The bootloader processes the priority operation and the deposit is reflected in Era state. Lina then signs the merchant payment and submits it through an RPC endpoint. A successful sequencer response tells her the transaction ran in an L2 block. It does not yet prove that Ethereum has accepted the containing L1 batch. Applications should expose at least the distinction between L2 execution, batch commitment, proof verification, and L1 execution.
+
+**3. Batch commitment and data publication.** The operator collects L2 blocks into an L1 batch and submits a commitment transaction to Ethereum. The commitment binds the previous and new state information and the public data needed by the protocol. An independent observer can associate Lina's transaction with its L2 block and L1 batch, then identify the Ethereum commitment transaction. If the operator stops before commitment, Lina has an L2 receipt without the strongest settlement evidence.
+
+**4. Proof.** The proving pipeline builds a witness for the EraVM transition and produces a validity proof. Ethereum's verifier checks the proof against public inputs tied to the batch commitment. If the witness does not satisfy the circuit or the public inputs do not match, a sound verifier rejects the proof. Unlike an optimistic rollup, Era does not make users wait to see whether someone challenges an accepted invalid transition. The cost moves into circuit correctness, witness generation, prover availability, verifier correctness, and upgrade control.
+
+**5. Batch execution and withdrawal.** After the proof is accepted, the L1 contracts execute the batch under the protocol sequence. Lina's later L2 withdrawal creates an L2-to-L1 message. Once the batch containing that message has reached the required L1 stage, she finalizes the withdrawal through the L1 bridge. ZKsync documents warn that withdrawals may experience an additional delay as a security measure; software should read the live status rather than promise that every validity-rollup withdrawal is immediate.[^9]
+
+### **Trust and upgrade assumptions**
+
+A validity proof prevents a transition outside the proved rules from being accepted, assuming the proof system, circuit, verifier contract, and cryptographic assumptions are sound. It does not prove that the sequencer included Lina promptly, that the user interface showed the right recipient, or that an upgrade is benign. It also does not create data availability by itself. Users need the data path specified by the deployment to reconstruct state and prepare transactions.
+
+Prover failure is normally a liveness failure: an unproved batch cannot advance through the settlement pipeline, but a prover should not be able to make Ethereum accept an arbitrary state without a valid proof. This makes prover diversity and recovery important even when the prover is not trusted for correctness. Sequencer and operator failures can delay inclusion, publication, proofs, and withdrawals. The bridge and system contracts remain high-value code. Upgrade transactions are especially important because a new verifier, bootloader, system-contract set, or circuit version can change what later proofs mean. ZKsync's L1-to-L2 documentation explicitly gives upgrade transactions a defined initiation, bootloader, commit, possible revert, and execute lifecycle.[^8]
+
+A deployment assessment should therefore identify who can authorize an upgrade, which delay and emergency powers apply, how old and new proof versions overlap, and whether a user has a usable exit path before the new rules take effect. "Validity proved" describes a batch relative to a program. It does not answer who chose that program.
+
+### **Observable consequences and failure path**
+
+The pipeline leaves concrete evidence: Lina's L2 receipt names a block; the block maps to a batch; Ethereum records the batch commitment, proof verification, and execution transactions; the bridge records whether her withdrawal message has been consumed. Operators can publish queue ages for uncommitted, unproved, and unexecuted batches. A long **unproved** queue points toward witness or prover trouble. A long **committed but unexecuted** queue points toward a later settlement stage. Those are different incidents even if both appear to a user as a delayed withdrawal.
+
+Now let the primary prover fail after a batch is committed. The correct response is not to bypass proof verification. The batch remains unproved while another prover reconstructs the witness and submits a proof. Lina's prior accepted balance remains safe under the assumed contract rules, but her withdrawal cannot complete on schedule. If the circuit contains a bug that accepts an invalid transition, proof verification can succeed while the economic state is wrong; validity systems move much of the correctness burden into circuit and verifier engineering. If an authorized upgrade installs a faulty verifier, governance has changed the proof boundary itself. And if batch data required for reconstruction is unavailable, users may be unable to independently derive the state even though a proof attests to the transition.
+
+The comparison with Nitro is now precise. Nitro needs an honest, timely challenge to reject a false assertion. Era needs a sound proof system and verifier to prevent one from being accepted. Both need ordered cross-layer messages, available data, safe contracts, transparent upgrade control, and a user-visible account of where a transaction sits.
+
+## **Production Rollup Comparison on One Payment-and-Withdrawal Workload**
+
+The table fixes the workload: deposit ETH from Ethereum, make one L2 payment, publish the batch data required by the named deployment, establish state correctness, and withdraw canonically to Ethereum. "Production" means the named public deployment is live; it does not claim that every decentralization or governance goal is complete. OP Mainnet and Base share the OP Stack family but are separate deployments with separate operators and governance contexts.[^10]
+
+| Deployment | Execution and ordering | Data and correctness path | Canonical withdrawal boundary | Main failure or control to inspect |
+|---|---|---|---|---|
+| **Arbitrum One (Nitro/BoLD)** | Nitro execution; fast sequencer feed, with an L1 delayed path for bypass and force inclusion | Ordered batches reach Ethereum by blobs or calldata; validators replay Nitro and BoLD adjudicates disputed assertions | Supporting assertion confirmed after the optimistic dispute process, then L1 bridge execution | Sequencer delay, effective validator participation and bonds, Nitro/dispute-contract versions, governance and upgrade powers |
+| **OP Mainnet (OP Stack)** | OP Stack sequencer produces L2 blocks; derivation reconstructs L2 from Ethereum data | Output claims are challengeable through the OP fault-proof system; Ethereum data drives derivation | Withdrawal is initiated on L2, proved against an output, waits through the applicable finalization period, then is finalized on L1 | Sequencer/proposer liveness, fault-proof configuration, guardian and upgrade powers, portal implementation[^11] |
+| **Base (OP Stack)** | OP Stack execution and sequencing operated for Base | Same broad OP derivation and fault-proof architecture, with deployment-specific contracts and controls | Same initiate-prove-finalize shape through the deployment's canonical bridge | Do not infer Base's live security configuration solely from OP Mainnet; inspect Base's contracts, operators, and current stage |
+| **ZKsync Era** | EraVM, bootloader, sequencer, L2 blocks grouped into L1 batches | Rollup data path plus commit-prove-execute pipeline; Ethereum verifies a validity proof | Batch containing the L2-to-L1 message reaches required proof/execution stage, then bridge finalization; a security delay may apply | Circuit/verifier correctness, prover liveness, operator queues, system-contract and upgrade controls |
+| **Starknet** | Starknet sequencer orders and executes Cairo transactions; transaction receipts expose staged status | State updates are proved through Starknet's proving pipeline, including SHARP aggregation, and verified on Ethereum | StarkGate releases after the relevant state/message is accepted and the bridge conditions are met | Sequencer and prover liveness, Cairo/prover/verifier versions, data reconstruction, messaging and upgrade controls[^12][^13] |
+| **Scroll** | EVM-compatible L2 execution; blocks are grouped into chunks and batches | Scroll documents execution, batch/data commitment, proof generation, and finalization; a commit transaction records batch data and a finalize transaction verifies proof and advances finalized state | Withdrawal message becomes finalizable after the containing batch is finalized and gateway checks pass | Sequencer/batcher/prover liveness, codec and circuit compatibility, gateway contracts, upgrade control[^14][^15] |
+
+The table should not be used to rank systems by one label. It is a checklist of where to look. For example, two validity rollups may use different virtual machines, proof aggregation, data encodings, upgrade authorities, and withdrawal delays. Two OP Stack chains may share software while exposing different operational and governance risk. The useful comparison holds the user action constant and follows the evidence all the way from a signature to asset release.
+
+
 ## **The Rollup Lifecycle**
 
 <p align="center">
@@ -1376,3 +1478,17 @@ Rollups do not remove the need to scale Layer 1. They make Layer 1 data capacity
 
 [^1]: Ethereum.org. "Optimistic Rollups." <https://ethereum.org/developers/docs/scaling/optimistic-rollups/>.
 [^2]: Buterin, Vitalik, et al. "EIP-4844: Shard Blob Transactions." <https://eips.ethereum.org/EIPS/eip-4844>.
+
+[^3]: Arbitrum Docs. "Inside Arbitrum Nitro." <https://docs.arbitrum.io/how-arbitrum-works/inside-arbitrum-nitro>.
+[^4]: Arbitrum Docs. "Transaction lifecycle on Arbitrum." <https://docs.arbitrum.io/how-arbitrum-works/deep-dives/transaction-lifecycle>.
+[^5]: Arbitrum Docs. "Overview of BoLD." <https://docs.arbitrum.io/how-arbitrum-works/bold/gentle-introduction>.
+[^6]: Arbitrum Docs. "The Sequencer and Censorship Resistance." <https://docs.arbitrum.io/how-arbitrum-works/deep-dives/sequencer>.
+[^7]: ZKsync Docs. "ZKsync protocol overview." <https://docs.zksync.io/zksync-protocol/rollup>.
+[^8]: ZKsync Docs. "L1 <-> L2 communication." <https://docs.zksync.io/zksync-protocol/era-vm/transactions/l1_l2_communication>.
+[^9]: ZKsync Docs. "Withdrawal delay." <https://docs.zksync.io/zksync-protocol/security/withdrawal-delay>.
+[^10]: Optimism Docs. "OP Mainnet." <https://docs.optimism.io/op-mainnet>.
+[^11]: Optimism Docs. "Withdrawal flow." <https://docs.optimism.io/op-stack/bridging/withdrawal-flow>.
+[^12]: Starknet Docs. "Transactions." <https://docs.starknet.io/learn/protocol/transactions>.
+[^13]: Starknet Docs. "SHARP." <https://docs.starknet.io/learn/protocol/sharp>.
+[^14]: Scroll Docs. "Rollup Process." <https://docs.scroll.io/en/technology/chain/rollup/>.
+[^15]: Scroll Docs. "Transactions." <https://docs.scroll.io/en/technology/chain/transactions/>.
