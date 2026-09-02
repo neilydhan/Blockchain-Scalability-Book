@@ -1,6 +1,6 @@
 # Chapter 2: The Blockchain Trilemma
 
-## Introduction
+## **Introduction**
 
 The blockchain trilemma is a design heuristic: increasing capacity, broad independent participation, and adversarial security draw on the same finite bandwidth, computation, storage, capital, and coordination. It is often summarized as a tension among **decentralization**, **security**, and **scalability**.[^1]
 
@@ -221,14 +221,14 @@ A defensible report should not say "1,200 validators means decentralized." It sh
 
 This converts the decentralization axis from a brand judgment into a set of failure hypotheses that can be tested.
 
-## Conclusion
+## **Conclusion**
 
 The trilemma is useful when it exposes where a scaling design spends resources and trust. It does not assign one score to a chain, prove that only two properties are possible, or make decentralization a validator count.
 
 A defensible comparison names workload, completion boundary, validator burden, dangerous coalitions, control keys, data and bridge assumptions, and recovery path. Chapter 3 applies that discipline to Layer 1 and Layer 2 architectures.
 
 
-## References
+## **References**
 
 [^1]: Buterin, Vitalik. "The Blockchain Trilemma." *Ethereum Blog* (2017). Available at: <https://vitalik.eth.link/general/2017/12/31/sharding_faq.html>.
 [^2]: Hill, Mark D. "What is Scalability?" *ACM SIGARCH Computer Architecture News* (1990). Referenced in Chapter 1.
