@@ -41,3 +41,28 @@
     display: none !important;
   }
 }
+
+/* Wide comparison and worksheet tables need compact print typography. */
+@media print {
+  table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  th, td {
+    min-width: 0 !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    hyphens: auto;
+  }
+
+  table.wide-table {
+    font-size: 0.68em;
+    line-height: 1.18;
+  }
+
+  table.wide-table th,
+  table.wide-table td {
+    padding: 3px 4px;
+  }
+}
