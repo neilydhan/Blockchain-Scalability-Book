@@ -6,6 +6,36 @@ Layer 1 and Layer 2 are different places to spend a system's resource and trust 
 
 The labels do not rank security or performance. A larger L1 block, a payment channel, a rollup, and a sidechain improve different workloads and fail in different ways. This chapter compares them by following execution, data, finality, cost, and recovery rather than by treating "L2" as a synonym for fast or cheap.
 
+## **First Intuition: Move the Work or Change the Base**
+
+A beginner can think of a blockchain as a public court plus a shared computer. The base chain receives evidence, applies rules, and records the accepted result. Scaling can change the court itself or let another system do routine work while the court remains available for enforcement.
+
+**Layer 1 (L1)** is the base chain and its native rules. An L1 change affects every node that follows the chain. Increasing the block limit, changing consensus, or adding sharded data capacity are L1 changes.
+
+**Layer 2 (L2)** is a protocol built above an L1 that uses the L1 for a meaningful security function. That function might be settling disputes, checking proofs, publishing recovery data, or enforcing exits. Calling a network "Layer 2" does not by itself say which function it inherits.
+
+Three everyday analogies help separate the designs:
+
+- An **L1 upgrade** is like widening the main road. Everyone uses the new road, and every road operator must handle its new width.
+- A **payment or state channel** is like opening a tab. Participants exchange signed updates privately and use the base chain only to open, close, or settle a disagreement.
+- A **rollup** is like a clerk processing many receipts and submitting a compressed report plus evidence that the total is correct. The base chain does less work per receipt but retains a rule for rejecting a false report.
+
+A **sidechain** is a neighboring road with its own traffic authority. A bridge connects it to the base chain, but the bridge does not automatically give the sidechain the base chain's validators or security.
+
+### **Questions to ask of any layer**
+
+Before comparing performance, follow one user action and ask:
+
+1. Who orders it?
+2. Who executes it?
+3. Where can another party obtain the data?
+4. What proof, challenge, or validator vote makes the result acceptable?
+5. When can the result still be reversed?
+6. Who can change the rules?
+7. How does the user recover if the normal operator disappears?
+
+These questions turn a layer label into a concrete mechanism. The rest of the chapter answers them for common L1 and L2 designs.
+
 ---
 
 ## **What Is Layer 1 Scaling?**
