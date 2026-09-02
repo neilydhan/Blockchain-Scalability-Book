@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<rect width="1200" height="630" fill="#0f172a"/>
+<g font-family="Noto Sans, sans-serif">
+<text x="80" y="150" font-size="64" font-weight="bold" fill="#f8fafc">Blockchain Scalability Book</text>
+<text x="80" y="205" font-size="27" fill="#94a3b8">A mechanism-first guide to scalability, security, trust, and recovery</text>
+<g font-size="19" font-weight="bold">
+<rect x="80" y="290" width="180" height="72" rx="10" fill="#1e3a5f" stroke="#3b82f6" stroke-width="2"/>
+<text x="170" y="322" fill="#93c5fd" text-anchor="middle">Execution</text>
+<text x="170" y="348" fill="#60a5fa" font-size="15" font-weight="normal" text-anchor="middle">compute state</text>
+<rect x="300" y="290" width="180" height="72" rx="10" fill="#14532d" stroke="#22c55e" stroke-width="2"/>
+<text x="390" y="322" fill="#86efac" text-anchor="middle">Data Availability</text>
+<text x="390" y="348" fill="#4ade80" font-size="15" font-weight="normal" text-anchor="middle">publish inputs</text>
+<rect x="520" y="290" width="180" height="72" rx="10" fill="#3b2f63" stroke="#8b5cf6" stroke-width="2"/>
+<text x="610" y="322" fill="#c4b5fd" text-anchor="middle">Consensus</text>
+<text x="610" y="348" fill="#a78bfa" font-size="15" font-weight="normal" text-anchor="middle">order and finalize</text>
+<rect x="740" y="290" width="180" height="72" rx="10" fill="#4a2c0f" stroke="#f59e0b" stroke-width="2"/>
+<text x="830" y="322" fill="#fcd34d" text-anchor="middle">Settlement</text>
+<text x="830" y="348" fill="#fbbf24" font-size="15" font-weight="normal" text-anchor="middle">accept state</text>
+<rect x="960" y="290" width="180" height="72" rx="10" fill="#4c1d1d" stroke="#ef4444" stroke-width="2"/>
+<text x="1050" y="322" fill="#fca5a5" text-anchor="middle">Recovery</text>
+<text x="1050" y="348" fill="#f87171" font-size="15" font-weight="normal" text-anchor="middle">when it breaks</text>
+</g>
+<g stroke="#475569" stroke-width="2"><line x1="262" y1="326" x2="298" y2="326"/><line x1="482" y1="326" x2="518" y2="326"/><line x1="702" y1="326" x2="738" y2="326"/><line x1="922" y1="326" x2="958" y2="326"/></g>
+<text x="80" y="470" font-size="24" fill="#e2e8f0">Neil Han</text>
+<text x="80" y="510" font-size="20" fill="#64748b">Free web, PDF, and EPUB editions &#183; CC BY-SA 4.0</text>
+<text x="80" y="560" font-size="18" fill="#475569">neilydhan.github.io/Blockchain-Scalability-Book</text>
+</g>
+</svg>
