@@ -159,6 +159,56 @@ The techniques complement each other. Each shard can execute transactions in par
 
 ---
 
+## **Named Transaction Traces: Solana, Sui, and Aptos**
+
+**Deployment label: all three are production networks.** They expose concurrency differently. Solana transactions declare account access before execution. Sui makes object identity and ownership central to its transaction model. Aptos orders transactions and uses Block-STM to discover conflicts during speculative execution. The useful comparison is not a peak transactions-per-second number. It is what information the scheduler has, what happens when two transactions collide, and which result becomes canonical.
+
+### **Solana: declared accounts become runtime locks**
+
+Trace two users buying different items from one marketplace program. Each Solana transaction contains signatures, a message, recent blockhash or durable-nonce context, instructions, and an account-key list. Each instruction identifies the program and the accounts it will read or write. The message marks accounts as writable or read-only. This declaration is part of the signed transaction, not a scheduler guess.[^1][^4]
+
+The processing pipeline receives and deserializes the transaction, verifies signatures, sanitizes structure, checks compute budget and age, validates nonce and fee payer, loads accounts, executes instructions, then commits or rolls back.[^4] Before execution, the runtime can see that transaction A writes inventory account `item_A` while transaction B writes `item_B`. If their other writable sets do not overlap, workers can execute them in parallel even though both call the same marketplace program. Program identity alone does not force serialization; writable state overlap does.
+
+Now add one global writable counter recording all sales. Both transactions name it. The runtime cannot safely execute both writes concurrently, so the counter becomes a lock conflict and a throughput bottleneck. If a client forgets to provide an account an instruction needs, the program cannot reach out to arbitrary undeclared state; execution fails. If a transaction declares an account writable when it only reads it, correctness survives but concurrency falls. If it understates access, the transaction fails rather than quietly bypassing locks.
+
+Observable evidence includes the signed account list, writable flags, instruction list, compute-unit use, execution logs, status, and commit slot. A benchmark should report writable-account overlap and account-lock failures. Ten programs touching one hot token or market account may serialize more than ten calls to one program over disjoint accounts.
+
+### **Sui: owned and shared objects choose different paths**
+
+Sui represents state as objects with identifiers, versions, ownership, and digests. A transaction names the objects it consumes or mutates. This makes dependencies explicit at an application level: two transfers over unrelated owned objects are independent, while two calls mutating one shared object contend on that object's order.[^5][^6]
+
+Trace a coffee-shop payment using address-owned coin objects. The wallet constructs a transaction naming the gas object, payment coin, recipient, commands, and current object versions. The user signs it and submits it. Validators verify authorization and object references, sequence the transaction under the applicable Sui path, execute Move commands, and produce signed transaction effects naming created, mutated, wrapped, or deleted objects. The effects become final under Sui's transaction rules and are later included in a checkpoint.[^5]
+
+For an owned-object transaction, ownership gives a direct authorization and dependency structure. Separate customers spending separate coin objects do not contend on one account balance row. A shared-object transaction, such as updating one public auction, needs consensus ordering because independent users may race to mutate the same object. Sui's consensus documentation and transaction lifecycle connect this path to Mysticeti and checkpointing. The object model narrows conflict domains; it does not remove the need to order genuinely shared state.
+
+Failure follows object versions. If two signed transactions try to consume the same owned coin version, both cannot succeed. Once one effect is final, replay or the conflicting spend is rejected by the version and ownership rules. If a wallet builds against a stale shared-object or owned-object reference, it must refresh and reconstruct rather than retry opaque bytes indefinitely. A globally shared object can become the same hot-state bottleneck seen in other systems, even when unrelated objects execute in parallel.
+
+Observable evidence includes transaction digest, input object IDs and versions, signatures, effects certificate or final effects, and checkpoint inclusion. "Final effects" and "included in checkpoint" answer different operational questions. Indexers and bridges may wait for checkpoint evidence even when a user interface already shows transaction finality.
+
+### **Aptos: Block-STM discovers conflicts speculatively**
+
+Aptos transactions do not need to declare a complete read/write set in advance. Consensus establishes a block order. The execution engine then applies Block-STM, a software transactional memory design that speculates on multiple ordered transactions, records versioned reads and writes, validates those reads, and re-executes work whose assumptions were invalidated by an earlier transaction.[^7][^8]
+
+Trace an ordered block containing `T0`, `T1`, and `T2`. `T0` updates Alice's balance. `T1` touches an unrelated resource. `T2` reads Alice's balance and sends funds. Workers may start all three. `T1` can finish independently. `T2` may first read an older multi-version value while `T0` is still running. Validation later sees that canonical earlier transaction `T0` changed the resource. Block-STM aborts and re-executes `T2` against the right version. The final state must match sequential execution in consensus order even though the work overlapped.
+
+This optimistic design extracts parallelism without requiring programmers to predict all accesses. Its failure cost is wasted work. An adversarial or badly designed workload can let many transactions run almost to completion and then conflict on one late-read resource. Re-execution increases CPU, cache and memory pressure while committed throughput falls. Correctness requires aborted attempts to leave no durable events, writes, gas result, or external effect. The final receipts and state root must be independent of worker count and thread timing.
+
+Aptos's end-to-end transaction path is broader than Block-STM. A client submits to a fullnode; transactions propagate toward validators, enter the consensus and Quorum Store pipeline, are ordered, executed, and committed to storage.[^8] A fast speculative attempt is not client finality. The user observes submission, pending state, block order, execution result, and commit.
+
+### **Fixed workload comparison**
+
+| Workload | Solana | Sui | Aptos |
+|---|---|---|---|
+| Two payments over disjoint state | Parallel when declared writable account sets do not conflict | Independent owned objects expose separate dependencies | Block-STM speculates in parallel and validates successfully |
+| Two updates to one hot market | Shared writable account creates lock contention | Shared object requires one consensus order and remains hot | Speculation conflicts; later ordered transaction may re-execute |
+| Dependency information | Signed account list and writable flags before execution | Object IDs, versions, ownership and shared-object status | Read/write dependencies discovered during speculative execution |
+| Safe collision behavior | Conflicting locks prevent unsafe concurrent writes | Object version/order prevents two incompatible effects | Validation aborts stale speculation and retries in canonical order |
+| Performance trap | Overbroad writable lists and global accounts | One popular shared object | Late conflicts and repeated speculative work |
+| Audit evidence | Accounts, instructions, logs, compute, slot/status | Inputs and versions, effects, checkpoint | Ordered block index, attempts/conflicts, receipt, committed state |
+
+All three preserve a deterministic canonical result. They differ in when dependency information appears and who bears mistakes. Solana makes the client and program expose accounts. Sui makes object topology part of application design. Aptos lets the runtime discover dependencies but may spend extra work on wrong speculation. A credible comparison replays the same contention distribution and reports committed results, retries or lock conflicts, latency percentiles, and state-commit cost.
+
+
 ## **Benchmarking Parallel Engines**
 
 Peak TPS is especially misleading here. A benchmark should report:
@@ -478,3 +528,9 @@ The limit is contention. A parallel VM is most effective when its application mo
 [^1]: Solana. "Transactions and Instructions." <https://solana.com/docs/core/transactions>.
 [^2]: Sui. "The Sui Smart Contracts Platform." <https://docs.sui.io/paper/sui.pdf>.
 [^3]: Gelashvili, Rati, et al. "Block-STM: Scaling Blockchain Execution by Turning Ordering Curse to a Performance Blessing." <https://arxiv.org/abs/2203.06871>.
+
+[^4]: Solana Documentation. "Transaction processing pipeline." <https://solana.com/docs/core/transactions/transaction-pipeline>.
+[^5]: Sui Documentation. "Life of a Transaction." <https://docs.sui.io/develop/transactions/transaction-lifecycle>.
+[^6]: Sui Documentation. "Types of Object Ownership." <https://docs.sui.io/develop/objects/object-ownership/>.
+[^7]: Aptos Documentation. "Execution." <https://aptos.dev/network/blockchain/execution>.
+[^8]: Aptos Documentation. "Life of a Transaction." <https://aptos.dev/network/blockchain/blockchain-deep-dive>.
