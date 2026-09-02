@@ -21,7 +21,7 @@ if [[ -z "$browser" ]]; then
 fi
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
-output="$root/book/blockchain-scalability-book.pdf"
+output="$root/book/mastering-blockchain-scalability.pdf"
 toc_map="$root/book/pdf-toc.json"
 helper="$root/scripts/pdf_toc.py"
 

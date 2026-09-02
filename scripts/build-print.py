@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup, NavigableString, Tag
 ROOT = Path(__file__).resolve().parent.parent
 BOOK = ROOT / "book"
 OUTDIR = ROOT / "print"
-OUT = OUTDIR / "blockchain-scalability-book-interior-7x10.pdf"
+OUT = OUTDIR / "mastering-blockchain-scalability-interior-7x10.pdf"
 CSS = ROOT / "theme" / "print-7x10.css"
 SITE = "https://neilydhan.github.io/Mastering-Blockchain-Scalability/"
 
@@ -164,19 +164,19 @@ def build():
   <div class="t">Mastering Blockchain Scalability</div>
   <div class="st">A mechanism-first guide to blockchain scalability, security, trust, and recovery</div>
   <div class="au">Neil Han</div>
-  <div class="ed">Version 1.1.1 &middot; Print Edition Candidate</div>
+  <div class="ed">Version 1.1.3 &middot; Print Edition Candidate</div>
 </div>""", "html.parser"))
 
     body.append(BeautifulSoup("""
 <div class="fm copyright">
   <p class="spacer"></p>
-  <p><b>Mastering Blockchain Scalability</b><br>Version 1.1.1, print edition candidate</p>
+  <p><b>Mastering Blockchain Scalability</b><br>Version 1.1.3, print edition candidate</p>
   <p>&copy; 2026 Neil Han. Book prose, exercises, tables, and original figures are licensed under the Creative Commons Attribution-ShareAlike 4.0 International License (CC BY-SA 4.0, https://creativecommons.org/licenses/by-sa/4.0/). Build software under scripts/, theme/, and .github/ is licensed under the MIT License. Third-party quotations, trademarks, and credited materials retain their respective rights. Figure sources and credits appear in the Figure Credits chapter.</p>
   <p>Free digital editions (web, PDF, EPUB): https://github.com/neilydhan/Blockchain-Scalability-Book/releases</p>
   <p>Independently published. Print ISBN: to be assigned through Amazon KDP.</p>
   <p>10 9 8 7 6 5 4 3 2 1</p>
   <p>This book is educational material, not financial, legal, or investment advice. Protocol details change; every time-sensitive claim carries a source and a date, and readers should verify the current specification.</p>
-  <p>Cite this edition: Han, Neil. <i>Mastering Blockchain Scalability</i>. Version 1.1.2, 2026. https://doi.org/10.5281/zenodo.22257267</p>
+  <p>Cite this edition: Han, Neil. <i>Mastering Blockchain Scalability</i>. Version 1.1.3, 2026. https://doi.org/10.5281/zenodo.22257267</p>
 </div>""", "html.parser"))
 
     # TOC

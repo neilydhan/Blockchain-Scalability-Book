@@ -33,7 +33,7 @@ browser_version=$(${browser:-false} --version 2>/dev/null || echo unavailable)
 out="release/v${version}"
 rm -rf "$out"
 mkdir -p "$out"
-pdf="book/blockchain-scalability-book.pdf"
+pdf="book/mastering-blockchain-scalability.pdf"
 pages=$(pdfinfo "$pdf" | awk '/^Pages:/{print $2}')
 page_size=$(pdfinfo "$pdf" | awk -F: '/^Page size:/{sub(/^[[:space:]]*/, "", $2); print $2}')
 replacement_characters=$(pdftotext "$pdf" - | grep -o $'�' | wc -l || true)
@@ -41,8 +41,8 @@ blank_pages=$(pdftotext "$pdf" - | awk -v RS='\f' '{ page=$0; gsub(/[[:space:]]/
 [[ "$pages" =~ ^[1-9][0-9]*$ ]] || { echo "could not verify PDF page count" >&2; exit 1; }
 [[ "$replacement_characters" -eq 0 ]] || { echo "PDF contains replacement characters" >&2; exit 1; }
 [[ "$blank_pages" -eq 0 ]] || { echo "PDF contains $blank_pages blank pages" >&2; exit 1; }
-cp "$pdf" "$out/blockchain-scalability-book-v${version}.pdf"
-tar -czf "$out/blockchain-scalability-book-v${version}-html.tar.gz" -C book --exclude='blockchain-scalability-book.pdf' .
+cp "$pdf" "$out/mastering-blockchain-scalability-v${version}.pdf"
+tar -czf "$out/mastering-blockchain-scalability-v${version}-html.tar.gz" -C book --exclude='mastering-blockchain-scalability.pdf' .
 
 cat > "$out/manifest.json" <<JSON
 {
