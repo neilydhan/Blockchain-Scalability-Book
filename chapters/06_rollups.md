@@ -714,6 +714,108 @@ A release test should assert:
 
 Run the complete game periodically in production-like staging. A deployed contract that has never resolved an intentionally invalid assertion remains an untested safety mechanism.
 
+## **Circuit Versioning, Trusted Setup, and Verifier Migration**
+
+A validity proof is meaningful only relative to a precise program and verifier. Upgrading the application while leaving an old verifier reachable, or upgrading a verifier without binding the proof's circuit version, can create a path that accepts the wrong transition.
+
+### Program identity
+
+Define one proof domain:
+
+```text
+ProofDomain {
+  chain_id,
+  rollup_id,
+  circuit_family,
+  circuit_version,
+  execution_program_hash,
+  verifier_hash,
+  public_parameter_hash,
+  activation_height
+}
+```
+
+Public inputs and proof submissions bind this domain. A proof generated for a test deployment, earlier circuit, different fork, or different setup ceremony must fail even if its byte format is otherwise valid.
+
+The **execution program hash** identifies the state-transition logic being proven. The **verifier hash** identifies the on-chain code or verification key. Both matter: correct program logic with a misconfigured verifier is unsafe, and a correct verifier for an older program can accept obsolete semantics.
+
+### Trusted setup
+
+Some proof systems use public parameters created through a **trusted setup ceremony**. Participants contribute randomness and should destroy secret intermediate material. Security holds if at least one honest participant destroys its secret under the ceremony's assumptions.
+
+A **universal setup** can support many circuits up to stated limits; a circuit-specific setup applies to one circuit. "Universal" does not mean valid for every size or proof system. Record curve, maximum degree or constraint bound, transcript hash, contribution software, and verification procedure.
+
+Users should be able to verify the final transcript independently. A ceremony with many names but no reproducible transcript is social evidence, not cryptographic verification.
+
+If toxic-waste secret material survives, an attacker may forge proofs without being detected by ordinary verification. Operational controls cannot compensate after the fact; migration requires a new trusted parameter set and verifier, plus a response for state accepted under the compromised system.
+
+### Transparent systems
+
+Transparent proof systems avoid a secret setup but still use public parameters such as hash functions, field choices, and security levels. Avoid saying "no assumptions." The trade may include larger proofs, more verification work, or different post-quantum properties.
+
+### Version transition
+
+A safe migration chooses a finalized activation boundary `H`. Batches before `H` use old circuit `C0`; batches at or after `H` use `C1`. The settlement contract rejects proofs whose version does not match the batch range.
+
+Pending jobs need an explicit rule. A batch proved under `C0` but submitted after activation can remain valid if its height is before `H`; submission time alone should not redefine semantics. Conversely, a `C1` proof must not validate a pre-activation batch unless the migration specification says so.
+
+### Dual verification window
+
+During a shadow period, generate both old and new proofs for the same batches and compare public outputs. The production contract can continue accepting only `C0` while operators validate `C1` off-chain. This detects mismatches without creating two canonical state paths.
+
+A dual on-chain acceptance window is riskier. If both verifiers can accept the same batch and disagree, an attacker chooses the more permissive path. Prefer height-partitioned acceptance and one canonical state root per batch.
+
+### Key and contract deployment
+
+Verify deployment bytecode, constructor inputs, verification key, proxy implementation, initialization state, owner, upgrade authority, and chain ID. Reproduce the address when deterministic deployment is part of the plan.
+
+A verifier contract that is correct but uninitialized may let the first caller set an owner or key. An old implementation left reachable through another proxy or bridge route can remain an acceptance path. Map every caller, not only the main interface.
+
+### Proof compatibility matrix
+
+Test:
+
+| Proof | Batch | Expected result |
+|---|---|---|
+| `C0` valid | before `H` | accept |
+| `C0` valid | at/after `H` | reject |
+| `C1` valid | before `H` | reject unless specified |
+| `C1` valid | at/after `H` | accept |
+| wrong chain/rollup | any | reject |
+| altered public input | any | reject |
+| correct proof, wrong verifier key | any | reject |
+| malformed version encoding | any | reject before expensive work when possible |
+
+Add empty batches, maximum-size batches, recursive aggregates spanning `H`, proofs already in the mempool at activation, and settlement reorganization across `H`.
+
+### Recursive and aggregated proofs
+
+An aggregation circuit that verifies child proofs embeds or commits to their verifier definitions. Upgrading a leaf circuit without updating the aggregation path can make new proofs unusable; accepting a generic child verifier identifier can make old or unintended proofs admissible.
+
+Bind child circuit version, batch range, order, and public-input hash into the aggregate. Prevent overlap and gaps. A proof covering batches 10-20 plus another covering 20-30 must not double-apply batch 20.
+
+### Emergency response
+
+If a soundness bug is suspected, stop accepting new proofs under the affected domain and preserve the last independently justified state. Do not switch to an operator-signed root as if it carried the same guarantee.
+
+Record all accepted proofs and batches in the vulnerable window. Re-execute from a known safe state with corrected logic, compare user balances and messages, and publish the canonical recovery evidence. The response may require governance, but governance should choose among verifiable recovery artifacts rather than invent state.
+
+### Release assertions
+
+Before verifier activation, require:
+
+- reproducible program and verifier hashes;
+- verified setup transcript or documented transparent parameters;
+- complete cross-version negative tests;
+- shadow proof agreement over production-shaped workloads;
+- recursive aggregation compatibility;
+- settlement reorganization testing around activation;
+- old acceptance paths disabled as specified;
+- user exit window when assumptions materially change;
+- rollback or forward-fix runbook that preserves asset and message accounting.
+
+Circuit upgrades are consensus upgrades for the rollup. Treat proof domains, setup artifacts, verifier code, activation boundaries, and recovery evidence with the same discipline as an L1 state-transition change.
+
 ## **Proving Pipeline: From Execution Trace to L1 Verification**
 
 A validity rollup does not prove "the block" as an informal object. It proves that a precisely encoded program accepted private witness data and public inputs. The engineering pipeline must keep execution, trace generation, arithmetization, proof creation, and contract verification on the same version.
