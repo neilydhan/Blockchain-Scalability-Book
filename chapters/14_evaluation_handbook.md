@@ -320,6 +320,118 @@ The next action is not to pick the largest number. For the rollup, add prover re
 
 The final record names the selected commit and deployment, rejected alternatives, measured workload, finality policy, trust and key inventory, unresolved risks, launch limits, rollback trigger, and date for reassessment. A decision is temporary when protocols, control structures, or workloads change.
 
+## **Upgrade Operations and User Exit Windows**
+
+An upgrade changes the code or parameters that protect user state. Treat it as a protocol migration, not a software deployment. The operational goal is to prove that the proposed transition is authorized, understood, reproducible, reversible where possible, and gives users a meaningful chance to exit when trust assumptions change.
+
+### Upgrade manifest
+
+Publish one machine-readable manifest:
+
+```text
+UpgradeManifest {
+  system_id,
+  proposal_id,
+  old_version,
+  new_version,
+  source_commit,
+  build_digest,
+  artifact_hashes[],
+  verifier_or_contract_addresses[],
+  state_migration_hash,
+  activation_condition,
+  activation_time_or_height,
+  rollback_condition,
+  governance_authority,
+  user_exit_deadline
+}
+```
+
+Signatures should authorize this exact manifest. A vote for prose that later resolves to different bytecode, initialization data, or activation height is not reproducible authorization.
+
+### Classify the change
+
+Label whether the upgrade changes:
+
+- execution semantics or gas schedule;
+- state encoding or commitment scheme;
+- proof circuit, verifier, or trusted setup;
+- sequencer, validator, or prover membership;
+- bridge custody or message verification;
+- DA provider or retention assumption;
+- fee market, asset, or oracle;
+- pause, upgrade, or emergency authority.
+
+A minor API release can still be a major security change if it redirects a proof endpoint or bridge verifier. Classification follows effect, not version number.
+
+### Pre-activation gates
+
+Require reproducible builds, independent artifact hashes, differential execution, state migration rehearsal, security review, and rollback testing. Run old and new versions in shadow against the same finalized inputs and compare state roots, receipts, logs, fees, and messages.
+
+Expected differences need machine-readable exceptions tied to test cases. "Roots differ because of the upgrade" is not an explanation. Enumerate which transactions or state fields change and prove that all other behavior remains equal.
+
+For a verifier upgrade, generate valid and invalid proof vectors across both versions. Test old proofs pending at activation, new proofs submitted early, recursive proofs embedding the old verifier, and malformed version tags.
+
+### Timelock and exit window
+
+A timelock is useful only if users can understand the change and complete an exit before activation. The window must include monitoring delay, challenge or proof time, settlement finality, bridge withdrawal, and congestion under simultaneous exits.
+
+Suppose monitoring may take 24 hours, an optimistic withdrawal needs 7 days, settlement policy adds 20 minutes, and a mass-exit capacity model requires 2 days. A 48-hour upgrade delay is not a meaningful exit window. A conservative bound is at least:
+
+```text
+24 h + 7 d + 20 min + 2 d ≈ 10 days and 20 minutes
+```
+
+Add operational margin. If emergency upgrades can bypass the delay, disclose exactly who can invoke that path and which loss it is intended to contain.
+
+### State migration
+
+Bind the pre-state root, migration program hash, parameters, and expected post-state root. Run the migration on a production-sized snapshot with constrained hardware. Measure wall time, peak memory, disk amplification, and downtime.
+
+Make migration idempotent or persist phases so a restart cannot apply transformations twice. Validate supply, ownership, nonces, permissions, pending messages, and consumed replay identifiers before activation.
+
+If rollback is possible after new transactions execute, define how those transactions are replayed or compensated. Database rollback alone can duplicate external messages or withdrawals. Often the safe recovery is a forward fix from a frozen state, not a silent binary downgrade.
+
+### Activation
+
+Use an objective height, finalized timestamp, or governance state visible to every component. Confirm clock and chain assumptions. Freeze configuration changes that could alter the manifest near activation.
+
+At activation, monitor version adoption, state-root agreement, block production, proof acceptance, bridge queues, forced messages, fee behavior, and user errors. Define abort thresholds before the event; do not invent them while under pressure.
+
+An activation runbook assigns named roles for command authority, observation, communications, bridge/prover/sequencer operations, and independent safety review. One person should not both execute and attest that all checks passed.
+
+### Rollback and halt matrix
+
+| Condition | Safe response | Forbidden shortcut |
+|---|---|---|
+| artifact hash mismatch | stop activation | rebuild unreviewed binary live |
+| state roots diverge in shadow | investigate and delay | label difference expected without vector |
+| migration stops before commit | resume from verified phase or restore snapshot | rerun blindly over partial state |
+| new verifier rejects valid proofs | halt unsafe frontier; preserve old accepted state | accept proofs off-chain by operator judgment |
+| bridge messages diverge | pause release and reconcile identifiers | replay all pending messages |
+| liveness degrades but safety holds | use bounded rollback/forward-fix rule | weaken validation to regain throughput |
+| conflicting accepted state appears | halt finalization and preserve evidence | choose a root based on convenience |
+
+### Governance key operations
+
+Inventory every key and threshold that can schedule, cancel, accelerate, pause, or execute an upgrade. Verify device access, signer identity, transaction simulation, nonce, chain ID, and destination contract. Conduct a dry run with the same signer path.
+
+A multisignature threshold is not independent if signers share custody software or one administrator can reset all accounts. Exercise loss of one signer and loss of the largest correlated signer group.
+
+After activation, revoke obsolete roles, rotate temporary keys, and verify old implementation contracts cannot be reinitialized or called through an alternate proxy path.
+
+### User communication
+
+Publish plain-language and technical notices from authenticated channels. State the exact effect, trust changes, hashes, activation boundary, exit deadline, known limitations, and where status updates will appear.
+
+Wallets and interfaces should surface pending upgrades that affect custody or verification. Avoid claiming "no action required" when a user must accept a new governance, DA, bridge, or proof assumption by remaining in the system.
+
+### Post-activation proof
+
+Record actual activation height, transaction, code hashes, post-migration root, signer set, tests, incidents, and any deviation from the manifest. Reconcile assets and messages. Keep the old and new artifacts plus migration inputs long enough for independent review.
+
+An upgrade is complete only after the observation window passes, queues normalize, proofs and exits work, obsolete authority is removed, and the evidence package lets an outsider reproduce what changed.
+
 ## **Conclusion**
 
 Scalability engineering begins after the headline number. A defensible evaluation starts with workload, traces the transaction and recovery paths, models each resource, tests the real stack under failure, and publishes enough detail for another team to reproduce the result.
