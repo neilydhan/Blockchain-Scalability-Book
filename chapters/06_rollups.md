@@ -8,6 +8,64 @@ This design separates three questions: who orders transactions, who executes the
 
 ---
 
+## **Rollups From First Principles**
+
+A rollup moves transaction execution away from the base chain while keeping a base-chain contract able to check and enforce the result. Many transactions are collected into a **batch**. The rollup executes them, calculates a new state root, and posts data plus a claim about that new state.
+
+Picture an accountant processing a box of receipts. Re-entering every receipt in the public ledger is expensive. Instead, the accountant publishes the receipts in a compact form, a new total, and evidence that the arithmetic follows the agreed rules. Anyone can reconstruct the work or check the evidence. The base chain acts as the final court and asset custodian.
+
+### **The roles**
+
+- The **sequencer** receives transactions and chooses their order. It gives fast responses but may be able to delay or censor users.
+- The **batcher** compresses and publishes ordered transaction data.
+- An **executor** runs the rollup program and calculates state changes.
+- A **prover** creates cryptographic evidence for a validity rollup.
+- A **challenger** checks optimistic claims and starts a dispute when one is invalid.
+- The **settlement contract** stores accepted commitments and applies proof or dispute rules on L1.
+- The **canonical bridge** locks assets on one layer and releases or represents them on the other according to the settlement contract.
+
+One operator can initially run several roles. Keeping the names separate shows which power must later be decentralized and which failure caused a delay.
+
+### **Optimistic and validity proofs**
+
+An **optimistic rollup** treats a posted state claim as acceptable if nobody successfully challenges it before a deadline. "Optimistic" means the normal path assumes the claim will not need a dispute; it does not mean users trust the operator without evidence.
+
+A **fault proof** demonstrates that a claimed transition was invalid. Interactive systems narrow a disagreement over a long execution trace until the base chain checks one small step. This resembles two people disputing a long spreadsheet by repeatedly identifying which half contains the first wrong row.
+
+A **validity rollup** requires a cryptographic proof before accepting the new state. A **validity proof** convinces a verifier that the encoded program transformed the committed input state into the claimed output state. A **zero-knowledge proof** can additionally hide private witness data, but not every validity proof uses privacy.
+
+### **Data is separate from correctness**
+
+A proof may show that a calculation was correct without giving users the inputs needed to reconstruct balances or make future transactions. **Data availability** asks whether those inputs can actually be obtained.
+
+Rollups commonly publish compressed transaction data to L1 or a specified DA layer. A **blob** is a temporary, separately priced L1 data container designed for rollup batches. The chain commits to blob contents and makes them available for a protocol retention period; long-term archives are a separate service.
+
+### **Deposits and withdrawals**
+
+A deposit locks an L1 asset in the bridge and creates a message the rollup must process. A withdrawal begins on L2, becomes part of an accepted state root, and then proves to the L1 bridge that the message is valid and unused.
+
+Optimistic withdrawals wait through the challenge period because releasing an asset too early could honor an invalid state claim. Validity withdrawals can proceed after proof acceptance and required L1 finality. Both still need replay protection: each withdrawal identifier can be consumed only once.
+
+### **Forced inclusion and escape**
+
+If a sequencer ignores a user, a **forced-inclusion inbox** lets the user submit through L1. The protocol specifies how soon the rollup must process that message. An **escape hatch** lets users recover or advance state without the normal operator under defined failure conditions.
+
+These mechanisms matter only when tested. A contract entry point that requires unavailable data, unaffordable gas, or an active operator is not an effective escape.
+
+### **Reading rollup status**
+
+A wallet can truthfully show several stages:
+
+1. received by the sequencer;
+2. ordered in an L2 block;
+3. batch data published;
+4. state claim submitted;
+5. proof accepted or challenge period complete;
+6. containing L1 block final;
+7. withdrawal executed.
+
+Later sections use "unsafe," "safe," "accepted," and "final" for these boundaries. The exact labels vary by implementation; the evidence behind the label is what matters.
+
 ## **The Rollup Lifecycle**
 
 <p align="center">
