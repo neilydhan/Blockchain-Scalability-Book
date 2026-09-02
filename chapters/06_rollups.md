@@ -329,6 +329,125 @@ After the state root is accepted, the user submits the message, Merkle path, and
 
 Marking consumption before transfer avoids reentrancy and replay. Binding both domains prevents the same proof from being reused on another chain. Token mapping must distinguish native assets from representations and handle tokens with unusual transfer behavior.
 
+## **Fee Estimation Under Volatility and Reorganizations**
+
+A user authorizes a maximum fee before the rollup knows the exact batch compression, DA inclusion price, proof allocation, and settlement outcome. The estimator must absorb uncertainty without silently converting every margin into operator revenue.
+
+### Quote object
+
+```text
+FeeQuote {
+  chain_id,
+  transaction_hash_or_template,
+  fee_asset,
+  maximum_total,
+  execution_component,
+  estimated_da_component,
+  proof_and_settlement_component,
+  price_observation_height,
+  quote_expiry,
+  refund_rule,
+  estimator_version
+}
+```
+
+A quote is not consensus truth, but binding it to inputs and version makes errors measurable. Wallets should distinguish estimated, maximum authorized, charged, and refunded amounts.
+
+### Inclusion delay and price movement
+
+The sequencer observes a base-layer data price at time `t0`, accepts a transaction, and may publish at `t1`. If price rises between them, it can absorb the loss, delay publication, or charge under a previously disclosed rule. It must not retroactively exceed the user's cap.
+
+A quote expiry bounds this exposure. Accepted transactions need a maximum publication delay or cancellation path; otherwise the operator holds free optionality to wait for favorable prices.
+
+### Safety margins and reconciliation
+
+Suppose estimated components are:
+
+```text
+execution              1,800 gwei
+DA                     2,500 gwei
+proof + settlement       300 gwei
+subtotal               4,600 gwei
+20% uncertainty margin   920 gwei
+maximum                5,520 gwei
+```
+
+If actual allocated cost is 4,850 gwei, a transparent refund returns 670 gwei. If margin is a stated fixed service charge rather than refundable reserve, label it separately. Users should not need to infer operator spread from unexplained quote error.
+
+### Compression attribution
+
+Batch compression creates shared savings. Transaction A may reduce B's marginal bytes by repeating the same address. Charging based on final marginal order lets the sequencer choose who receives the benefit.
+
+Stable choices include charging uncompressed bytes, assigning dictionary costs by a canonical rule, or socializing actual batch cost by weighted uncompressed size. Each is imperfect but auditable. Publish both charged proxy and realized compressed cost.
+
+### Reverted and dropped transactions
+
+A reverted transaction used execution and publication resources, so a zero fee is not generally sustainable. Charge actual metered work under the signed cap and refund unused gas or reserved components canonically.
+
+A transaction dropped before publication should not pay DA cost. A sequencer acknowledgement that reserves resources may have an explicit cancellation fee, but it must be in the quote and triggered by an objective state.
+
+### Reorganizations
+
+An L1 reorganization can remove a published batch. Reposting consumes additional DA and settlement cost. Decide who bears it:
+
+- the operator as normal business risk;
+- a transparent insurance reserve;
+- users through a bounded protocol rule;
+- a faulting party when accountable evidence exists.
+
+Charging the same user twice without renewed authorization violates fee finality. If the original transaction remains valid and is replayed, preserve its total cap across attempts or expose a new quote before resubmission.
+
+### Failed batches
+
+A malformed or invalid batch is an operator fault, not user resource consumption under normal assumptions. Users should not fund the replacement publication. A batch rejected because the base layer reorganized or a data market halted is a different class; accounting should name the cause.
+
+Maintain per-batch ledgers linking user charges, posted data transaction, proof job, settlement transaction, refunds, and subsidies. Aggregate profitability cannot reveal whether one user was overcharged.
+
+### Fee-token exchange rates
+
+When fees are paid in another token, the quote converts settlement costs using an oracle and spread. Bind oracle value, timestamp, staleness bound, decimal precision, and fallback.
+
+Suppose DA cost is 0.002 ETH and ETH is quoted at 2,000 fee tokens per ETH. Base conversion is 4 tokens. A 3 percent spread gives 4.12 tokens. If the oracle becomes stale, rejecting new quotes is safer than silently using an operator-selected price.
+
+Rate changes between quote and charge follow the signed quote policy. The user should not take unlimited exchange risk after acceptance.
+
+### Sponsored and subsidized transactions
+
+A sponsor can pay fees without changing protocol resource use. Bind sponsorship to chain, transaction or policy, maximum amount, expiry, and replay identifier. Prevent an application from exhausting an unlimited sponsor allowance with adversarial calls.
+
+Show the user whether a transaction is fully sponsored, partially sponsored, or may later require another fee for withdrawal. "Free" sequencing can still leave an unaffordable L1 escape.
+
+### Estimator evaluation
+
+Replay the historical distribution and inject sudden DA price multiples, compressibility changes, proof backlog, reorganization, fee-token volatility, and batch rejection. Report:
+
+- quote-to-charge error percentiles;
+- overcharge refunded and operator deficit;
+- acceptance-to-publication delay;
+- transactions expired or canceled;
+- realized versus allocated compression;
+- cost by failure and repost class;
+- subsidy and sponsor exhaustion.
+
+### Invariants
+
+For each authorization:
+
+```text
+charged + refund <= maximum authorized
+charged = named resource charges + named service charge - subsidy
+```
+
+Across a batch:
+
+```text
+allocated shared costs = realized shared costs + disclosed reserve adjustment
+```
+
+Allowing rounding dust requires a bounded, named destination.
+
+Fee estimation is part of user safety. A scalable rollup should expose uncertainty, bound authorization, reconcile shared costs, and preserve the fee cap through failure rather than using operational complexity as permission for arbitrary charges.
+
 ## **Fault-Proof Game Economics**
 
 A challenger spends compute to replay batches and capital to post bonds. If rewards do not cover monitoring and transaction cost, "one honest challenger" may exist in theory but not operation.
