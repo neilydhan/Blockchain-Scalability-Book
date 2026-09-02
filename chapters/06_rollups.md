@@ -303,6 +303,136 @@ Decentralization can worsen latency and make reorganization behavior visible to 
 
 Based sequencing inherits ordering from L1 proposers. Shared sequencing amortizes consensus across rollups. Each choice changes censorship, MEV, latency, and cross-rollup composition rather than producing one universal measure of sequencing decentralization.
 
+## **Sequencer Decentralization and Failover Protocol**
+
+A decentralized sequencer is not merely several machines behind one endpoint. The system must define who may order transactions, how a leader is selected, what a signed soft confirmation means, how state passes to the next leader, and how users make progress when the service fails.
+
+A sequencer set can use rotating leaders, proof-of-stake consensus, a shared external sequencer, or ordering inherited from the settlement layer. Each choice changes latency, censorship resistance, equivocation evidence, and the complexity of recovery.
+
+### Sequencer state
+
+Every sequencer replica should persist at least:
+
+```text
+SequencerState {
+  chain_id,
+  epoch,
+  view,
+  leader,
+  unsafe_head,
+  safe_l1_origin,
+  inbox_cursor,
+  next_l2_height,
+  accepted_transaction_ids,
+  confirmation_signing_state,
+  protocol_version
+}
+```
+
+`unsafe_head` may include unpublished blocks; `safe_l1_origin` identifies the settlement data from which derivation is stable under policy. Mixing them causes a failover replica to build on data that other nodes cannot reconstruct.
+
+Persist signing state before releasing a confirmation. After a crash, a replica must not sign a conflicting block or preconfirmation for the same height and view merely because its memory was lost.
+
+### Normal leader rotation
+
+1. replicas agree on the current epoch and leader schedule;
+2. the leader selects transactions plus mandatory inbox messages;
+3. replicas validate the proposed block and its L1 origin;
+4. the required quorum certifies the order;
+5. the service returns a confirmation naming its strength and expiry;
+6. the batcher publishes enough data for independent derivation;
+7. the next leader starts from the highest certified and available block.
+
+If one operator controls every signing key or every replica database, quorum messages do not create an independent failure domain. Report operators, keys, hosting, client implementations, and settlement access separately.
+
+### Soft confirmation semantics
+
+A confirmation should bind:
+
+```text
+Preconfirmation {
+  chain_id,
+  l2_height,
+  transaction_hash,
+  ordered_position,
+  l1_origin,
+  expiry,
+  sequencer_epoch,
+  view,
+  signer_or_quorum,
+  protocol_version
+}
+```
+
+The wallet must distinguish "received," "sequencer-ordered," "data published," "state accepted," and "settlement final." A preconfirmation can support low-risk UX, but it cannot be presented as settlement if another rule can still remove or reorder the transaction.
+
+Define objective equivocation evidence. Two valid signatures for incompatible commitments in the same domain should be slashable or otherwise penalized. A promise whose violation cannot be proven is a service-level claim, not a cryptographic guarantee.
+
+### Crash before publication
+
+Suppose leader `S1` confirms 2,000 transactions and crashes before publishing the block. Successor `S2` has three possible starting points:
+
+- a certified block body replicated before confirmation;
+- a certified commitment but unavailable body;
+- no certified record beyond the last published batch.
+
+Only the first allows seamless continuation. With a commitment but no body, replicas must recover data before building on it or abandon it under a rule users understand. With no durable certificate, transactions return to the pending pool and earlier soft confirmations expire or are marked broken.
+
+Replicate the complete block body to a quorum or DA service before issuing a strong confirmation. Replicating only a hash proves what was promised but does not make the state recoverable.
+
+### View-change protocol
+
+On leader timeout, replicas send signed new-view messages containing their highest certified block and publication status. The next leader selects the highest safe parent under deterministic tie-breaking and reproposes pending work.
+
+Timeouts that are too short cause churn during latency spikes; timeouts that are too long extend censorship and outage windows. Use adaptive operational alerts, but keep consensus transitions deterministic. Expose current view, leader, timeout cause, highest certificate, unavailable block bodies, and mandatory-inbox age.
+
+A view change must not skip forced messages whose deadline is near. Reserve block resources before ordinary transaction selection and carry the authoritative inbox cursor into the new view.
+
+### Settlement-layer reorganization
+
+A leader may derive from L1 origin `O` that later reorganizes away. The sequencer set should rewind to the common safe origin, deterministically discard or requeue dependent L2 transactions, and issue a visible status change.
+
+Transactions sourced from reverted deposits cannot remain valid unless protocol rules explicitly fund them another way. Transactions independent of the reverted input may be replayable, but replay should re-evaluate nonce, fees, and state rather than copying an old result.
+
+All replicas must use the same L1 fork-choice inputs. If some see one provider and others another, the set can stop or equivocate. Operate independent L1 nodes and cross-check finalized and safe heads; a load balancer over one provider account is not diversity.
+
+### Membership change
+
+Activate a new sequencer set at a settlement-authenticated epoch boundary. The transition must bind old and new sets, threshold, activation height, protocol version, and pending confirmation policy.
+
+Outstanding preconfirmations need a rule: the old set publishes them before handoff, the new set inherits the certified block bodies, or they expire before activation. Rotating keys without transferring availability can make valid promises impossible to fulfill.
+
+Test removal of a malicious member, emergency threshold loss, and a delayed member still signing the old epoch. Domain separation must make old-epoch signatures invalid after activation without invalidating already settled history.
+
+### Censorship recovery
+
+A decentralized set can still censor if a quorum agrees or all ingress passes through one gateway. Users need independent submission routes and a settlement-layer inbox whose consumption deadline is enforced.
+
+Measure time from forced submission to inclusion under sequencer outage, not only ordinary API latency. Test transactions that competitors dislike, transactions from blocked network regions, low-fee valid transactions, and forced messages arriving during view changes.
+
+### Worked availability envelope
+
+Assume seven sequencer operators and a five-of-seven ordering threshold. The protocol tolerates two unavailable operators. If three operators share one cloud region, a regional outage can remove the threshold even though no operator individually failed.
+
+If block bodies are stored by only the leader and one backup, ordering may continue to certify unavailable data. Require the availability threshold to match the recovery claim. For example, a five-signature certificate could require each signer to attest that it has the body, but operations must test whether those copies are independently retrievable and durable.
+
+### Failover drill
+
+Run a continuous workload while:
+
+1. killing the leader before proposal, after proposal, after certificate, after user confirmation, and during publication;
+2. partitioning a minority, then a threshold of replicas;
+3. corrupting one replica's persisted view and signing state;
+4. reorganizing the L1 origin;
+5. filling the forced inbox near its deadline;
+6. changing membership with outstanding confirmations;
+7. removing the largest common cloud or network dependency;
+8. restoring nodes from durable state.
+
+Assert no conflicting settled order, no duplicate inbox consumption, deterministic parent selection, bounded broken confirmations, eventual forced inclusion after assumptions recover, and exact reconciliation between confirmed, published, dropped, and requeued transactions.
+
+A decentralized sequencer is production-ready when ordering keys, data, ingress, settlement views, and operations survive independent failures. Replica count alone is not the property; safe handoff and user recovery are.
+
 ## **Rollup Upgrade and Escape Testing**
 
 Before an upgrade, operators should replay historical blocks against the new implementation, compare state roots, test bridge messages, and execute the forced path. A canary deployment or shadow prover can find divergence before activation.
