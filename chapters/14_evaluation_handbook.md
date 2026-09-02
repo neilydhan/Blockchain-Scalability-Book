@@ -2,6 +2,72 @@
 
 A scaling architecture should be reviewed as a system, not as a collection of attractive components. This handbook turns the concepts in the book into a repeatable evaluation process for engineers, investors, researchers, and application teams.
 
+## **How a Basic Reader Can Evaluate a System**
+
+Evaluation does not require trusting a large benchmark number or understanding every cryptographic detail. Start with one user action and follow its evidence.
+
+Suppose Maya deposits into a rollup, makes a payment, and withdraws. Draw boxes for the wallet, sequencer, rollup executor, data publisher, proof or challenge system, L1, and bridge. Draw an arrow whenever one box sends data or evidence to another.
+
+For every arrow, ask:
+
+- What message is sent?
+- How does the receiver know its source and version?
+- Which signature, hash, proof, or validator vote is checked?
+- Can the sender delay, replace, or censor it?
+- What status does Maya see while it is missing?
+- Is there another path when the sender fails?
+
+This simple diagram is a **trust-boundary map**. A trust boundary is any point where one component accepts another component's statement. Verification narrows what must be trusted; it does not remove dependencies such as timing and data delivery.
+
+### **Requirements before metrics**
+
+A **service-level objective (SLO)** states a measurable target, such as "99 percent of withdrawals settle within ten minutes." A **recovery time objective (RTO)** states how quickly service should recover. A **recovery point objective (RPO)** states how much recently accepted work may be lost or replayed after recovery.
+
+These terms force a team to say what "working" means. A system can meet a throughput target while missing withdrawal SLOs or losing recent soft confirmations after restart.
+
+### **Normal path and failure path**
+
+Write the normal path first, but evaluate the failure path separately. For each dependency, remove it and observe:
+
+1. whether safety still holds;
+2. whether new work stops;
+3. whether existing users can exit;
+4. which manual authority is required;
+5. how long recovery takes;
+6. which evidence proves recovery was correct.
+
+A failure that halts safely differs from one that releases the wrong asset. A recovery that needs a governance vote differs from a permissionless retry.
+
+### **Measured, simulated, and projected**
+
+- **Measured:** observed from a real run with recorded inputs and instrumentation.
+- **Simulated:** produced by a model or controlled environment whose assumptions are stated.
+- **Projected:** estimated by scaling measurements or theory beyond the tested range.
+
+All three can be useful, but they are not interchangeable. If four provers handle 100 jobs per second, eight provers may not handle 200 when they share one database or aggregator.
+
+### **Reading operational terms**
+
+A **runbook** is a tested sequence for responding to a known condition. **Telemetry** is measured system data such as queue age, errors, and resource use. An **alert** is a rule that calls attention to telemetry crossing a meaningful boundary. A **postmortem** reconstructs an incident and assigns testable follow-up work.
+
+"We monitor it" is incomplete. Name the metric, threshold, user impact, responder, safe action, and test that proves the alert works.
+
+### **A one-page beginner scorecard**
+
+| Question | Evidence to request |
+|---|---|
+| What useful work completes? | transaction templates and success rule |
+| When is it final? | named consensus, proof, and settlement boundary |
+| Who can block progress? | role and failure-domain map |
+| Who can create loss? | keys, thresholds, contracts, and value caps |
+| Can data be recovered? | retrieval test from independent providers |
+| Can a user exit? | exercised transaction and worst-case cost/time |
+| Does capacity survive failure? | fault-injected benchmark and queue behavior |
+| Can the rules change? | upgrade manifest, delay, authority, and exit window |
+| Can another team reproduce it? | code, configuration, snapshot, raw data, and scripts |
+
+The rest of the handbook expands this scorecard. Readers can use it even when specialists perform the cryptographic review.
+
 ## **1. Define the Workload Before the Architecture**
 
 Start with actions users perform, not a target TPS. Record the expected and peak rates for transfers, contract calls, state reads, proof requests, deposits, withdrawals, and cross-domain messages. Measure transaction size and the number of state locations touched.
