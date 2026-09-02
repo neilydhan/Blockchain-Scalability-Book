@@ -6,6 +6,73 @@ Blockchain scalability is the ability to support increasing useful demand while 
 
 Public blockchains combine replicated execution and storage with adversarial consensus. That redundancy lets users verify shared state without trusting one database operator, but it also makes capacity expensive. The techniques in this book divide, compress, schedule, or prove the work while trying to preserve that independent check.
 
+## **A Minimal Blockchain Model**
+
+Before discussing scalability, it helps to picture the smallest useful blockchain.
+
+A **transaction** is a signed instruction, such as "send one token to Maya" or "exchange these two assets." A digital signature lets anyone verify that the holder of a private key authorized the instruction without revealing the private key.
+
+Transactions are grouped into **blocks**. Each block points to the preceding block by including its cryptographic hash, a short fingerprint that changes if the earlier data changes. These links create an ordered history. Changing an old block would change its fingerprint and every later link.
+
+A blockchain also maintains **state**: the latest balances, contract storage, ownership records, and other values applications use now. A transaction changes the old state into new state under deterministic rules. "Deterministic" means honest computers starting from the same inputs calculate the same result.
+
+Several independent computers, called **nodes**, exchange transactions and blocks. Some nodes participate in **consensus**, the protocol for choosing one canonical order when messages arrive at different times or a participant lies. A **validator** is a consensus participant that checks proposed blocks and votes, attests, or otherwise helps the network accept them. A **block producer** proposes an ordered block. One machine can fill several roles, but the roles are conceptually different.
+
+The word **canonical** means "the version the protocol currently accepts." This matters because two valid-looking blocks can briefly compete. A wallet may first show a transaction as included, then wait for **finality**, the point at which the protocol's assumptions make reversal sufficiently unlikely or forbidden. Finality is not instant by definition; later chapters distinguish probabilistic and voting-based forms.
+
+### **Why replicate the work?**
+
+A normal online service can keep one authoritative database. Users trust its operator to preserve balances and apply rules. A public blockchain instead lets many parties hold and check the same history. Replication is intentionally inefficient: it prevents one database owner from silently rewriting the result.
+
+Imagine a shared notebook copied to hundreds of desks. Everyone checks each new page before adding it. The copies make tampering visible, but every page must travel to many desks and be checked many times. Blockchain scalability asks how to handle more useful work without abandoning the checks that make the notebook trustworthy.
+
+### **Accounts, contracts, and virtual machines**
+
+An **account** identifies an owner or program and may hold assets or data. A **smart contract** is a program stored and executed under blockchain rules. It does not understand legal intent; it applies code to inputs and current state.
+
+A **virtual machine (VM)** defines the contract instruction set and execution rules. Ethereum's VM is the **EVM**. Every EVM validator must calculate the same result for the same ordered transactions. This shared execution enables applications to interact, but it also makes computation a replicated resource.
+
+### **Hashes, trees, and commitments**
+
+A cryptographic hash maps any input to a fixed-length fingerprint. Finding two useful inputs with the same fingerprint should be infeasible. Protocols combine hashes into a **Merkle tree**, where leaf fingerprints are repeatedly paired and hashed until one **root** remains.
+
+The root is a compact **commitment** to all leaves. A **Merkle proof** supplies the few neighboring hashes needed to show that one leaf belongs under that root. Think of the root as a tamper-evident seal on a large filing cabinet: the proof opens one drawer while still letting the verifier check the seal.
+
+State roots, transaction roots, data commitments, and proof systems build on this idea. A commitment proves what data was bound only when the verifier also has a valid proof and the protocol specifies how the data was encoded.
+
+### **The basic user journey**
+
+A transfer usually follows these steps:
+
+1. a wallet constructs and signs a transaction;
+2. a node receives it and shares it with peers;
+3. a producer selects and orders it in a block;
+4. validators check signatures, rules, and the resulting state;
+5. consensus accepts the block as canonical;
+6. later blocks or votes strengthen finality;
+7. wallets and applications update what they show the user.
+
+The same action therefore has several completion points: submitted, received, included, executed, accepted, and final. Much confusion about blockchain performance comes from timing one point and comparing it with another.
+
+### **The adversarial setting**
+
+Ordinary distributed systems expect crashes and network delay. Blockchains also consider **Byzantine faults**: participants may send conflicting messages, fabricate data, censor users, or coordinate attacks. A system's security claim must say how many or how much weight may be Byzantine and which network conditions are assumed.
+
+**Safety** means honest participants do not accept incompatible outcomes. **Liveness** means valid work eventually progresses under the stated conditions. A network partition may preserve safety by halting, or preserve availability by letting sides continue and reconciling later. Asset systems usually make that choice explicit because accepting two conflicting spends creates loss.
+
+### **Where scaling enters**
+
+The basic design repeats computation, storage, data transfer, and consensus. Scaling techniques change that repetition:
+
+- **sharding** assigns different work to different groups;
+- **channels** keep repeated interactions between participants off the shared chain;
+- **rollups** execute batches elsewhere and publish data plus a proof or challenge path;
+- **data availability sampling** lets nodes test that large published data can be recovered without downloading all of it;
+- **parallel execution** runs independent transactions at the same time;
+- **succinct proofs** let a verifier check a large computation with a much smaller proof.
+
+Every shortcut must answer the beginner's most important question: if fewer parties do the original work, what evidence lets everyone else trust the result, and what can a user do when that evidence or service is missing?
+
 ---
 ## **Why Naive Comparisons Fail**
 
