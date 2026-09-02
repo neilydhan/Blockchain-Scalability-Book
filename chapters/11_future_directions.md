@@ -112,6 +112,104 @@ Application-specific rollups will specialize further. An exchange may build nati
 
 ---
 
+## **Account Abstraction, Bundlers, and Paymasters**
+
+Account abstraction lets contract logic define how a user's operation is authorized and paid instead of requiring every account to follow one fixed signature and fee model. It can support recovery keys, multisignature policy, session permissions, sponsored fees, and batching. It also introduces new mempool, simulation, and sponsor failure paths.
+
+### User operation
+
+A user signs a structured request rather than a native transaction:
+
+```text
+UserOperation {
+  chain_id,
+  account,
+  nonce,
+  call_data,
+  gas_limits,
+  fee_limits,
+  authorization_data,
+  paymaster_data,
+  validity_window,
+  entry_point,
+  version
+}
+```
+
+The signature or authorization binds every field that can change destination, value, fee, replay scope, or code path. A wallet displays the effective calls, not only an opaque hash.
+
+A contract account validates the operation under its own policy. The policy may require one key for small payments, several keys for large payments, a guardian delay for recovery, or a session key restricted to one application and amount.
+
+### Entry point and bundler
+
+A **bundler** collects user operations, simulates them, and submits a native transaction to an **entry-point contract**. The entry point validates accounts, charges fees, executes calls, and reconciles payments.
+
+The bundler is replaceable for correctness when another bundler can include the same valid operation. It still controls short-term inclusion and pays native transaction cost upfront. A wallet needs several submission paths or a direct fallback.
+
+Bundle execution must isolate failures. One invalid user operation should not revert every unrelated valid operation unless the protocol explicitly prices and handles that risk.
+
+### Nonces and parallel lanes
+
+A single increasing nonce serializes all operations from one account. Structured nonces can provide independent lanes, such as one for routine payments and another for application sessions. The account contract must prevent reuse within each lane and define cancellation.
+
+Parallel nonces improve throughput but complicate user expectations. Canceling nonce 10 in one lane should not cancel nonce 10 elsewhere. Wallets must bind lane, sequence, and validity window in the signature.
+
+### Simulation and state changes
+
+Bundlers simulate validation before inclusion, but chain state can change before execution. Another operation may consume a nonce, revoke a key, spend a deposit, or change a paymaster policy.
+
+Consensus execution remains authoritative. Simulation failure should produce a specific reason and safe retry; success is not a guarantee of later inclusion. Bundlers protect themselves with conservative admission, reputation, deposits, and resource limits.
+
+Validation code must be bounded and deterministic. If it reads volatile or unrestricted state, attackers can create operations that simulate successfully and fail on-chain, forcing bundlers to pay gas.
+
+### Paymasters
+
+A **paymaster** sponsors fees or accepts payment in another asset. It validates a policy and deposits native fee assets with the entry point.
+
+Sponsorship data binds operation, chain, maximum charge, expiry, and replay identifier. An application should not sign an unlimited promise that an attacker can attach to arbitrary calls.
+
+A paymaster can fail because its deposit is empty, oracle is stale, policy changed, or post-execution accounting reverts. The user's operation should report that sponsorship failed rather than appearing as an unexplained wallet failure.
+
+### Worked sponsorship budget
+
+Suppose a paymaster deposits 10 ETH and caps one operation at 0.002 ETH. Ignoring refill, the theoretical maximum is:
+
+```text
+10 / 0.002 = 5,000 operations
+```
+
+At a 70 percent planning limit, admit at most 3,500 maximum-cost outstanding operations before requiring refill or lower reservations. Otherwise many individually valid promises can compete for one exhausted deposit.
+
+Reserve against maximum authorized cost, then reconcile actual cost and release the remainder. Concurrent bundlers must see one authoritative reservation state or can overbook the deposit.
+
+### Session keys
+
+A session key gives limited authority for a period. Its policy includes allowed contracts and methods, per-call and cumulative value, fee ceiling, chain, expiry, and revocation.
+
+Checking only the first call is unsafe when that call delegates, batches, or triggers token approvals. Validate the effective call graph or restrict operations to contracts with understood behavior. A token approval can grant value beyond the immediate zero-value call.
+
+Revocation must be available through a stronger key and take effect under a clear finality rule. An operation already in a public mempool may race revocation; policy defines which canonical order wins.
+
+### Recovery and upgrades
+
+Social recovery replaces lost authorization after a delay and guardian threshold. Guardians should not gain immediate spending power. A pending recovery must be visible, cancelable by the current owner when safe, and domain-separated from other accounts and chains.
+
+Contract-account upgrades can replace every validation rule. Bind upgrade authority, delay, implementation hash, and escape behavior. A wallet calling an account "multisignature" is misleading if one upgrade key can remove the threshold instantly.
+
+### Mempool fragmentation
+
+Different account and paymaster rules make validation heterogeneous. Bundlers may support only common implementations, creating a de facto permission boundary. Publish compatibility, rejection reasons, and inclusion latency by account type.
+
+Private bundlers improve UX but can censor or observe operations. A shared mempool needs anti-spam rules that do not require executing unbounded custom validation for free.
+
+### Production tests
+
+Test duplicate and parallel nonces, key revocation races, malformed authorization, bundle partial failure, paymaster depletion, stale exchange rates, simulation/execution divergence, session-key limits, recovery cancellation, entry-point upgrade, bundler outage, and settlement reorganization.
+
+Reconcile user maximum fee, sponsor reservation, actual native gas, token charge, refund, and bundler compensation for every path.
+
+Account abstraction improves usability when flexible authorization remains explicit, bounded, recoverable, and portable across bundlers. It becomes a scalability tool when batching and sponsorship reduce friction without turning one entry point, paymaster, or wallet service into hidden custody.
+
 ## **Chain Abstraction**
 
 Users should not need to know which chain holds gas, which bridge route is safe, or when a message changes finality domains. Chain abstraction combines smart accounts, intent systems, solvers, and cross-chain messaging to present one interface.
