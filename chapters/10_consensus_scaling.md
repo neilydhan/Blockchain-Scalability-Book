@@ -299,6 +299,84 @@ Critical scenarios include:
 
 Testing cannot replace proof, and proof cannot replace implementation testing. The model, specification, and code must encode the same protocol.
 
+## **Consensus Network Partitions and Recovery**
+
+A network partition prevents groups of honest validators from communicating reliably. Consensus must decide whether any group can continue and how branches reconcile when connectivity returns.
+
+### Quorum reachability
+
+In a BFT protocol requiring more than two-thirds voting weight, a partition with 70 percent on one side and 30 percent on the other can let the larger side progress while the smaller cannot form a certificate. A 50/50 partition halts both sides, preserving safety if honest replicas do not violate locking rules.
+
+Validator count is insufficient when weights differ. Compute reachable weight from the authenticated epoch set and avoid counting duplicate signers or replicas of one key.
+
+### Partition or slow network?
+
+A replica observes missing or delayed messages, not a labeled partition. Pacemaker timeouts advance views, but rapid view changes can add load to an already congested network.
+
+Expose peer reachability, vote weight observed, message latency, timeout certificate formation, highest QC, and block-body availability. Operators should not manually force a leader or lower quorum because progress is slow.
+
+### Asymmetric partitions
+
+Communication may work from A to B but not B to A, or small messages may pass while large block bodies fail. Votes can form for data some replicas cannot retrieve.
+
+Test direction, payload size, and protocol phase separately. Availability certificates should mean signers actually possess retrievable data under the stated rule, not merely that they saw a header.
+
+### Healing and view convergence
+
+When connectivity returns, replicas exchange highest certificates and locked state. The pacemaker brings them to a common higher view, and the next valid leader extends the safe parent selected by protocol rules.
+
+Do not choose the branch with the most transactions or the operator's preferred payments. Certificate and lock rules determine safety. Transactions from abandoned uncommitted proposals may return to the mempool after nonce and state revalidation.
+
+### Persistence
+
+A replica persists its current epoch, last vote by view/height, highest QC, lock, and committed boundary before sending messages whose replay could violate safety. After restart, it reloads this state before voting.
+
+Disk failure can make a node "forget" a vote and sign a conflict. Remote signers need monotonic slashing protection or consensus-state fencing. Two active replicas sharing one validator key can equivocate during a partition unless only one has signing authority.
+
+### Worked weighted partition
+
+Suppose validator weights are:
+
+```text
+A 28, B 24, C 20, D 16, E 12; total W = 100
+```
+
+A certificate needs at least 67 under a `floor(2W/3)+1` rule. If A, B, and E can communicate, they have 64 and cannot progress. A, C, D, and E have 76 and can.
+
+If B's operator also controls E, they are separate protocol weights but one operational failure domain. Consensus arithmetic and decentralization analysis answer different questions.
+
+### Reconfiguration during a partition
+
+Do not activate a validator-set change independently on two sides. The new set is authenticated by a finalized or committed boundary under the old set, and every certificate is checked against the set active for its domain.
+
+A partition across the boundary may leave some nodes unaware of the new epoch. Their old-epoch votes must not count in the new epoch. Handoff rules may require overlap or a joint certificate.
+
+### Client and implementation divergence
+
+What looks like a network partition can be a deterministic client split: implementations reject each other's blocks. Network dashboards show healthy connections while votes divide by client.
+
+Compare validation errors, state roots, protocol versions, and payload hashes. Preserve the offending input. Restarting peers or adding bandwidth will not repair divergent execution.
+
+### Recovery procedure
+
+1. identify last committed/finalized block agreed across independent nodes;
+2. preserve votes, timeout messages, proposals, and network observations;
+3. restore connectivity without changing quorum or lock rules;
+4. let protocol view synchronization choose the safe parent;
+5. verify abandoned transactions before requeue;
+6. reconcile proposer rewards, slashing evidence, and user status;
+7. test catch-up from the minority side and a fresh node.
+
+If conflicting commits exist, ordinary recovery assumptions have failed. Halt value release and treat the event as a safety incident; do not call one branch canonical without accountable evidence and the protocol's extraordinary governance process.
+
+### Partition test matrix
+
+Run 70/30, 50/50, rotating minorities, one-way links, high loss, delayed votes, header-only connectivity, body withholding, signer restart, duplicated signer, epoch transition, and mixed-client divergence.
+
+Measure committed throughput, finality latency, timeout/view rate, bandwidth amplification, fork depth, catch-up time, and transaction replay. Assert no conflicting commits under the modeled fault bound and eventual progress once the network and honest-leader assumptions recover.
+
+Consensus scales responsibly when recovery uses the same certificates and locks as normal operation. A partition is not permission to replace protocol safety with administrator judgment.
+
 ## **Consensus Operations**
 
 Operators monitor view duration, proposal delay, vote arrival distribution, missed leaders, QC formation time, finality lag, peer diversity, and clock offset. A rise in view changes may indicate a faulty leader, regional network problem, overloaded verification, or timeout too close to normal p99 delay.
