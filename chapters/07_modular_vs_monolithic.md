@@ -468,6 +468,133 @@ Run adversarial vectors for invalid signature weights, duplicate validators, mal
 
 Finally, rehearse a relayer outage, near-expired trusting period, frozen client, emergency verifier upgrade, and orderly channel shutdown. A bridge is production-ready when operators can explain every accepted proof, bound the value exposed while evidence is ambiguous, and recover without silently choosing a chain history.
 
+## **Bridge Accounting, Limits, and Circuit Breakers**
+
+A bridge is both a verification system and an accounting system. Correct proofs do not help if token mapping, fee behavior, rounding, or pending liabilities let destination supply exceed source backing.
+
+### Conservation equation
+
+For a lock-and-mint bridge at one observation boundary:
+
+```text
+source escrow
+= destination circulating representation
++ finalized burns awaiting source release
++ finalized deposits awaiting destination mint
++ explicitly identified fees and reserves
+```
+
+The exact terms depend on message timing, but every unit must occupy one named state. Reconcile by asset identifier and message ID, not only aggregate dollar value.
+
+For burn-and-mint across native domains, track authorized supply changes rather than escrow. For liquidity-network bridges, track provider liabilities and claims separately from canonical issuance.
+
+### Asset identity
+
+Bind source chain, source contract, destination chain, destination contract, decimals, version, and bridge route. Symbols such as `USDC` are display labels and can collide.
+
+Decimal conversion needs a canonical rounding rule. Bridging 1 unit from an 18-decimal token to a 6-decimal representation can create dust. Decide whether dust remains escrowed, accumulates for later claims, or is rejected. It must not vanish into operator discretion.
+
+Fee-on-transfer and rebasing assets break naive "requested amount equals received amount" assumptions. Measure the escrow's effective balance change and define which asset behaviors are supported. An upgradeable source token can change behavior after onboarding, so monitor its implementation authority.
+
+### Message lifecycle
+
+Use one state machine:
+
+```text
+observed -> finalized -> proven -> releasable -> consumed
+                    \-> expired / canceled / disputed
+```
+
+Transitions are monotonic and keyed by a domain-separated message identifier. "Consumed" is recorded before or atomically with external asset release. A failed token call must leave a retryable state without allowing a second successful release.
+
+A relayer retry should submit the same proof and converge on one state. Operator databases are caches; the contract or protocol state is authoritative.
+
+### Rate limits
+
+Rate limits bound loss from a verifier, key, or accounting failure. They do not make an invalid release correct.
+
+Possible limits include:
+
+- amount per asset per hour or day;
+- amount per destination and route;
+- one-message maximum;
+- net outflow relative to inflow;
+- total value at risk;
+- new-asset probation caps;
+- slower lanes for unusually large claims.
+
+Use deterministic windows or token buckets. Define timestamp source, boundary behavior, retries, and whether unused capacity accumulates. A miner-controlled timestamp should not permit a large window jump.
+
+### Worked token bucket
+
+Suppose a route allows a sustained 100 tokens per minute and a burst capacity of 500. The bucket refills at `100 / 60 ≈ 1.67` tokens per second up to 500.
+
+After a 400-token withdrawal, 100 tokens remain. A new 250-token withdrawal must wait for 150 tokens of refill:
+
+```text
+150 / 1.67 ≈ 90 seconds
+```
+
+The interface should show the limiting route and earliest estimated eligibility. Splitting the withdrawal into smaller messages must not bypass the shared bucket.
+
+### Value-aware limits
+
+Token amounts are not comparable across assets. A price-based global limit introduces oracle risk: stale or manipulated prices can admit excessive value or freeze safe transfers.
+
+Use conservative price sources, staleness checks, per-asset hard caps, and a deterministic fallback. Newly listed or thinly traded assets should not inherit a large cap from an unreliable spot price.
+
+Caps should consider source finality and bridge verification delay. The maximum loss before detection can include all releases during the alert, governance, pause, and settlement windows.
+
+### Circuit breakers
+
+A circuit breaker pauses a narrow transition when objective conditions hold:
+
+- conflicting finality evidence;
+- accounting imbalance;
+- proof verification anomaly;
+- withdrawal rate above the configured envelope;
+- stale light client or oracle;
+- unexpected contract implementation change;
+- consumed-message collision;
+- monitored supply change without a matching bridge event.
+
+Automatic halts should be conservative and observable. An attacker must not be able to keep a bridge halted cheaply with unauthenticated reports. Manual pause keys add power and need thresholds, scope, expiry, and public evidence.
+
+Separate deposit, mint, burn, and release controls. It may be safe to stop new deposits while allowing previously proven withdrawals, or necessary to stop release while preserving proof submission and accounting visibility.
+
+### Fast and slow lanes
+
+Small transfers can use an ordinary lane. Large transfers may require stronger finality, more confirmations, delayed release, additional proof review, or liquidity-provider collateral.
+
+Publish the threshold and timing. Hidden discretionary review makes fungible users receive different security without knowing it. Attackers can split claims unless limits aggregate by sender, asset, route, intent, and system-wide outflow where appropriate.
+
+### Monitoring and reconciliation
+
+Continuously compare:
+
+- source escrow balance;
+- destination total supply;
+- pending deposits and withdrawals by status;
+- consumed identifiers;
+- rate-limit state;
+- fees, dust, and reserves;
+- contract implementation and authority;
+- light-client and oracle freshness.
+
+Run reconciliation from independent indexers and direct chain state. Matching dashboards that share one database are not independent evidence.
+
+### Failure and recovery
+
+If an imbalance appears, stop the release or mint transition that can enlarge it, preserve every message and proof, and identify the last balanced boundary. Do not "fix" totals by burning a user asset or changing escrow without message-level reconciliation.
+
+A recovery manifest lists affected IDs, expected and observed states, correction transactions, signers, before/after supply equations, and user remedies. Reopen under low caps and an observation window.
+
+### Production tests
+
+Test decimal mismatches, dust, rebasing, transfer fees, paused and callback tokens, duplicate proofs, failed external calls, window boundaries, split claims, oracle staleness, source reorganization, implementation upgrades, and circuit-breaker recovery.
+
+A bridge is operationally safe when every unit has a named state, every release has unique final evidence, limits bound loss during response, and operators can reconcile and resume without inventing balances.
+
 ## **Operating a Modular Stack**
 
 Observability should correlate one transaction across every layer. Assign a stable journey identifier and record:
