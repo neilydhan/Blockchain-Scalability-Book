@@ -2,6 +2,72 @@
 
 This glossary defines terms as they are used in this book. Some projects use the same word differently; the surrounding security model always takes precedence over the label.
 
+## **Start Here: Core Blockchain Terms**
+
+**Address**
+
+A public identifier used as a transaction sender, recipient, account, or contract location. An address is not a person's verified real-world identity.
+
+**Block**
+
+An ordered package of transactions and protocol data linked to prior history. A block can be proposed or included before it reaches the protocol's strongest finality.
+
+**Block header**
+
+The compact part of a block containing metadata and commitments such as the parent hash and state or transaction roots. The header binds a larger body without containing all of it.
+
+**Canonical chain**
+
+The history currently selected by the protocol's fork-choice and finality rules. Temporary competing branches may exist before convergence.
+
+**Cryptographic hash**
+
+A fixed-length fingerprint of data. A small input change produces a different fingerprint, and finding useful collisions should be infeasible under the assumed hash function.
+
+**Digital signature**
+
+Cryptographic evidence that the holder of a private key authorized specific bytes. It does not by itself prove sufficient funds, correct execution, inclusion, or finality.
+
+**Finality**
+
+The condition under which a block or transaction should not be reverted under stated protocol and fault assumptions. Finality may be probabilistic or based on explicit validator certificates.
+
+**Full node**
+
+Software that independently checks blocks under protocol rules. Storage and historical-retention choices vary; "full" does not always mean retaining every old byte forever.
+
+**Merkle proof**
+
+A small set of neighboring hashes that proves one item is included under a Merkle root. It authenticates an item but does not guarantee that every committed item is available.
+
+**Node**
+
+A computer running blockchain protocol software and communicating with peers. Nodes may validate, produce blocks, serve data, or perform only a subset of roles.
+
+**Private key and public key**
+
+A private key is secret signing material. A corresponding public key lets others verify signatures. Control of a key establishes protocol authorization, not necessarily legal identity or rightful ownership after theft.
+
+**Smart contract**
+
+Program code executed under blockchain rules. A contract deterministically changes state from inputs; it does not infer intent beyond its code and authenticated messages.
+
+**State**
+
+The latest live values used by execution, such as balances, ownership, nonces, and contract storage. State differs from history, the record of how those values changed.
+
+**Transaction**
+
+A signed instruction submitted to the network. Its final outcome depends on admission, ordering, execution, fees, current state, consensus, and finality.
+
+**Validator**
+
+A participant that checks proposals and contributes votes, attestations, or other consensus evidence. The exact authority and penalty depend on the consensus protocol.
+
+**Wallet**
+
+Software that manages keys, constructs transactions, and displays observed status. A wallet usually relies on nodes or service providers for chain data unless it verifies through its own node or light client.
+
 ## **Architecture and State**
 
 **Application chain (appchain)**
