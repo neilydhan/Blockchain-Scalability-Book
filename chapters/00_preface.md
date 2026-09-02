@@ -25,6 +25,50 @@ I developed this material from blockchain courses taught at Nanyang Technologica
 
 The book grew from a teaching need: students could find papers, documentation, and product descriptions, but few resources connected the full scaling stack and its failure modes. The figures and examples retain that classroom objective while adding implementation checklists, calculations, test plans, and primary references.
 
+## How to Read the Worked Examples
+
+The book uses worked examples to make protocol limits concrete. They are models with stated assumptions, not live fee quotes or performance promises.
+
+Each calculation should be read in four steps:
+
+1. **Name the quantity.** Throughput is work per second; latency is time per action; bandwidth is bytes or bits per second; probability is dimensionless.
+2. **Write the assumptions.** Transaction mix, hardware, finality rule, compression, and failure conditions determine the result.
+3. **Carry the units.** Dividing bytes by bytes per second produces seconds. Multiplying gas by price per gas produces a fee. Units expose many mistakes.
+4. **Interpret the boundary.** The smallest resource ceiling is the current bottleneck; it is not a universal maximum after the workload changes.
+
+### Common notation
+
+Letters are local labels, defined near each example:
+
+- `n` commonly means a total count, such as validators or encoded shares;
+- `k` commonly means a required subset or number of shards;
+- `f` commonly means faulty participants or a fraction;
+- `λ` (lambda) means an arrival rate;
+- `μ` (mu) means a service or processing rate;
+- `p50`, `p95`, and `p99` are percentiles: 50, 95, or 99 percent of observations complete at or below that value;
+- `R0` and `R1` label a prior and next state root;
+- `T1`, `T2`, and so on label transactions in one trace.
+
+A percentile describes a distribution, not an average. If p99 latency is ten seconds, 99 percent of measured actions finished within ten seconds and one percent took longer. The test duration and sample count still matter.
+
+### Decimal and binary units
+
+- `kB`, `MB`, and `GB` use powers of 1,000 in this book unless a source says otherwise.
+- `KiB`, `MiB`, and `GiB` use powers of 1,024.
+- Network rates written `Mbps` are megabits per second; divide by eight to obtain ideal megabytes per second before overhead.
+- `ms` means milliseconds; 1,000 ms equals one second.
+- Ethereum fees may use `gwei`, where one gwei is one billionth of an ETH.
+
+### Probability language
+
+A model probability is conditional on its assumptions. Independent samples must truly be hard for an attacker to predict or correlate. A one-in-a-million result per event may still occur often when a system runs billions of events. Always pair a probability with the event rate, exposure time, and consequence.
+
+### Pseudocode and data structures
+
+Code blocks such as `Packet { ... }` are often pseudocode. They expose fields that must be bound or checked but are not a copy-paste implementation. A production encoding must additionally define byte order, field lengths, canonical forms, versioning, bounds, and error behavior.
+
+When a section becomes difficult, return to five questions: who acts, what data they use, what evidence the next party checks, when the result becomes final, and how failure is recovered.
+
 ## How to Use This Book
 
 Chapters 1-3 establish the measurement model and architecture vocabulary. Chapters 4-10 examine the main mechanisms. Chapter 11 looks at developing directions without treating research proposals as deployed facts.
