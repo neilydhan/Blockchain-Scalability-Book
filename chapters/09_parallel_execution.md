@@ -266,6 +266,85 @@ A scheduler can use several strategies.
 
 The best scheduler depends on conflict distribution, transaction duration, and cost of abort. Benchmarks should include short and long transactions; counting transactions alone hides load imbalance.
 
+## **Parallel Execution Memory, I/O, and NUMA Effects**
+
+Adding execution workers can move the bottleneck from CPU instructions to memory bandwidth, cache coherence, or state-database I/O. A scheduler benchmark that reports core count without memory and storage behavior can mistake hardware saturation for protocol contention.
+
+### Shared memory pressure
+
+Workers read account metadata, contract code, storage values, version tables, and execution results. If their working sets exceed cache, they fetch from main memory. More workers then compete for finite memory bandwidth.
+
+Suppose one worker executes 8,000 transactions per second and reads 40 kB of memory per transaction. Its read demand is:
+
+```text
+8,000 × 40 kB = 320 MB/s
+```
+
+Sixteen ideal workers would request 5.12 GB/s before writes, proofs, database overhead, and cache misses. On a machine sustaining 4 GB/s for this access pattern, speedup saturates before sixteen workers even without logical conflicts.
+
+Measure cache misses, memory bandwidth, allocation, garbage collection, and lock wait. CPU utilization below 100 percent can coexist with a memory bottleneck.
+
+### Non-uniform memory access
+
+Multi-socket servers often have **non-uniform memory access (NUMA)**: a core reaches memory attached to its own socket faster than memory attached to another. A shared version table allocated on one socket can make remote workers slower.
+
+Pin worker threads, place memory by access locality, partition state caches, and report socket topology. A result from one large NUMA server does not automatically predict performance on many smaller machines.
+
+Scheduler correctness must not depend on thread pinning. NUMA tuning changes performance only; state roots and receipts remain identical.
+
+### Database I/O
+
+Cold state misses memory and reaches storage. Random reads can dominate latency even when nominal SSD bandwidth is high. Report IOPS, queue depth, read/write amplification, compaction, cache size, and state locality.
+
+An optimistic executor may read state during speculative attempts that later abort. If 30 percent of attempts abort after cold reads, storage traffic can rise without committed throughput. Cache pollution can also slow the successful path.
+
+Use an execution cache keyed by state version and invalidate it deterministically. A stale cache result must be detected before commit; cache correctness is consensus-critical even when cache policy is not.
+
+### False sharing and locks
+
+Two workers can update independent logical values stored on the same cache line. Hardware repeatedly transfers ownership of that line, causing **false sharing** even though the transactions do not conflict at protocol level.
+
+Separate frequently written worker counters, use per-worker buffers, and merge them deterministically. Instrument lock hold time and contention by data structure. A global metrics lock can destroy scalability while the VM itself is parallel.
+
+### State commitment bottleneck
+
+Execution may run in parallel while Merkle-tree or other state commitment updates serialize near shared ancestors. Batch and deduplicate leaf updates, calculate independent subtrees concurrently, then combine roots in canonical order.
+
+Do not report execution completion before commitment when validators need the new root to accept the block. Measure execution, validation, writeback, root calculation, and database flush separately.
+
+### Oversubscription
+
+More software workers than hardware threads can hide I/O latency, but excessive workers increase context switching and memory use. GPU or prover tasks on the same host may also compete for CPU, memory, and I/O.
+
+Sweep worker counts rather than choosing the maximum. Record where throughput plateaus and tail latency or abort rate worsens. The best count can change with workload locality and state size.
+
+### Persistence and crash recovery
+
+Parallel workers produce intermediate results that must become durable atomically with the committed block boundary. A crash after some database writes but before root persistence must roll back or replay idempotently.
+
+Use write batches, journals, generations, or copy-on-write structures. Recovery rechecks the last durable state root and must not expose partial receipts or logs to indexers.
+
+### Hardware-aware benchmark matrix
+
+Vary:
+
+- cores, sockets, and simultaneous multithreading;
+- memory channels, capacity, and NUMA placement;
+- hot versus cold working set;
+- storage medium, IOPS, queue depth, and compaction;
+- worker count and scheduler policy;
+- conflict distribution and abort depth;
+- commitment scheme and flush policy;
+- background snapshot, proof, and indexing load.
+
+Report throughput and p99 block completion with hardware counters. A 10x VM microbenchmark speedup may become 2x end-to-end when state commitment and storage dominate.
+
+### Operational assertions
+
+Assert identical outputs across worker counts and placements, bounded memory under adversarial conflicts, recovery from crashes at every persistence boundary, no starvation under cold-state load, and stable catch-up while snapshots or compaction run.
+
+Parallel blockchain execution scales when independent work survives both logical conflicts and physical resource limits. The scheduler, memory hierarchy, database, commitment tree, and persistence path form one executor.
+
 ## **Fee Markets for Contention**
 
 A transaction can consume little CPU yet block many others by writing a popular key. Traditional gas meters its direct execution but not the opportunity cost of serializing a block.
