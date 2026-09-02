@@ -2,6 +2,12 @@
 
 The Blockchain Scalability Book explains how blockchains increase capacity while preserving verifiability, security, and credible recovery. It connects Layer 1 changes, channels, rollups, modular data availability, parallel execution, and consensus through end-to-end transaction and failure paths.
 
+## Download the Book
+
+**[Download the latest PDF edition from GitHub Releases](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest)**
+
+The release page includes the PDF as a direct download. Readers who prefer the web or source edition can use the chapter links below.
+
 Start with our [Preface](chapters/00_preface.md) to learn more about the book's purpose and structure.
 
 ## Why This Book?
