@@ -6,6 +6,8 @@ Blockchain scalability is a resource and systems problem, not a contest for the 
 
 [**Read online**](https://neilydhan.github.io/Blockchain-Scalability-Book/) · [**Download PDF**](https://github.com/neilydhan/Blockchain-Scalability-Book/releases/latest) · [**Cite**](CITATION.cff) · [**Teach this book**](ACADEMIC.md) · [**Contribute**](CONTRIBUTING.md)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22257267.svg)](https://doi.org/10.5281/zenodo.22257267)
+
 ## Who This Book Is For
 
 This is a technical systems book for:
