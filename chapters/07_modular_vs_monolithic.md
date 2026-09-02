@@ -126,6 +126,52 @@ The security statement must be precise: the data layer can show that data was pu
 
 ---
 
+## **Named Deployment Trace: An OP Stack Chain With Celestia DA**
+
+**Deployment label: production-capable stack and deployed integrations; the exact security label belongs to each chain configuration.** The OP Stack separates sequencing, derivation, execution, data availability, settlement and governance into named components. Celestia's OP Stack integration replaces Ethereum as the primary location for transaction batch data while retaining an Ethereum-facing commitment and verification path through the configured alternative-DA contracts.[^2][^3] This is a concrete modular deployment, not a hypothetical four-box diagram.
+
+Trace Maya's payment on an OP Stack chain configured for Celestia DA. Maya signs an EVM transaction and sends it to the chain's sequencer. The sequencer's execution client checks and executes it, while `op-node` coordinates L2 block production. Maya receives a fast L2 result under the sequencer's ordering promise. At this point the transaction has executed in the operator's view, but independent derivation still depends on publication.
+
+The batcher collects L2 blocks and compresses their transaction data. In the default Ethereum-DA configuration, that data is posted in Ethereum calldata or blobs. In the Celestia alternative-DA configuration, the batcher sends the payload to Celestia and receives a commitment or reference under the integration protocol. It then posts the compact DA commitment through the OP Stack's Ethereum-facing data-availability contract path. An independent node reads Ethereum's canonical inputs, sees the alternative-DA reference, retrieves the payload from Celestia, verifies that the bytes match the commitment, and feeds them into the OP derivation pipeline. The execution engine reproduces the same L2 blocks and state.[^2][^4]
+
+The settlement path remains another module. An output proposal or dispute-game claim commits to L2 state on Ethereum under that chain's fault-proof configuration. A challenger reconstructing a disputed state needs the Celestia payload. If it cannot retrieve the data required by the configured DA rule, it cannot safely treat the execution claim as reproducible merely because an Ethereum contract stored a short commitment. The integration must define how unavailable alternative data blocks state acceptance or activates a challenge.
+
+A canonical withdrawal now crosses all of these boundaries. Maya initiates an L2-to-L1 message. The message is in an L2 block derived from Celestia-backed batch data. A state claim covering that block is proposed on Ethereum and passes the applicable dispute period. Maya proves and finalizes the withdrawal through the OP bridge contracts. Ethereum holds the escrow and judges the fault-proof game, but the transaction data needed to reconstruct the claim came from Celestia. End-to-end security is the composition, not the strongest module named in the diagram.
+
+### **Exact trust and liveness assumptions**
+
+The sequencer can delay or reorder the fast path. Users need the chain's configured L1 submission or recovery mechanism to bypass it. Celestia validators and data-availability sampling secure publication under Celestia's model, while retrievers and archives determine whether challengers can still obtain the batch throughout the required window. Ethereum orders the DA commitments, state claims and bridge actions and executes the settlement contracts. OP derivation and execution clients must agree on the alternative-DA encoding. The fault-proof program and challenger set must be effective. Governance can replace contracts, chain configuration, DA adapters or proof components.
+
+This deployment does **not** inherit Ethereum blob availability for its batch bytes. It does **not** ask Celestia to execute the EVM transaction or decide the OP Stack state root. Blobstream can relay Celestia data-root commitments to an EVM chain, but it proves facts about Celestia consensus and commitments, not correctness of Maya's application execution.[^5] The OP fault-proof path establishes execution correctness relative to available input and the deployed program.
+
+### **Observable consequences and failure paths**
+
+Operators should connect one batch across systems with durable identifiers: L2 block range and batch hash; Celestia namespace, height and blob commitment; Ethereum alternative-DA commitment transaction; derived L2 safe head; output or dispute-game claim; and withdrawal message. A dashboard that monitors only Ethereum batch transactions can report healthy settlement while Celestia retrieval is failing. A Celestia explorer can show available bytes while the Ethereum commitment adapter or OP derivation client is broken.
+
+Suppose the sequencer produces 100 L2 blocks, publishes their payload to Celestia, but crashes before posting the alternative-DA commitment to Ethereum. Celestia contains bytes, yet canonical OP derivation has no authenticated pointer in its Ethereum input stream. A replacement batcher needs an idempotent recovery rule that posts the same commitment and block range, not a new encoding that forks derivation.
+
+Suppose the Ethereum commitment lands, but Celestia data cannot be reconstructed. Nodes stop advancing the safe derived chain at that input. They must not replace unavailable bytes with a batch fetched privately from the sequencer unless the protocol authenticates the same commitment and the DA acceptance rule is satisfied. The rollup's proof and withdrawal timers must not outrun the challenge data.
+
+Suppose Celestia reorganizes a not-yet-final block containing the blob while Ethereum retains the reference. The integration needs a finality policy and a response: wait before posting, update or invalidate the reference under allowed rules, or halt derivation. A reference to a noncanonical DA block must not silently become valid because Ethereum finalized the reference transaction.
+
+Suppose Blobstream or another bridge carrying Celestia commitments pauses. Celestia can remain available while Ethereum-side verification and settlement stop. This is a liveness failure at the bridge module. If the bridge accepts a false root because its validator or contract assumptions fail, that becomes a safety failure. A circuit breaker can limit value or stop new withdrawals, but it cannot by itself reconstruct missing data or prove the correct state.
+
+### **Deployment comparison**
+
+| Layer | Standard OP Stack with Ethereum DA | OP Stack with Celestia DA |
+|---|---|---|
+| Execution | OP execution client/EVM | OP execution client/EVM |
+| Sequencing | Configured OP sequencer | Configured OP sequencer |
+| Batch bytes | Ethereum calldata or blobs | Celestia blob under integration namespace/rules |
+| Canonical reference | Ethereum batch input | Ethereum alternative-DA commitment/reference |
+| DA security | Ethereum protocol and blob/calldata availability | Celestia consensus, coding/sampling and retrieval assumptions |
+| Settlement | Ethereum OP contracts and fault proofs | Ethereum OP contracts and fault proofs, now dependent on Celestia input retrieval |
+| Added module | None beyond normal OP path | DA adapter, Celestia client/retriever, commitment verification or Blobstream path |
+| Distinct failure | Ethereum data price/capacity | Cross-layer finality mismatch, retriever failure, adapter/bridge failure |
+
+The modular design can reduce publication cost or add capacity, and it lets execution and DA evolve separately. Its cost is a longer proof chain. A production claim should therefore state the complete route: "OP Stack execution, Celestia data availability, Ethereum settlement through these contracts and this bridge version," followed by the exact fallback and upgrade controls. "Secured by Ethereum" alone leaves out the layer whose data makes an Ethereum challenge possible.
+
+
 ## **Sovereign and Settled Rollups**
 
 A **settled rollup** submits state roots to a settlement contract that enforces its validity or dispute rules. Its canonical bridge depends on that contract.
@@ -707,3 +753,8 @@ The gain is flexibility and scale. The cost is fragmentation and a larger set of
 ## **References**
 
 [^1]: Celestia Docs. "Data Availability." <https://docs.celestia.org/learn/celestia-101/data-availability/>.
+
+[^2]: Optimism Documentation. "OP Stack components." <https://docs.optimism.io/op-stack/protocol/components>.
+[^3]: Optimism Documentation. "Transaction flow." <https://docs.optimism.io/op-stack/transactions/transaction-flow>.
+[^4]: Celestia Documentation. "OP Stack integration." <https://docs.celestia.org/build/stacks/op-alt-da/introduction/>.
+[^5]: Celestia Documentation. "Blobstream." <https://docs.celestia.org/learn/blobstream/>.
