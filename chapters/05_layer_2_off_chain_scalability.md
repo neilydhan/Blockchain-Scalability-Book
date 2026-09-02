@@ -10,6 +10,47 @@ The course groups the main approaches into channels, sidechains and commit-chain
 
 ---
 
+## **Intuition: Signed Receipts Instead of Global Updates**
+
+A base chain is expensive because every update is broadcast, checked, and stored by many nodes. Off-chain protocols ask whether participants can exchange evidence privately and involve the chain only for a checkpoint or dispute.
+
+Imagine Alice and Bob playing many rounds of a game. Instead of paying a court to record every score, they both sign the latest score sheet. If they agree at the end, they submit only the final sheet. If Bob submits an older sheet, Alice shows the newer signature during a dispute window.
+
+This simple idea introduces the chapter's core terms:
+
+- A **channel** locks assets or state in an on-chain contract and lets named participants exchange signed updates.
+- A **commitment transaction** is a pre-authorized on-chain outcome representing one channel state.
+- A **dispute window** is the time allowed to challenge stale or invalid evidence.
+- A **timelock** prevents an action until a time or block height, giving another party time to respond.
+- A **revocation secret** is evidence that an older Lightning commitment should no longer be used.
+- A **watchtower** monitors the chain and responds for a user who is offline.
+
+The chain is the judge of last resort. Safety depends on the contract recognizing the newest valid evidence and users being able to reach it before deadlines.
+
+### **Payments through intermediaries**
+
+A payment channel connects only its participants. To pay someone without a direct channel, a sender can route through intermediaries. Each intermediary needs a guarantee: it should pay the next hop only if it can claim from the previous hop.
+
+A **hash time-locked contract (HTLC)** combines two conditions. The receiver must reveal a secret whose hash matches a known value, and must do so before a deadline. Revealing the secret lets claims propagate backward along the route. Staggered deadlines give each intermediary time to react on-chain if the next hop waits.
+
+Think of several locked boxes in a row that open with the same code. The receiver opens the last box, revealing the code; each intermediary then uses it to open the preceding box. The boxes also have closing times, ordered so an intermediary does not pay out after losing its own chance to claim.
+
+### **Liquidity, not only connectivity**
+
+A route can exist in the network graph and still fail. A channel with 10 units total may have all 10 on the wrong side. **Liquidity** is spendable balance in the needed direction, not total channel capacity.
+
+Routing therefore resembles finding roads that have both a connection and enough remaining cargo allowance. Fees, timelocks, private channels, concurrent payments, and failed attempts make the map imperfect.
+
+### **Plasma, sidechains, and rollups**
+
+These systems all move activity away from ordinary L1 execution but return different evidence:
+
+- A **sidechain** has its own consensus. A bridge decides when to accept its messages.
+- A **Plasma chain** posts commitments while users retain data needed to challenge and exit. Missing data can force many users to leave together.
+- A **rollup** publishes transaction data, or enough recoverable data under its model, and lets the base layer reject invalid state through a fault proof or validity proof.
+
+The beginner's test is: if the off-chain operator disappears today, what evidence does the user already have, what data can they obtain, which contract can they call, and how long do they have?
+
 ## **The General Off-Chain Pattern**
 
 <p align="center">
